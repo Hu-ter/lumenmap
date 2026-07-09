@@ -57,7 +57,7 @@ async function fetchFromHubble(
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   const range = resolvePeriod(period);
-  const cacheKey = `activity:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v2:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {

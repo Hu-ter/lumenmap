@@ -2,13 +2,8 @@ import {
   CATEGORY_COLORS,
   GROUP_LABELS,
   TYPE_TO_GROUP,
-  UNKNOWN_ENTITY_TOP_N,
 } from "@/lib/constants";
-import {
-  getDisplayName,
-  getProtocolLabel,
-  lookupEntity,
-} from "@/lib/entities/registry";
+import { getDisplayName, lookupEntity } from "@/lib/entities/registry";
 import type {
   AccountRow,
   ActivityKpis,
@@ -23,128 +18,94 @@ interface BuildTreemapInput {
   accounts: AccountRow[];
 }
 
+const GROUP_ORDER = [
+  "soroban",
+  "payments",
+  "dex",
+  "trustlines",
+  "account",
+  "other",
+] as const;
+
+const MAX_LEAVES = 10;
+
 function getGroupForType(type: string): string {
   return TYPE_TO_GROUP[type] ?? "other";
 }
 
-function withNodeIds(node: TreemapNode, prefix = "root"): TreemapNode {
-  const id = `${prefix}-${node.name}`;
-  return {
-    ...node,
-    id,
-    children: node.children?.map((child, index) =>
-      withNodeIds(child, `${id}-${index}`),
-    ),
-  };
-}
+function getGroupTotals(categories: CategoryRow[]): Map<string, number> {
+  const totals = new Map<string, number>();
 
-function sumValues(nodes: TreemapNode[]): number {
-  return nodes.reduce((total, node) => total + (node.value ?? 0), 0);
-}
-
-function buildContractBranch(contracts: ContractRow[]): TreemapNode | null {
-  if (contracts.length === 0) {
-    return null;
+  for (const row of categories) {
+    const group = getGroupForType(row.type_string);
+    totals.set(group, (totals.get(group) ?? 0) + row.op_count);
   }
 
-  const byProtocol = new Map<string, ContractRow[]>();
+  return totals;
+}
 
-  for (const contract of contracts) {
-    const protocol = getProtocolLabel(contract.contract_id);
-    const list = byProtocol.get(protocol) ?? [];
-    list.push(contract);
-    byProtocol.set(protocol, list);
+function appendOtherLeaf(
+  leaves: TreemapNode[],
+  categoryTotal: number,
+  category: string,
+  label: string,
+): TreemapNode[] {
+  const leafSum = leaves.reduce((sum, leaf) => sum + (leaf.value ?? 0), 0);
+  const remainder = categoryTotal - leafSum;
+
+  if (remainder <= 0) {
+    return leaves;
   }
 
-  const children: TreemapNode[] = [];
+  return [
+    ...leaves,
+    {
+      name: label,
+      value: remainder,
+      color: CATEGORY_COLORS.other,
+      meta: {
+        type: "entity",
+        category,
+        opCount: remainder,
+      },
+    },
+  ];
+}
 
-  for (const [protocol, rows] of byProtocol) {
-    const sorted = [...rows].sort((a, b) => b.op_count - a.op_count);
-    const known = sorted.filter((row) => lookupEntity(row.contract_id));
-    const unknown = sorted.filter((row) => !lookupEntity(row.contract_id));
+function buildContractLeaves(
+  contracts: ContractRow[],
+  categoryTotal: number,
+): TreemapNode[] {
+  const sorted = [...contracts].sort((a, b) => b.op_count - a.op_count);
+  const top = sorted.slice(0, MAX_LEAVES);
 
-    const protocolChildren: TreemapNode[] = known.map((row) => ({
-      name: getDisplayName(row.contract_id),
+  const leaves: TreemapNode[] = top.map((row) => {
+    const entity = lookupEntity(row.contract_id);
+    return {
+      name: entity?.name ?? getDisplayName(row.contract_id),
       value: row.op_count,
       color: CATEGORY_COLORS.soroban,
       meta: {
         type: "contract",
         id: row.contract_id,
         category: "soroban",
-        protocol,
+        protocol: entity?.protocol,
         opCount: row.op_count,
       },
-    }));
+    };
+  });
 
-    if (unknown.length > 0) {
-      const topUnknown = unknown.slice(0, UNKNOWN_ENTITY_TOP_N);
-      const restUnknown = unknown.slice(UNKNOWN_ENTITY_TOP_N);
-      const restTotal = restUnknown.reduce((sum, row) => sum + row.op_count, 0);
-
-      protocolChildren.push(
-        ...topUnknown.map((row) => ({
-          name: getDisplayName(row.contract_id),
-          value: row.op_count,
-          color: CATEGORY_COLORS.soroban,
-          meta: {
-            type: "contract" as const,
-            id: row.contract_id,
-            category: "soroban",
-            protocol,
-            opCount: row.op_count,
-          },
-        })),
-      );
-
-      if (restTotal > 0) {
-        protocolChildren.push({
-          name: "Other Contracts",
-          value: restTotal,
-          color: CATEGORY_COLORS.other,
-          meta: {
-            type: "entity",
-            category: "soroban",
-            protocol,
-            opCount: restTotal,
-          },
-        });
-      }
-    }
-
-    children.push({
-      name: protocol,
-      children: protocolChildren,
-      meta: {
-        type: "entity",
-        category: "soroban",
-        protocol,
-        opCount: sumValues(protocolChildren),
-      },
-    });
-  }
-
-  return {
-    name: GROUP_LABELS.soroban,
-    children,
-    meta: {
-      type: "category",
-      category: "soroban",
-      opCount: sumValues(children),
-    },
-  };
+  return appendOtherLeaf(leaves, categoryTotal, "soroban", "Other Contracts");
 }
 
-function buildAccountBranch(
-  group: string,
+function buildAccountLeaves(
   accounts: AccountRow[],
-): TreemapNode | null {
+  group: string,
+  categoryTotal: number,
+): TreemapNode[] {
   const filtered = accounts.filter(
     (row) => getGroupForType(row.type_string) === group,
   );
-
-  if (filtered.length === 0) {
-    return null;
-  }
 
   const byAccount = new Map<string, number>();
   for (const row of filtered) {
@@ -156,121 +117,81 @@ function buildAccountBranch(
 
   const sorted = [...byAccount.entries()]
     .map(([account_id, op_count]) => ({ account_id, op_count }))
-    .sort((a, b) => b.op_count - a.op_count);
+    .sort((a, b) => b.op_count - a.op_count)
+    .slice(0, MAX_LEAVES);
 
-  const byProtocol = new Map<string, { account_id: string; op_count: number }[]>();
+  const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
 
-  for (const row of sorted) {
-    const protocol = getProtocolLabel(row.account_id);
-    const list = byProtocol.get(protocol) ?? [];
-    list.push(row);
-    byProtocol.set(protocol, list);
-  }
-
-  const children: TreemapNode[] = [];
-
-  for (const [protocol, rows] of byProtocol) {
-    const known = rows.filter((row) => lookupEntity(row.account_id));
-    const unknown = rows.filter((row) => !lookupEntity(row.account_id));
-
-    const protocolChildren: TreemapNode[] = known.map((row) => ({
-      name: getDisplayName(row.account_id),
+  const leaves: TreemapNode[] = sorted.map((row) => {
+    const entity = lookupEntity(row.account_id);
+    return {
+      name: entity?.name ?? getDisplayName(row.account_id),
       value: row.op_count,
-      color: CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other,
+      color,
       meta: {
         type: "account",
         id: row.account_id,
         category: group,
-        protocol,
+        protocol: entity?.protocol,
+        opCount: row.op_count,
+      },
+    };
+  });
+
+  const otherLabel =
+    group === "payments"
+      ? "Other Payments"
+      : group === "dex"
+        ? "Other DEX Activity"
+        : group === "trustlines"
+          ? "Other Trustlines"
+          : "Other Account Ops";
+
+  return appendOtherLeaf(leaves, categoryTotal, group, otherLabel);
+}
+
+function buildTypeLeaves(
+  categories: CategoryRow[],
+  group: string,
+): TreemapNode[] {
+  const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
+
+  return categories
+    .filter((row) => getGroupForType(row.type_string) === group)
+    .sort((a, b) => b.op_count - a.op_count)
+    .map((row) => ({
+      name: row.type_string.replaceAll("_", " "),
+      value: row.op_count,
+      color,
+      meta: {
+        type: "entity" as const,
+        category: group,
         opCount: row.op_count,
       },
     }));
-
-    const topUnknown = unknown.slice(0, UNKNOWN_ENTITY_TOP_N);
-    const restUnknown = unknown.slice(UNKNOWN_ENTITY_TOP_N);
-    const restTotal = restUnknown.reduce((sum, row) => sum + row.op_count, 0);
-
-    protocolChildren.push(
-      ...topUnknown.map((row) => ({
-        name: getDisplayName(row.account_id),
-        value: row.op_count,
-        color: CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other,
-        meta: {
-          type: "account" as const,
-          id: row.account_id,
-          category: group,
-          protocol,
-          opCount: row.op_count,
-        },
-      })),
-    );
-
-    if (restTotal > 0) {
-      protocolChildren.push({
-        name: "Other Accounts",
-        value: restTotal,
-        color: CATEGORY_COLORS.other,
-        meta: {
-          type: "entity",
-          category: group,
-          protocol,
-          opCount: restTotal,
-        },
-      });
-    }
-
-    children.push({
-      name: protocol,
-      children: protocolChildren,
-      meta: {
-        type: "entity",
-        category: group,
-        protocol,
-        opCount: sumValues(protocolChildren),
-      },
-    });
-  }
-
-  return {
-    name: GROUP_LABELS[group] ?? group,
-    children,
-    meta: {
-      type: "category",
-      category: group,
-      opCount: sumValues(children),
-    },
-  };
 }
 
-function buildOtherBranch(categories: CategoryRow[]): TreemapNode | null {
-  const otherCategories = categories.filter(
-    (row) => getGroupForType(row.type_string) === "other",
-  );
-
-  if (otherCategories.length === 0) {
-    return null;
+function buildCategoryChildren(
+  group: string,
+  input: BuildTreemapInput,
+  categoryTotal: number,
+): TreemapNode[] {
+  if (group === "soroban") {
+    return buildContractLeaves(input.contracts, categoryTotal);
   }
 
-  const children: TreemapNode[] = otherCategories.map((row) => ({
-    name: row.type_string,
-    value: row.op_count,
-    color: CATEGORY_COLORS.other,
-    meta: {
-      type: "entity",
-      category: "other",
-      opCount: row.op_count,
-    },
-  }));
+  if (group === "payments" || group === "dex" || group === "trustlines") {
+    const accountLeaves = buildAccountLeaves(
+      input.accounts,
+      group,
+      categoryTotal,
+    );
+    if (accountLeaves.length > 0) {
+      return accountLeaves;
+    }
+  }
 
-  return {
-    name: GROUP_LABELS.other,
-    children,
-    meta: {
-      type: "category",
-      category: "other",
-      opCount: sumValues(children),
-    },
-  };
+  return buildTypeLeaves(input.categories, group);
 }
 
 export function buildKpis(
@@ -278,17 +199,10 @@ export function buildKpis(
   contracts: ContractRow[],
 ): ActivityKpis {
   const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
-  const sorobanOps = categories
-    .filter((row) => getGroupForType(row.type_string) === "soroban")
-    .reduce((sum, row) => sum + row.op_count, 0);
+  const groupTotals = getGroupTotals(categories);
+  const sorobanOps = groupTotals.get("soroban") ?? 0;
 
-  const groupedTotals = new Map<string, number>();
-  for (const row of categories) {
-    const group = getGroupForType(row.type_string);
-    groupedTotals.set(group, (groupedTotals.get(group) ?? 0) + row.op_count);
-  }
-
-  const topCategoryEntry = [...groupedTotals.entries()].sort(
+  const topCategoryEntry = [...groupTotals.entries()].sort(
     (a, b) => b[1] - a[1],
   )[0];
 
@@ -303,65 +217,44 @@ export function buildKpis(
 }
 
 export function buildTreemap(input: BuildTreemapInput): TreemapNode {
-  const { categories, contracts, accounts } = input;
+  const groupTotals = getGroupTotals(input.categories);
+  const totalOps = categoriesTotal(input.categories);
 
-  const branches: TreemapNode[] = [];
-
-  const sorobanBranch = buildContractBranch(contracts);
-  if (sorobanBranch) {
-    branches.push(sorobanBranch);
-  }
-
-  for (const group of ["payments", "dex", "trustlines", "account"] as const) {
-    const branch = buildAccountBranch(group, accounts);
-    if (branch) {
-      branches.push(branch);
+  const children: TreemapNode[] = GROUP_ORDER.flatMap((group) => {
+    const value = groupTotals.get(group) ?? 0;
+    if (value <= 0) {
+      return [];
     }
-  }
 
-  const otherBranch = buildOtherBranch(categories);
-  if (otherBranch) {
-    branches.push(otherBranch);
-  }
+    const categoryChildren = buildCategoryChildren(group, input, value);
 
-  const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
+    return [
+      {
+        name: GROUP_LABELS[group] ?? group,
+        value,
+        color: CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other,
+        meta: {
+          type: "category",
+          category: group,
+          opCount: value,
+          share: totalOps > 0 ? (value / totalOps) * 100 : 0,
+        },
+        children: categoryChildren,
+      },
+    ];
+  });
 
-  const withShares = branches.map((branch) => ({
-    ...branch,
-    meta: {
-      ...branch.meta,
-      type: branch.meta?.type ?? "category",
-      share:
-        totalOps > 0 && branch.meta?.opCount
-          ? (branch.meta.opCount / totalOps) * 100
-          : 0,
-    },
-  }));
-
-  return withNodeIds({
+  return {
     name: "Network Activity",
-    children: withShares,
+    value: totalOps,
     meta: {
       type: "root",
       opCount: totalOps,
     },
-  });
+    children,
+  };
 }
 
-export function attachShares(node: TreemapNode, total: number): TreemapNode {
-  const value =
-    node.value ??
-    (node.children ? sumValues(node.children) : node.meta?.opCount ?? 0);
-
-  return {
-    ...node,
-    value: node.children ? undefined : value,
-    meta: {
-      ...node.meta,
-      type: node.meta?.type ?? "entity",
-      share: total > 0 ? (value / total) * 100 : 0,
-      opCount: value,
-    },
-    children: node.children?.map((child) => attachShares(child, total)),
-  };
+function categoriesTotal(categories: CategoryRow[]): number {
+  return categories.reduce((sum, row) => sum + row.op_count, 0);
 }

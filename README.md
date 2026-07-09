@@ -16,7 +16,7 @@ Interactive dashboard for exploring Stellar mainnet activity by contract, compan
 - Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
-- Nivo treemap
+- D3 squarified treemap with drill-down navigation
 - TanStack Query
 - Hubble BigQuery (with mock fallback)
 

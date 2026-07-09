@@ -40,8 +40,20 @@ export function getMockActivityData(): {
         op_count: 310_000,
       },
       {
+        contract_id: "CSTELLARUSDCSTELLARUSDCSTELLARUSDCSTELLARUSDCST",
+        op_count: 280_000,
+      },
+      {
+        contract_id: "CVALUEMARTVALUEMARTVALUEMARTVALUEMARTVALUEMART",
+        op_count: 210_000,
+      },
+      {
+        contract_id: "CDEFINDEXCDEFINDEXCDEFINDEXCDEFINDEXCDEFINDEXCDEF",
+        op_count: 180_000,
+      },
+      {
         contract_id: "CUNKNOWNCONTRACTUNKNOWNCONTRACTUNKNOWNCONTRACTUN",
-        op_count: 1_230_000,
+        op_count: 560_000,
       },
     ],
     accounts: [
@@ -51,29 +63,49 @@ export function getMockActivityData(): {
         op_count: 520_000,
       },
       {
-        account_id: "GDKY2J7E3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3",
-        type_string: "payment",
-        op_count: 310_000,
-      },
-      {
         account_id: "GBMoneyGramMoneyGramMoneyGramMoneyGramMoneyGramM",
         type_string: "payment",
-        op_count: 240_000,
+        op_count: 340_000,
+      },
+      {
+        account_id: "GDKY2J7E3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3",
+        type_string: "payment",
+        op_count: 280_000,
+      },
+      {
+        account_id: "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL",
+        type_string: "payment",
+        op_count: 190_000,
       },
       {
         account_id: "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX",
         type_string: "manage_sell_offer",
-        op_count: 180_000,
+        op_count: 320_000,
+      },
+      {
+        account_id: "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX",
+        type_string: "manage_buy_offer",
+        op_count: 210_000,
       },
       {
         account_id: "GANCHORWALLETANCHORWALLETANCHORWALLETANCHORWALL",
         type_string: "change_trust",
-        op_count: 150_000,
+        op_count: 420_000,
+      },
+      {
+        account_id: "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL",
+        type_string: "change_trust",
+        op_count: 180_000,
       },
       {
         account_id: "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL",
         type_string: "create_account",
         op_count: 95_000,
+      },
+      {
+        account_id: "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX",
+        type_string: "liquidity_pool_deposit",
+        op_count: 72_000,
       },
     ],
   };
