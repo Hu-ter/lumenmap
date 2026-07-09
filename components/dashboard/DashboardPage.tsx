@@ -20,10 +20,8 @@ function DataSourceNotice() {
   return (
     <p className="text-xs text-zinc-500">
       Data source:{" "}
-      <span className="text-zinc-300">
-        {data.source === "hubble" ? "Hubble BigQuery" : "Mock dataset"}
-      </span>
-      {data.source === "hubble" ? " · Hubble updates in intraday batches" : ""}
+      <span className="text-zinc-300">Hubble BigQuery</span>
+      {" · Hubble updates in intraday batches"}
     </p>
   );
 }

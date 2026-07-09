@@ -1,6 +1,5 @@
 import { getBigQueryClient } from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
-import { getMockActivityData } from "@/lib/hubble/mock-data";
 import {
   accountQuery,
   accountMetadataQuery,
@@ -91,8 +90,14 @@ async function fetchHomeDomains(ids: string[]) {
 }
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
+  if (!hasBigQueryCredentials()) {
+    throw new Error(
+      "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
+    );
+  }
+
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v9:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -101,24 +106,10 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
 
   const start = range.start.toISOString();
   const end = range.end.toISOString();
-
-  let raw: RawQueryResults;
-  let source: ActivityResponse["source"] = "mock";
-
-  if (hasBigQueryCredentials()) {
-    try {
-      raw = await fetchFromHubble(start, end);
-      source = "hubble";
-    } catch {
-      raw = getMockActivityData();
-    }
-  } else {
-    raw = getMockActivityData();
-  }
-
+  const raw = await fetchFromHubble(start, end);
   const kpis = buildKpis(raw.categories, raw.contracts);
   const labels = await resolveEntityLabels(collectTreemapIds(raw), {
-    fetchHomeDomains: hasBigQueryCredentials() ? fetchHomeDomains : undefined,
+    fetchHomeDomains,
   });
   const treemaps = buildAllTreemaps({ ...raw, labels });
 
@@ -126,7 +117,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     period,
     start,
     end,
-    source,
+    source: "hubble",
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,

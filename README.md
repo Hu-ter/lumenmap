@@ -18,7 +18,7 @@ Interactive dashboard for exploring Stellar mainnet activity by contract, compan
 - Tailwind CSS
 - D3 squarified treemap with drill-down navigation
 - TanStack Query
-- Hubble BigQuery (with mock fallback)
+- Hubble BigQuery
 
 ## Getting Started
 
@@ -27,9 +27,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-Without GCP credentials, the app serves mock data so the UI can be developed locally.
+Open [http://localhost:3000](http://localhost:3000). GCP credentials are required — see Hubble setup below.
 
 ## Hubble BigQuery Setup
 

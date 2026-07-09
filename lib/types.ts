@@ -1,6 +1,6 @@
 export type Period = "1d" | "7d" | "30d" | "month";
 
-export type DataSource = "hubble" | "mock";
+export type DataSource = "hubble";
 
 export type TreemapNodeType =
   | "root"

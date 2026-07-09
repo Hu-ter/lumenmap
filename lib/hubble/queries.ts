@@ -63,32 +63,33 @@ ORDER BY type_string, op_count DESC
 `;
 
 export const sorobanFunctionQuery = `
+WITH labeled AS (
+  SELECT
+    CASE
+      WHEN soroban_operation_type = 'invoke_contract'
+        AND parameters_decoded[SAFE_OFFSET(1)].type = 'Sym'
+      THEN parameters_decoded[SAFE_OFFSET(1)].value
+      ELSE soroban_operation_type
+    END AS function_name
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations_soroban\`
+  WHERE closed_at BETWEEN @start AND @end
+)
 SELECT
-  CASE
-    WHEN soroban_operation_type = 'invoke_contract'
-      AND parameters_decoded[SAFE_OFFSET(1)].type = 'Sym'
-    THEN parameters_decoded[SAFE_OFFSET(1)].value
-    ELSE soroban_operation_type
-  END AS function_name,
+  function_name,
   COUNT(*) AS op_count
-FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations_soroban\`
-WHERE closed_at BETWEEN @start AND @end
+FROM labeled
+WHERE function_name IS NOT NULL AND function_name != ''
 GROUP BY function_name
-HAVING function_name IS NOT NULL AND function_name != ''
 ORDER BY op_count DESC
 LIMIT ${TOP_SOROBAN_FUNCTIONS}
 `;
 
 export const sorobanFunctionContractQuery = `
-WITH ranked AS (
+WITH aggregated AS (
   SELECT
     parameters_decoded[SAFE_OFFSET(1)].value AS function_name,
     contract_id,
-    COUNT(*) AS op_count,
-    ROW_NUMBER() OVER (
-      PARTITION BY parameters_decoded[SAFE_OFFSET(1)].value
-      ORDER BY COUNT(*) DESC
-    ) AS rank
+    COUNT(*) AS op_count
   FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations_soroban\`
   WHERE closed_at BETWEEN @start AND @end
     AND soroban_operation_type = 'invoke_contract'
@@ -96,6 +97,17 @@ WITH ranked AS (
     AND contract_id IS NOT NULL
     AND contract_id != ''
   GROUP BY function_name, contract_id
+),
+ranked AS (
+  SELECT
+    function_name,
+    contract_id,
+    op_count,
+    ROW_NUMBER() OVER (
+      PARTITION BY function_name
+      ORDER BY op_count DESC
+    ) AS rank
+  FROM aggregated
 )
 SELECT function_name, contract_id, op_count
 FROM ranked
