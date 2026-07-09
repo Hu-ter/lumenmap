@@ -91,6 +91,15 @@ export function DetailPanel() {
           </div>
         ) : null}
 
+        {selectedNode.meta?.eventType ? (
+          <div>
+            <p className="mb-1 text-xs text-zinc-500">Operation type</p>
+            <p className="font-mono text-xs text-zinc-300">
+              {selectedNode.meta.eventType}
+            </p>
+          </div>
+        ) : null}
+
         {selectedNode.meta?.childCount ? (
           <p className="text-xs text-stellar-light">
             Click this tile again in the treemap to explore{" "}

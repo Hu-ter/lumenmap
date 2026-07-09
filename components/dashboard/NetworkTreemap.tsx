@@ -3,6 +3,7 @@
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
+import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -16,8 +17,15 @@ const CATEGORY_LEGEND = [
 ];
 
 export function NetworkTreemap() {
-  const { data, isLoading, isError, error, period, setSelectedNode } =
-    useDashboard();
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    period,
+    treemapView,
+    setSelectedNode,
+  } = useDashboard();
 
   if (isLoading) {
     return (
@@ -47,16 +55,19 @@ export function NetworkTreemap() {
     );
   }
 
+  const activeTreemap = data.treemaps[treemapView];
+
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-3">
+      <CardHeader className="flex flex-col gap-4">
         <div>
           <CardTitle>Network Treemap</CardTitle>
           <p className="text-xs text-zinc-500">
-            Tile size reflects operation volume. Click a category to drill into
-            contracts and accounts.
+            Switch views to explore operation types or top accounts and
+            contracts.
           </p>
         </div>
+        <TreemapViewSelector />
         <div className="flex flex-wrap gap-2">
           {CATEGORY_LEGEND.map((item) => (
             <span
@@ -74,11 +85,11 @@ export function NetworkTreemap() {
       </CardHeader>
       <CardContent>
         <div
-          key={period}
+          key={`${period}-${treemapView}`}
           className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
         >
           <D3Treemap
-            root={data.treemap}
+            root={activeTreemap}
             totalOps={data.kpis.totalOps}
             onSelect={setSelectedNode}
           />

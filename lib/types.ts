@@ -46,6 +46,7 @@ export interface TreemapNodeMeta {
   share?: number;
   opCount?: number;
   childCount?: number;
+  eventType?: string;
 }
 
 export interface TreemapNode {
@@ -57,6 +58,13 @@ export interface TreemapNode {
   meta?: TreemapNodeMeta;
 }
 
+import type { TreemapViewId } from "@/lib/constants";
+
+export interface ActivityTreemaps {
+  events: TreemapNode;
+  actors: TreemapNode;
+}
+
 export interface ActivityResponse {
   period: Period;
   start: string;
@@ -66,7 +74,7 @@ export interface ActivityResponse {
   contracts: ContractRow[];
   accounts: AccountRow[];
   kpis: ActivityKpis;
-  treemap: TreemapNode;
+  treemaps: ActivityTreemaps;
 }
 
 export interface SelectedNode {

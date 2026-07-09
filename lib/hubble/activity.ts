@@ -12,7 +12,7 @@ import {
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
-import { buildKpis, buildTreemap } from "@/lib/entities/build-treemap";
+import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
 import { resolvePeriod } from "@/lib/periods";
 import type { ActivityResponse, Period } from "@/lib/types";
 
@@ -57,7 +57,7 @@ async function fetchFromHubble(
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v3:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v4:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -82,7 +82,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const kpis = buildKpis(raw.categories, raw.contracts);
-  const treemap = buildTreemap(raw);
+  const treemaps = buildAllTreemaps(raw);
 
   const response: ActivityResponse = {
     period,
@@ -93,7 +93,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     contracts: raw.contracts,
     accounts: raw.accounts,
     kpis,
-    treemap,
+    treemaps,
   };
 
   setCache(cacheKey, response);

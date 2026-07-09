@@ -242,11 +242,12 @@ function buildTypeLeaves(
         type: "entity" as const,
         category: group,
         opCount: row.op_count,
+        eventType: row.type_string,
       },
     }));
 }
 
-function buildCategoryChildren(
+function buildCategoryGroupChildren(
   group: string,
   input: BuildTreemapInput,
   categoryTotal: number,
@@ -269,29 +270,13 @@ function buildCategoryChildren(
   return buildTypeLeaves(input.categories, group);
 }
 
-export function buildKpis(
-  categories: CategoryRow[],
-  contracts: ContractRow[],
-): ActivityKpis {
-  const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
-  const groupTotals = getGroupTotals(categories);
-  const sorobanOps = groupTotals.get("soroban") ?? 0;
-
-  const topCategoryEntry = [...groupTotals.entries()].sort(
-    (a, b) => b[1] - a[1],
-  )[0];
-
-  return {
-    totalOps,
-    sorobanShare: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
-    topCategory: topCategoryEntry
-      ? (GROUP_LABELS[topCategoryEntry[0]] ?? topCategoryEntry[0])
-      : "N/A",
-    activeContracts: contracts.length,
-  };
-}
-
-export function buildTreemap(input: BuildTreemapInput): TreemapNode {
+function buildGroupedTreemap(
+  input: BuildTreemapInput,
+  getCategoryChildren: (
+    group: string,
+    categoryTotal: number,
+  ) => TreemapNode[],
+): TreemapNode {
   const groupTotals = getGroupTotals(input.categories);
   const totalOps = categoriesTotal(input.categories);
 
@@ -301,7 +286,7 @@ export function buildTreemap(input: BuildTreemapInput): TreemapNode {
       return [];
     }
 
-    const categoryChildren = buildCategoryChildren(group, input, value);
+    const categoryChildren = getCategoryChildren(group, value);
 
     return [
       {
@@ -328,6 +313,52 @@ export function buildTreemap(input: BuildTreemapInput): TreemapNode {
       opCount: totalOps,
     },
     children,
+  };
+}
+
+export function buildEventTypeTreemap(input: BuildTreemapInput): TreemapNode {
+  return buildGroupedTreemap(input, (group) =>
+    buildTypeLeaves(input.categories, group),
+  );
+}
+
+export function buildActorTreemap(input: BuildTreemapInput): TreemapNode {
+  return buildGroupedTreemap(input, (group, categoryTotal) =>
+    buildCategoryGroupChildren(group, input, categoryTotal),
+  );
+}
+
+export function buildAllTreemaps(input: BuildTreemapInput) {
+  return {
+    events: buildEventTypeTreemap(input),
+    actors: buildActorTreemap(input),
+  };
+}
+
+/** @deprecated Use buildActorTreemap or buildAllTreemaps */
+export function buildTreemap(input: BuildTreemapInput): TreemapNode {
+  return buildActorTreemap(input);
+}
+
+export function buildKpis(
+  categories: CategoryRow[],
+  contracts: ContractRow[],
+): ActivityKpis {
+  const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
+  const groupTotals = getGroupTotals(categories);
+  const sorobanOps = groupTotals.get("soroban") ?? 0;
+
+  const topCategoryEntry = [...groupTotals.entries()].sort(
+    (a, b) => b[1] - a[1],
+  )[0];
+
+  return {
+    totalOps,
+    sorobanShare: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
+    topCategory: topCategoryEntry
+      ? (GROUP_LABELS[topCategoryEntry[0]] ?? topCategoryEntry[0])
+      : "N/A",
+    activeContracts: contracts.length,
   };
 }
 

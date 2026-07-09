@@ -1,12 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { TreemapViewId } from "@/lib/constants";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
 
 interface DashboardContextValue {
   period: Period;
   setPeriod: (period: Period) => void;
+  treemapView: TreemapViewId;
+  setTreemapView: (view: TreemapViewId) => void;
   data?: ActivityResponse;
   isLoading: boolean;
   isError: boolean;
@@ -28,7 +31,12 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriod] = useState<Period>("7d");
+  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+
+  useEffect(() => {
+    setSelectedNode(null);
+  }, [period, treemapView]);
 
   const query = useQuery({
     queryKey: ["activity", period],
@@ -40,6 +48,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     () => ({
       period,
       setPeriod,
+      treemapView,
+      setTreemapView,
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
@@ -47,7 +57,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       selectedNode,
       setSelectedNode,
     }),
-    [period, query.data, query.isLoading, query.isError, query.error, selectedNode],
+    [
+      period,
+      treemapView,
+      query.data,
+      query.isLoading,
+      query.isError,
+      query.error,
+      selectedNode,
+    ],
   );
 
   return (
