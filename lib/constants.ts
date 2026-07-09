@@ -1,0 +1,64 @@
+export const CATEGORY_COLORS: Record<string, string> = {
+  soroban: "#7B61FF",
+  payments: "#14B8A6",
+  dex: "#F59E0B",
+  trustlines: "#3B82F6",
+  account: "#EC4899",
+  other: "#6B7280",
+};
+
+export const GROUP_LABELS: Record<string, string> = {
+  soroban: "Soroban Contracts",
+  payments: "Payments",
+  dex: "DEX Trades",
+  trustlines: "Trustlines",
+  account: "Account Operations",
+  other: "Other",
+};
+
+export const TYPE_TO_GROUP: Record<string, string> = {
+  invoke_host_function: "soroban",
+  payment: "payments",
+  path_payment_strict_receive: "payments",
+  path_payment_strict_send: "payments",
+  create_account: "payments",
+  account_merge: "payments",
+  manage_buy_offer: "dex",
+  manage_sell_offer: "dex",
+  create_passive_sell_offer: "dex",
+  change_trust: "trustlines",
+  set_options: "account",
+  bump_sequence: "account",
+  allow_trust: "account",
+  manage_data: "account",
+  create_claimable_balance: "account",
+  claim_claimable_balance: "account",
+  begin_sponsoring_future_reserves: "account",
+  end_sponsoring_future_reserves: "account",
+  revoke_sponsorship: "account",
+  clawback: "account",
+  clawback_claimable_balance: "account",
+  set_trust_line_flags: "account",
+  liquidity_pool_deposit: "dex",
+  liquidity_pool_withdraw: "dex",
+  inflation: "other",
+  extend_footprint_ttl: "soroban",
+  restore_footprint: "soroban",
+};
+
+export const ACCOUNT_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "manage_buy_offer",
+  "manage_sell_offer",
+  "create_passive_sell_offer",
+  "change_trust",
+  "create_account",
+  "liquidity_pool_deposit",
+  "liquidity_pool_withdraw",
+];
+
+export const TOP_ACCOUNT_LIMIT = 200;
+export const TOP_CONTRACT_LIMIT = 200;
+export const UNKNOWN_ENTITY_TOP_N = 12;

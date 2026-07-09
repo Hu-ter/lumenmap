@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stellar Network Treemap
+
+Interactive dashboard for exploring Stellar mainnet activity by contract, company/protocol, and operation category.
+
+## Features
+
+- Hierarchical treemap of network activity
+- Daily, 7-day, 30-day, and monthly period filters
+- Soroban contract volume and classic operation breakdown
+- Entity labeling for known ecosystem actors
+- KPI cards for total operations, Soroban share, top category, and active contracts
+- Responsive dark UI optimized for desktop and mobile
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS
+- Nivo treemap
+- TanStack Query
+- Hubble BigQuery (with mock fallback)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without GCP credentials, the app serves mock data so the UI can be developed locally.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Hubble BigQuery Setup
 
-## Learn More
+1. Create a Google Cloud project.
+2. Enable the BigQuery API.
+3. Create a service account with BigQuery User permissions.
+4. Copy `.env.example` to `.env.local` and set one of:
+   - `GOOGLE_APPLICATION_CREDENTIALS=./gcp-sa.json`
+   - `GCP_SERVICE_ACCOUNT_KEY=<base64-encoded-json>`
 
-To learn more about Next.js, take a look at the following resources:
+Public dataset: `crypto-stellar.crypto_stellar_dbt`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See the [Hubble connection guide](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API
 
-## Deploy on Vercel
+`GET /api/activity?period=1d|7d|30d|month`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Returns aggregated categories, contracts, accounts, KPIs, and treemap tree data.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Entity Registry
+
+Known contracts and accounts are mapped in [`data/entities.json`](data/entities.json). Extend this file to label more ecosystem actors.
+
+## Scripts
+
+- `npm run dev` — start development server
+- `npm run build` — production build
+- `npm run start` — start production server
+- `npm run lint` — run ESLint
+
+## Notes
+
+- Hubble data is updated in intraday batches and may lag behind live network activity.
+- BigQuery queries are cached in memory for 15 minutes by default.
+- Query costs are reduced with date filters and top-N limits.

@@ -1,0 +1,57 @@
+{
+  "CBIELTK6Y5Y5U5DT5OMY7C5QZQZQZQZQZQZQZQZQZQZQZQZQ": {
+    "name": "Soroswap Router",
+    "category": "defi",
+    "protocol": "Soroswap"
+  },
+  "CBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLEND": {
+    "name": "Blend Lending Pool",
+    "category": "defi",
+    "protocol": "Blend"
+  },
+  "CAQUARIUSDEXAQUARIUSDEXAQUARIUSDEXAQUARIUSDEXAQUAR": {
+    "name": "Aquarius AMM",
+    "category": "defi",
+    "protocol": "Aquarius"
+  },
+  "CSOROSWAPSOROSWAPSOROSWAPSOROSWAPSOROSWAPSOROSWAP": {
+    "name": "Soroswap Pool",
+    "category": "defi",
+    "protocol": "Soroswap"
+  },
+  "CPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOEN": {
+    "name": "Phoenix DEX",
+    "category": "defi",
+    "protocol": "Phoenix"
+  },
+  "GA5ZSEJYB37JRC5FFQI7QTYVHZV5J3C2TZL7Q5W5K3V5Y3Y3Y3Y3Y": {
+    "name": "Circle USDC",
+    "category": "issuer",
+    "protocol": "Circle"
+  },
+  "GBMoneyGramMoneyGramMoneyGramMoneyGramMoneyGramM": {
+    "name": "MoneyGram",
+    "category": "anchor",
+    "protocol": "MoneyGram"
+  },
+  "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX": {
+    "name": "StellarX Market Maker",
+    "category": "dex",
+    "protocol": "StellarX"
+  },
+  "GANCHORWALLETANCHORWALLETANCHORWALLETANCHORWALL": {
+    "name": "Anchor Wallet",
+    "category": "anchor",
+    "protocol": "Anchor"
+  },
+  "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL": {
+    "name": "LOBSTR",
+    "category": "wallet",
+    "protocol": "LOBSTR"
+  },
+  "GDKY2J7E3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3": {
+    "name": "Stellar Development Foundation",
+    "category": "foundation",
+    "protocol": "SDF"
+  }
+}

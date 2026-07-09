@@ -1,0 +1,76 @@
+export type Period = "1d" | "7d" | "30d" | "month";
+
+export type DataSource = "hubble" | "mock";
+
+export type TreemapNodeType =
+  | "root"
+  | "category"
+  | "entity"
+  | "contract"
+  | "account";
+
+export interface EntityInfo {
+  name: string;
+  category: string;
+  protocol: string;
+}
+
+export interface CategoryRow {
+  type_string: string;
+  op_count: number;
+}
+
+export interface ContractRow {
+  contract_id: string;
+  op_count: number;
+}
+
+export interface AccountRow {
+  account_id: string;
+  type_string: string;
+  op_count: number;
+}
+
+export interface ActivityKpis {
+  totalOps: number;
+  sorobanShare: number;
+  topCategory: string;
+  activeContracts: number;
+}
+
+export interface TreemapNodeMeta {
+  type: TreemapNodeType;
+  id?: string;
+  category?: string;
+  protocol?: string;
+  share?: number;
+  opCount?: number;
+}
+
+export interface TreemapNode {
+  id?: string;
+  name: string;
+  value?: number;
+  color?: string;
+  children?: TreemapNode[];
+  meta?: TreemapNodeMeta;
+}
+
+export interface ActivityResponse {
+  period: Period;
+  start: string;
+  end: string;
+  source: DataSource;
+  categories: CategoryRow[];
+  contracts: ContractRow[];
+  accounts: AccountRow[];
+  kpis: ActivityKpis;
+  treemap: TreemapNode;
+}
+
+export interface SelectedNode {
+  name: string;
+  value: number;
+  share: number;
+  meta?: TreemapNodeMeta;
+}

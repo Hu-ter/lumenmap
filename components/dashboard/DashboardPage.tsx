@@ -1,0 +1,71 @@
+"use client";
+
+import { Badge } from "@/components/ui/badge";
+import {
+  DashboardProvider,
+  useDashboard,
+} from "@/components/dashboard/DashboardProvider";
+import { DetailPanel } from "@/components/dashboard/DetailPanel";
+import { KpiCards } from "@/components/dashboard/KpiCards";
+import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
+import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
+
+function DataSourceNotice() {
+  const { data } = useDashboard();
+
+  if (!data) {
+    return null;
+  }
+
+  return (
+    <p className="text-xs text-zinc-500">
+      Data source:{" "}
+      <span className="text-zinc-300">
+        {data.source === "hubble" ? "Hubble BigQuery" : "Mock dataset"}
+      </span>
+      {data.source === "hubble" ? " · Hubble updates in intraday batches" : ""}
+    </p>
+  );
+}
+
+function DashboardContent() {
+  return (
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stellar/20 text-stellar-light">
+              <span className="text-lg font-bold">★</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Stellar Network Activity
+              </h1>
+              <p className="text-sm text-zinc-400">
+                Contract, company, and operation volume across mainnet.
+              </p>
+            </div>
+            <Badge>Mainnet</Badge>
+          </div>
+          <DataSourceNotice />
+        </div>
+        <PeriodSelector />
+      </header>
+
+      <KpiCards />
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <NetworkTreemap />
+        <DetailPanel />
+      </div>
+    </div>
+  );
+}
+
+export function DashboardPage() {
+  return (
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
+  );
+}
