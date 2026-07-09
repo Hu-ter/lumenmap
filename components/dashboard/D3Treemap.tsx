@@ -118,7 +118,12 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
         name: data.name,
         value,
         share,
-        meta: original.meta,
+        meta: {
+          ...original.meta,
+          type: original.meta?.type ?? "entity",
+          opCount: value,
+          childCount: original.children?.length ?? original.meta?.childCount,
+        },
       });
 
       if (original.children && original.children.length > 0) {

@@ -45,6 +45,7 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  childCount?: number;
 }
 
 export interface TreemapNode {

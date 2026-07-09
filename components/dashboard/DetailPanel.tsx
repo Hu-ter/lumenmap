@@ -91,6 +91,13 @@ export function DetailPanel() {
           </div>
         ) : null}
 
+        {selectedNode.meta?.childCount ? (
+          <p className="text-xs text-stellar-light">
+            Click this tile again in the treemap to explore{" "}
+            {selectedNode.meta.childCount} sub-items.
+          </p>
+        ) : null}
+
         <div>
           <p className="mb-1 text-xs text-zinc-500">Period</p>
           <p className="text-sm text-zinc-200">{periodLabel}</p>

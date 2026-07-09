@@ -27,7 +27,8 @@ const GROUP_ORDER = [
   "other",
 ] as const;
 
-const MAX_LEAVES = 10;
+const MAX_TOP_TILES = 10;
+const MAX_OTHER_CHILDREN = 60;
 
 function getGroupForType(type: string): string {
   return TYPE_TO_GROUP[type] ?? "other";
@@ -44,32 +45,29 @@ function getGroupTotals(categories: CategoryRow[]): Map<string, number> {
   return totals;
 }
 
-function appendOtherLeaf(
-  leaves: TreemapNode[],
-  categoryTotal: number,
-  category: string,
+function buildOtherBucket(
   label: string,
-): TreemapNode[] {
-  const leafSum = leaves.reduce((sum, leaf) => sum + (leaf.value ?? 0), 0);
-  const remainder = categoryTotal - leafSum;
-
-  if (remainder <= 0) {
-    return leaves;
+  category: string,
+  children: TreemapNode[],
+): TreemapNode | null {
+  if (children.length === 0) {
+    return null;
   }
 
-  return [
-    ...leaves,
-    {
-      name: label,
-      value: remainder,
-      color: CATEGORY_COLORS.other,
-      meta: {
-        type: "entity",
-        category,
-        opCount: remainder,
-      },
+  const value = children.reduce((sum, child) => sum + (child.value ?? 0), 0);
+
+  return {
+    name: label,
+    value,
+    color: CATEGORY_COLORS.other,
+    children,
+    meta: {
+      type: "entity",
+      category,
+      opCount: value,
+      childCount: children.length,
     },
-  ];
+  };
 }
 
 function buildContractLeaves(
@@ -77,7 +75,8 @@ function buildContractLeaves(
   categoryTotal: number,
 ): TreemapNode[] {
   const sorted = [...contracts].sort((a, b) => b.op_count - a.op_count);
-  const top = sorted.slice(0, MAX_LEAVES);
+  const top = sorted.slice(0, MAX_TOP_TILES);
+  const rest = sorted.slice(MAX_TOP_TILES, MAX_TOP_TILES + MAX_OTHER_CHILDREN);
 
   const leaves: TreemapNode[] = top.map((row) => {
     const entity = lookupEntity(row.contract_id);
@@ -95,7 +94,46 @@ function buildContractLeaves(
     };
   });
 
-  return appendOtherLeaf(leaves, categoryTotal, "soroban", "Other Contracts");
+  const topSum = leaves.reduce((sum, leaf) => sum + (leaf.value ?? 0), 0);
+  const restSum = rest.reduce((sum, row) => sum + row.op_count, 0);
+  const unattributed = Math.max(0, categoryTotal - topSum - restSum);
+
+  const otherChildren: TreemapNode[] = rest.map((row) => {
+    const entity = lookupEntity(row.contract_id);
+    return {
+      name: entity?.name ?? getDisplayName(row.contract_id),
+      value: row.op_count,
+      color: CATEGORY_COLORS.soroban,
+      meta: {
+        type: "contract",
+        id: row.contract_id,
+        category: "soroban",
+        protocol: entity?.protocol,
+        opCount: row.op_count,
+      },
+    };
+  });
+
+  if (unattributed > 0) {
+    otherChildren.push({
+      name: "Unlisted contracts",
+      value: unattributed,
+      color: CATEGORY_COLORS.other,
+      meta: {
+        type: "entity",
+        category: "soroban",
+        opCount: unattributed,
+      },
+    });
+  }
+
+  const otherBucket = buildOtherBucket(
+    "Other Contracts",
+    "soroban",
+    otherChildren,
+  );
+
+  return otherBucket ? [...leaves, otherBucket] : leaves;
 }
 
 function buildAccountLeaves(
@@ -117,12 +155,14 @@ function buildAccountLeaves(
 
   const sorted = [...byAccount.entries()]
     .map(([account_id, op_count]) => ({ account_id, op_count }))
-    .sort((a, b) => b.op_count - a.op_count)
-    .slice(0, MAX_LEAVES);
+    .sort((a, b) => b.op_count - a.op_count);
+
+  const top = sorted.slice(0, MAX_TOP_TILES);
+  const rest = sorted.slice(MAX_TOP_TILES, MAX_TOP_TILES + MAX_OTHER_CHILDREN);
 
   const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
 
-  const leaves: TreemapNode[] = sorted.map((row) => {
+  const leaves: TreemapNode[] = top.map((row) => {
     const entity = lookupEntity(row.account_id);
     return {
       name: entity?.name ?? getDisplayName(row.account_id),
@@ -138,6 +178,39 @@ function buildAccountLeaves(
     };
   });
 
+  const topSum = leaves.reduce((sum, leaf) => sum + (leaf.value ?? 0), 0);
+  const restSum = rest.reduce((sum, row) => sum + row.op_count, 0);
+  const unattributed = Math.max(0, categoryTotal - topSum - restSum);
+
+  const otherChildren: TreemapNode[] = rest.map((row) => {
+    const entity = lookupEntity(row.account_id);
+    return {
+      name: entity?.name ?? getDisplayName(row.account_id),
+      value: row.op_count,
+      color,
+      meta: {
+        type: "account",
+        id: row.account_id,
+        category: group,
+        protocol: entity?.protocol,
+        opCount: row.op_count,
+      },
+    };
+  });
+
+  if (unattributed > 0) {
+    otherChildren.push({
+      name: "Unlisted sources",
+      value: unattributed,
+      color: CATEGORY_COLORS.other,
+      meta: {
+        type: "entity",
+        category: group,
+        opCount: unattributed,
+      },
+    });
+  }
+
   const otherLabel =
     group === "payments"
       ? "Other Payments"
@@ -147,7 +220,9 @@ function buildAccountLeaves(
           ? "Other Trustlines"
           : "Other Account Ops";
 
-  return appendOtherLeaf(leaves, categoryTotal, group, otherLabel);
+  const otherBucket = buildOtherBucket(otherLabel, group, otherChildren);
+
+  return otherBucket ? [...leaves, otherBucket] : leaves;
 }
 
 function buildTypeLeaves(
@@ -238,6 +313,7 @@ export function buildTreemap(input: BuildTreemapInput): TreemapNode {
           category: group,
           opCount: value,
           share: totalOps > 0 ? (value / totalOps) * 100 : 0,
+          childCount: categoryChildren.length,
         },
         children: categoryChildren,
       },
