@@ -76,7 +76,7 @@ async function fetchHomeDomains(ids: string[]) {
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v7:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v8:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {

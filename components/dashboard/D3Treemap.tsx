@@ -46,7 +46,19 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
-  const levelTotal = getNodeValue(currentNode);
+  const levelTotal = useMemo(() => {
+    const children = currentNode.children ?? [];
+    if (children.length > 0) {
+      const childSum = children.reduce(
+        (sum, child) => sum + getNodeValue(child),
+        0,
+      );
+      if (childSum > 0) {
+        return childSum;
+      }
+    }
+    return getNodeValue(currentNode);
+  }, [currentNode]);
 
   useEffect(() => {
     const element = chartRef.current;
