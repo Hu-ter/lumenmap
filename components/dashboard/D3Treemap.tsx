@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 
 interface D3TreemapProps {
   root: TreemapNode;
-  totalOps: number;
   onSelect: (node: SelectedNode) => void;
 }
 
@@ -39,7 +38,7 @@ function getNodeValue(node: TreemapNode): number {
   return node.value ?? node.meta?.opCount ?? 0;
 }
 
-export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
+export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
@@ -47,6 +46,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
+  const levelTotal = getNodeValue(currentNode);
 
   useEffect(() => {
     const element = chartRef.current;
@@ -116,7 +116,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
       const data = node.data;
       const original = tileLookup.get(data.id ?? data.name) ?? data;
       const value = node.value ?? 0;
-      const share = totalOps > 0 ? (value / totalOps) * 100 : 0;
+      const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
 
       onSelect({
         name: data.name,
@@ -135,7 +135,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
         setPath((current) => [...current, original]);
       }
     },
-    [onSelect, tileLookup, totalOps],
+    [levelTotal, onSelect, tileLookup],
   );
 
   const navigateTo = (index: number) => {
@@ -180,7 +180,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
           const data = node.data;
           const original = tileLookup.get(data.id ?? data.name) ?? data;
           const value = node.value ?? 0;
-          const share = totalOps > 0 ? (value / totalOps) * 100 : 0;
+          const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
           const color = resolveColor(data);
           const nodeId = `${data.id ?? data.name}-${node.x0}-${node.y0}`;
           const isHovered = hoveredId === nodeId;

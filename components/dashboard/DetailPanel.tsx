@@ -65,7 +65,7 @@ export function DetailPanel() {
             </p>
           </div>
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-            <p className="text-xs text-zinc-500">Share</p>
+            <p className="text-xs text-zinc-500">Share (current level)</p>
             <p className="text-lg font-semibold text-white">
               {formatPercent(selectedNode.share)}
             </p>
