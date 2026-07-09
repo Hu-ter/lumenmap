@@ -1,14 +1,24 @@
 import entities from "@/data/entities.json";
+import directory from "@/data/directory.json";
 import type { EntityInfo } from "@/lib/types";
 
-const registry = entities as Record<string, EntityInfo>;
+const registry: Record<string, EntityInfo> = {
+  ...(directory as Record<string, EntityInfo>),
+  ...(entities as Record<string, EntityInfo>),
+};
 
-export function lookupEntity(id: string): EntityInfo | null {
-  return registry[id] ?? null;
+export function lookupEntity(
+  id: string,
+  labels?: Record<string, EntityInfo>,
+): EntityInfo | null {
+  return registry[id] ?? labels?.[id] ?? null;
 }
 
-export function getProtocolLabel(id: string): string {
-  const entity = lookupEntity(id);
+export function getProtocolLabel(
+  id: string,
+  labels?: Record<string, EntityInfo>,
+): string {
+  const entity = lookupEntity(id, labels);
   if (entity) {
     return entity.protocol;
   }
@@ -20,8 +30,11 @@ export function getProtocolLabel(id: string): string {
   return "Unknown Accounts";
 }
 
-export function getDisplayName(id: string): string {
-  const entity = lookupEntity(id);
+export function getDisplayName(
+  id: string,
+  labels?: Record<string, EntityInfo>,
+): string {
+  const entity = lookupEntity(id, labels);
   if (entity) {
     return entity.name;
   }

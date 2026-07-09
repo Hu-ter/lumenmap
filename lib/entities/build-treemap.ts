@@ -9,6 +9,7 @@ import type {
   ActivityKpis,
   CategoryRow,
   ContractRow,
+  EntityInfo,
   TreemapNode,
 } from "@/lib/types";
 
@@ -16,6 +17,7 @@ interface BuildTreemapInput {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
+  labels?: Record<string, EntityInfo>;
 }
 
 const GROUP_ORDER = [
@@ -73,15 +75,17 @@ function buildOtherBucket(
 function buildContractLeaves(
   contracts: ContractRow[],
   categoryTotal: number,
+  labels?: BuildTreemapInput["labels"],
 ): TreemapNode[] {
   const sorted = [...contracts].sort((a, b) => b.op_count - a.op_count);
   const top = sorted.slice(0, MAX_TOP_TILES);
   const rest = sorted.slice(MAX_TOP_TILES, MAX_TOP_TILES + MAX_OTHER_CHILDREN);
 
   const leaves: TreemapNode[] = top.map((row) => {
-    const entity = lookupEntity(row.contract_id);
+    const entity = lookupEntity(row.contract_id, labels);
     return {
-      name: entity?.name ?? getDisplayName(row.contract_id),
+      id: row.contract_id,
+      name: entity?.name ?? getDisplayName(row.contract_id, labels),
       value: row.op_count,
       color: CATEGORY_COLORS.soroban,
       meta: {
@@ -99,9 +103,10 @@ function buildContractLeaves(
   const unattributed = Math.max(0, categoryTotal - topSum - restSum);
 
   const otherChildren: TreemapNode[] = rest.map((row) => {
-    const entity = lookupEntity(row.contract_id);
+    const entity = lookupEntity(row.contract_id, labels);
     return {
-      name: entity?.name ?? getDisplayName(row.contract_id),
+      id: row.contract_id,
+      name: entity?.name ?? getDisplayName(row.contract_id, labels),
       value: row.op_count,
       color: CATEGORY_COLORS.soroban,
       meta: {
@@ -141,6 +146,7 @@ function buildAccountLeavesFromRows(
   group: string,
   categoryTotal: number,
   otherLabel: string,
+  labels?: BuildTreemapInput["labels"],
 ): TreemapNode[] {
   const sorted = [...rows].sort((a, b) => b.op_count - a.op_count);
   const top = sorted.slice(0, MAX_TOP_TILES);
@@ -149,9 +155,10 @@ function buildAccountLeavesFromRows(
   const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
 
   const leaves: TreemapNode[] = top.map((row) => {
-    const entity = lookupEntity(row.account_id);
+    const entity = lookupEntity(row.account_id, labels);
     return {
-      name: entity?.name ?? getDisplayName(row.account_id),
+      id: row.account_id,
+      name: entity?.name ?? getDisplayName(row.account_id, labels),
       value: row.op_count,
       color,
       meta: {
@@ -169,9 +176,10 @@ function buildAccountLeavesFromRows(
   const unattributed = Math.max(0, categoryTotal - topSum - restSum);
 
   const otherChildren: TreemapNode[] = rest.map((row) => {
-    const entity = lookupEntity(row.account_id);
+    const entity = lookupEntity(row.account_id, labels);
     return {
-      name: entity?.name ?? getDisplayName(row.account_id),
+      id: row.account_id,
+      name: entity?.name ?? getDisplayName(row.account_id, labels),
       value: row.op_count,
       color,
       meta: {
@@ -206,6 +214,7 @@ function buildAccountLeaves(
   accounts: AccountRow[],
   group: string,
   categoryTotal: number,
+  labels?: BuildTreemapInput["labels"],
 ): TreemapNode[] {
   const filtered = accounts.filter(
     (row) => getGroupForType(row.type_string) === group,
@@ -233,7 +242,13 @@ function buildAccountLeaves(
           ? "Other Trustlines"
           : "Other Account Ops";
 
-  return buildAccountLeavesFromRows(rows, group, categoryTotal, otherLabel);
+  return buildAccountLeavesFromRows(
+    rows,
+    group,
+    categoryTotal,
+    otherLabel,
+    labels,
+  );
 }
 
 function buildAccountLeavesForEventType(
@@ -241,6 +256,7 @@ function buildAccountLeavesForEventType(
   eventType: string,
   typeTotal: number,
   group: string,
+  labels?: BuildTreemapInput["labels"],
 ): TreemapNode[] {
   const rows = accounts
     .filter((row) => row.type_string === eventType)
@@ -259,6 +275,7 @@ function buildAccountLeavesForEventType(
     group,
     typeTotal,
     `Other ${label}`,
+    labels,
   );
 }
 
@@ -278,6 +295,7 @@ function buildTypeLeaves(
         const contractChildren = buildContractLeaves(
           input.contracts,
           row.op_count,
+          input.labels,
         );
         if (contractChildren.length > 0) {
           children = contractChildren;
@@ -288,6 +306,7 @@ function buildTypeLeaves(
           row.type_string,
           row.op_count,
           group,
+          input.labels,
         );
         if (accountChildren.length > 0) {
           children = accountChildren;
@@ -316,7 +335,7 @@ function buildCategoryGroupChildren(
   categoryTotal: number,
 ): TreemapNode[] {
   if (group === "soroban") {
-    return buildContractLeaves(input.contracts, categoryTotal);
+    return buildContractLeaves(input.contracts, categoryTotal, input.labels);
   }
 
   if (group === "payments" || group === "dex" || group === "trustlines") {
@@ -324,6 +343,7 @@ function buildCategoryGroupChildren(
       input.accounts,
       group,
       categoryTotal,
+      input.labels,
     );
     if (accountLeaves.length > 0) {
       return accountLeaves;

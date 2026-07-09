@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
-import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
+import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
   const { selectedNode, setSelectedNode, data } = useDashboard();
@@ -81,12 +81,9 @@ export function DetailPanel() {
 
         {selectedNode.meta?.id ? (
           <div>
-            <p className="mb-1 text-xs text-zinc-500">Identity</p>
+            <p className="mb-1 text-xs text-zinc-500">Address</p>
             <p className="break-all font-mono text-xs text-zinc-300">
               {selectedNode.meta.id}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {truncateAddress(selectedNode.meta.id, 8)}
             </p>
           </div>
         ) : null}

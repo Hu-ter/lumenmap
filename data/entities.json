@@ -1,57 +1,47 @@
 {
-  "CBIELTK6Y5Y5U5DT5OMY7C5QZQZQZQZQZQZQZQZQZQZQZQZQ": {
-    "name": "Soroswap Router",
-    "category": "defi",
-    "protocol": "Soroswap"
-  },
-  "CBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLEND": {
-    "name": "Blend Lending Pool",
-    "category": "defi",
-    "protocol": "Blend"
-  },
-  "CAQUARIUSDEXAQUARIUSDEXAQUARIUSDEXAQUARIUSDEXAQUAR": {
-    "name": "Aquarius AMM",
-    "category": "defi",
-    "protocol": "Aquarius"
-  },
-  "CSOROSWAPSOROSWAPSOROSWAPSOROSWAPSOROSWAPSOROSWAP": {
-    "name": "Soroswap Pool",
-    "category": "defi",
-    "protocol": "Soroswap"
-  },
-  "CPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOEN": {
-    "name": "Phoenix DEX",
-    "category": "defi",
-    "protocol": "Phoenix"
-  },
-  "GA5ZSEJYB37JRC5FFQI7QTYVHZV5J3C2TZL7Q5W5K3V5Y3Y3Y3Y3Y": {
+  "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN": {
     "name": "Circle USDC",
     "category": "issuer",
     "protocol": "Circle"
   },
-  "GBMoneyGramMoneyGramMoneyGramMoneyGramMoneyGramM": {
-    "name": "MoneyGram",
-    "category": "anchor",
-    "protocol": "MoneyGram"
+  "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXBSDP6SJY4ITNPP2": {
+    "name": "Circle EURC",
+    "category": "issuer",
+    "protocol": "Circle"
   },
-  "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX": {
-    "name": "StellarX Market Maker",
-    "category": "dex",
-    "protocol": "StellarX"
+  "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5": {
+    "name": "Centre USDC (Testnet)",
+    "category": "issuer",
+    "protocol": "Circle"
   },
-  "GANCHORWALLETANCHORWALLETANCHORWALLETANCHORWALL": {
-    "name": "Anchor Wallet",
-    "category": "anchor",
-    "protocol": "Anchor"
+  "GA5XIGA5C7QTPTWXQHY6MCJRMTRZDOSHR6EFIBNDQTCQHG262N4GGKTM": {
+    "name": "Kraken",
+    "category": "exchange",
+    "protocol": "Kraken"
   },
-  "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL": {
+  "GDKJ3ZXB5RA2MV5T2Y3Z5D3D3VKR5F7EFRB2A3BMBC3IHGBOK5GDI2LQ": {
     "name": "LOBSTR",
     "category": "wallet",
     "protocol": "LOBSTR"
   },
-  "GDKY2J7E3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3K3": {
-    "name": "Stellar Development Foundation",
-    "category": "foundation",
-    "protocol": "SDF"
+  "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNKNLXLTCV": {
+    "name": "MoneyGram",
+    "category": "anchor",
+    "protocol": "MoneyGram"
+  },
+  "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2": {
+    "name": "Soroswap",
+    "category": "defi",
+    "protocol": "Soroswap"
+  },
+  "CA2TZIB56KYKD46F7IFBF6XPO5TDNK6N2U6BRTGZ5AF4WUSBN6BKZMGF": {
+    "name": "Soroswap Pool",
+    "category": "defi",
+    "protocol": "Soroswap"
+  },
+  "CBIELTK6Y5Y5U5DT5OMY7C5QZQZQZQZQZQZQZQZQZQZQZQZQ": {
+    "name": "Soroswap Router",
+    "category": "defi",
+    "protocol": "Soroswap"
   }
 }

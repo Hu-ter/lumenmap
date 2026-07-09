@@ -6,7 +6,7 @@ import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
-import { formatNumber, formatPercent } from "@/lib/utils";
+import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface D3TreemapProps {
@@ -74,6 +74,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
   const tiles = useMemo(
     () =>
       (currentNode.children ?? []).map((child) => ({
+        key: child.id ?? child.meta?.id ?? child.name,
         tile: { ...child, children: undefined } as TreemapNode,
         original: child,
       })),
@@ -83,7 +84,10 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
   const layoutRoot = useMemo(() => {
     const layoutData: TreemapNode = {
       name: currentNode.name,
-      children: tiles.map((entry) => entry.tile),
+      children: tiles.map((entry) => ({
+        ...entry.tile,
+        id: entry.key,
+      })),
     };
 
     const rootHierarchy = hierarchy(layoutData, (node) => node.children)
@@ -101,7 +105,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
   }, [currentNode.name, size.height, size.width, tiles]);
 
   const tileLookup = useMemo(
-    () => new Map(tiles.map((entry) => [entry.tile.name, entry.original])),
+    () => new Map(tiles.map((entry) => [entry.key, entry.original])),
     [tiles],
   );
 
@@ -110,7 +114,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
   const handleNodeClick = useCallback(
     (node: HierarchyNode<TreemapNode>) => {
       const data = node.data;
-      const original = tileLookup.get(data.name) ?? data;
+      const original = tileLookup.get(data.id ?? data.name) ?? data;
       const value = node.value ?? 0;
       const share = totalOps > 0 ? (value / totalOps) * 100 : 0;
 
@@ -121,6 +125,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
         meta: {
           ...original.meta,
           type: original.meta?.type ?? "entity",
+          id: original.meta?.id ?? original.id,
           opCount: value,
           childCount: original.children?.length ?? original.meta?.childCount,
         },
@@ -173,15 +178,18 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
           const data = node.data;
+          const original = tileLookup.get(data.id ?? data.name) ?? data;
           const value = node.value ?? 0;
           const share = totalOps > 0 ? (value / totalOps) * 100 : 0;
           const color = resolveColor(data);
-          const nodeId = `${data.name}-${node.x0}-${node.y0}`;
+          const nodeId = `${data.id ?? data.name}-${node.x0}-${node.y0}`;
           const isHovered = hoveredId === nodeId;
+          const identity = original.meta?.id ?? original.id;
           const showLabel = width > 72 && height > 44;
-          const showValue = width > 110 && height > 64;
+          const showIdentity =
+            Boolean(identity) && width > 100 && height > 72 && showLabel;
+          const showValue = width > 110 && height > (showIdentity ? 88 : 64);
 
-          const original = tileLookup.get(data.name);
           const canDrill = Boolean(original?.children?.length);
 
           return (
@@ -205,7 +213,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
               {showLabel ? (
                 <text
                   x={10}
-                  y={22}
+                  y={18}
                   fill="#ffffff"
                   fontSize={showValue ? 14 : 12}
                   fontWeight={700}
@@ -216,11 +224,23 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
                     : data.name}
                 </text>
               ) : null}
+              {showIdentity && identity ? (
+                <text
+                  x={10}
+                  y={34}
+                  fill="rgba(255,255,255,0.65)"
+                  fontSize={10}
+                  fontFamily="monospace"
+                  pointerEvents="none"
+                >
+                  {truncateAddress(identity, 5)}
+                </text>
+              ) : null}
               {showValue ? (
                 <>
                   <text
                     x={10}
-                    y={42}
+                    y={showIdentity ? 52 : 42}
                     fill="rgba(255,255,255,0.9)"
                     fontSize={13}
                     fontWeight={600}
@@ -230,7 +250,7 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
                   </text>
                   <text
                     x={10}
-                    y={60}
+                    y={showIdentity ? 70 : 60}
                     fill="rgba(255,255,255,0.65)"
                     fontSize={11}
                     pointerEvents="none"
@@ -240,7 +260,9 @@ export function D3Treemap({ root, totalOps, onSelect }: D3TreemapProps) {
                 </>
               ) : null}
               <title>
-                {`${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
+                {identity
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
               </title>
             </g>
           );

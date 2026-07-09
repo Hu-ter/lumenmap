@@ -85,3 +85,22 @@ export function mapAccountRows(rows: Record<string, unknown>[]): AccountRow[] {
     op_count: Number(row.op_count),
   }));
 }
+
+export const accountMetadataQuery = `
+SELECT
+  account_id,
+  home_domain
+FROM \`crypto-stellar.crypto_stellar_dbt.accounts_current\`
+WHERE account_id IN UNNEST(@ids)
+  AND home_domain IS NOT NULL
+  AND home_domain != ''
+`;
+
+export function mapAccountMetadataRows(
+  rows: Record<string, unknown>[],
+): { account_id: string; home_domain: string }[] {
+  return rows.map((row) => ({
+    account_id: String(row.account_id),
+    home_domain: String(row.home_domain),
+  }));
+}

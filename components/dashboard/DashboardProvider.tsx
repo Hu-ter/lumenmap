@@ -30,7 +30,7 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriod] = useState<Period>("7d");
+  const [period, setPeriod] = useState<Period>("1d");
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 

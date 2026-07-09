@@ -54,7 +54,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         label: "This Month",
       };
     default:
-      return resolvePeriod("7d", now);
+      return resolvePeriod("1d", now);
   }
 }
 

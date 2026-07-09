@@ -3,9 +3,11 @@ import { getCached, setCache } from "@/lib/hubble/cache";
 import { getMockActivityData } from "@/lib/hubble/mock-data";
 import {
   accountQuery,
+  accountMetadataQuery,
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  mapAccountMetadataRows,
   mapAccountRows,
   mapCategoryRows,
   mapContractRows,
@@ -13,6 +15,11 @@ import {
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
 import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
+import {
+  collectTreemapIds,
+  homeDomainsToEntities,
+  resolveEntityLabels,
+} from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
 import type { ActivityResponse, Period } from "@/lib/types";
 
@@ -55,9 +62,21 @@ async function fetchFromHubble(
   };
 }
 
+async function fetchHomeDomains(ids: string[]) {
+  if (ids.length === 0) {
+    return {};
+  }
+
+  const rows = await runQuery<Record<string, unknown>>(accountMetadataQuery, {
+    ids,
+  });
+
+  return homeDomainsToEntities(mapAccountMetadataRows(rows));
+}
+
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v5:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v7:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -82,7 +101,10 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const kpis = buildKpis(raw.categories, raw.contracts);
-  const treemaps = buildAllTreemaps(raw);
+  const labels = await resolveEntityLabels(collectTreemapIds(raw), {
+    fetchHomeDomains: hasBigQueryCredentials() ? fetchHomeDomains : undefined,
+  });
+  const treemaps = buildAllTreemaps({ ...raw, labels });
 
   const response: ActivityResponse = {
     period,

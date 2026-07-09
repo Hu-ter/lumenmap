@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const periodParam = searchParams.get("period");
-  const period = isValidPeriod(periodParam) ? periodParam : "7d";
+  const period = isValidPeriod(periodParam) ? periodParam : "1d";
 
   try {
     const data = await getActivityData(period);
