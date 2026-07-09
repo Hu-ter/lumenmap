@@ -136,27 +136,13 @@ function buildContractLeaves(
   return otherBucket ? [...leaves, otherBucket] : leaves;
 }
 
-function buildAccountLeaves(
-  accounts: AccountRow[],
+function buildAccountLeavesFromRows(
+  rows: { account_id: string; op_count: number }[],
   group: string,
   categoryTotal: number,
+  otherLabel: string,
 ): TreemapNode[] {
-  const filtered = accounts.filter(
-    (row) => getGroupForType(row.type_string) === group,
-  );
-
-  const byAccount = new Map<string, number>();
-  for (const row of filtered) {
-    byAccount.set(
-      row.account_id,
-      (byAccount.get(row.account_id) ?? 0) + row.op_count,
-    );
-  }
-
-  const sorted = [...byAccount.entries()]
-    .map(([account_id, op_count]) => ({ account_id, op_count }))
-    .sort((a, b) => b.op_count - a.op_count);
-
+  const sorted = [...rows].sort((a, b) => b.op_count - a.op_count);
   const top = sorted.slice(0, MAX_TOP_TILES);
   const rest = sorted.slice(MAX_TOP_TILES, MAX_TOP_TILES + MAX_OTHER_CHILDREN);
 
@@ -211,6 +197,33 @@ function buildAccountLeaves(
     });
   }
 
+  const otherBucket = buildOtherBucket(otherLabel, group, otherChildren);
+
+  return otherBucket ? [...leaves, otherBucket] : leaves;
+}
+
+function buildAccountLeaves(
+  accounts: AccountRow[],
+  group: string,
+  categoryTotal: number,
+): TreemapNode[] {
+  const filtered = accounts.filter(
+    (row) => getGroupForType(row.type_string) === group,
+  );
+
+  const byAccount = new Map<string, number>();
+  for (const row of filtered) {
+    byAccount.set(
+      row.account_id,
+      (byAccount.get(row.account_id) ?? 0) + row.op_count,
+    );
+  }
+
+  const rows = [...byAccount.entries()].map(([account_id, op_count]) => ({
+    account_id,
+    op_count,
+  }));
+
   const otherLabel =
     group === "payments"
       ? "Other Payments"
@@ -220,31 +233,81 @@ function buildAccountLeaves(
           ? "Other Trustlines"
           : "Other Account Ops";
 
-  const otherBucket = buildOtherBucket(otherLabel, group, otherChildren);
+  return buildAccountLeavesFromRows(rows, group, categoryTotal, otherLabel);
+}
 
-  return otherBucket ? [...leaves, otherBucket] : leaves;
+function buildAccountLeavesForEventType(
+  accounts: AccountRow[],
+  eventType: string,
+  typeTotal: number,
+  group: string,
+): TreemapNode[] {
+  const rows = accounts
+    .filter((row) => row.type_string === eventType)
+    .map((row) => ({
+      account_id: row.account_id,
+      op_count: row.op_count,
+    }));
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const label = eventType.replaceAll("_", " ");
+  return buildAccountLeavesFromRows(
+    rows,
+    group,
+    typeTotal,
+    `Other ${label}`,
+  );
 }
 
 function buildTypeLeaves(
-  categories: CategoryRow[],
+  input: BuildTreemapInput,
   group: string,
 ): TreemapNode[] {
   const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
 
-  return categories
+  return input.categories
     .filter((row) => getGroupForType(row.type_string) === group)
     .sort((a, b) => b.op_count - a.op_count)
-    .map((row) => ({
-      name: row.type_string.replaceAll("_", " "),
-      value: row.op_count,
-      color,
-      meta: {
-        type: "entity" as const,
-        category: group,
-        opCount: row.op_count,
-        eventType: row.type_string,
-      },
-    }));
+    .map((row) => {
+      let children: TreemapNode[] | undefined;
+
+      if (group === "soroban") {
+        const contractChildren = buildContractLeaves(
+          input.contracts,
+          row.op_count,
+        );
+        if (contractChildren.length > 0) {
+          children = contractChildren;
+        }
+      } else {
+        const accountChildren = buildAccountLeavesForEventType(
+          input.accounts,
+          row.type_string,
+          row.op_count,
+          group,
+        );
+        if (accountChildren.length > 0) {
+          children = accountChildren;
+        }
+      }
+
+      return {
+        name: row.type_string.replaceAll("_", " "),
+        value: row.op_count,
+        color,
+        ...(children ? { children } : {}),
+        meta: {
+          type: "entity" as const,
+          category: group,
+          opCount: row.op_count,
+          eventType: row.type_string,
+          childCount: children?.length,
+        },
+      };
+    });
 }
 
 function buildCategoryGroupChildren(
@@ -267,7 +330,7 @@ function buildCategoryGroupChildren(
     }
   }
 
-  return buildTypeLeaves(input.categories, group);
+  return buildTypeLeaves(input, group);
 }
 
 function buildGroupedTreemap(
@@ -317,9 +380,7 @@ function buildGroupedTreemap(
 }
 
 export function buildEventTypeTreemap(input: BuildTreemapInput): TreemapNode {
-  return buildGroupedTreemap(input, (group) =>
-    buildTypeLeaves(input.categories, group),
-  );
+  return buildGroupedTreemap(input, (group) => buildTypeLeaves(input, group));
 }
 
 export function buildActorTreemap(input: BuildTreemapInput): TreemapNode {

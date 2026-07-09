@@ -1,6 +1,6 @@
 import {
   ACCOUNT_QUERY_TYPES,
-  TOP_ACCOUNT_LIMIT,
+  TOP_ACCOUNTS_PER_TYPE,
   TOP_CONTRACT_LIMIT,
 } from "@/lib/constants";
 import type { AccountRow, CategoryRow, ContractRow } from "@/lib/types";
@@ -34,16 +34,24 @@ LIMIT ${TOP_CONTRACT_LIMIT}
 `;
 
 export const accountQuery = `
-SELECT
-  op_source_account AS account_id,
-  type_string,
-  COUNT(*) AS op_count
-FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
-WHERE closed_at BETWEEN @start AND @end
-  AND type_string IN UNNEST(@types)
-GROUP BY account_id, type_string
-ORDER BY op_count DESC
-LIMIT ${TOP_ACCOUNT_LIMIT}
+WITH ranked AS (
+  SELECT
+    op_source_account AS account_id,
+    type_string,
+    COUNT(*) AS op_count,
+    ROW_NUMBER() OVER (
+      PARTITION BY type_string
+      ORDER BY COUNT(*) DESC
+    ) AS rank
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN UNNEST(@types)
+  GROUP BY account_id, type_string
+)
+SELECT account_id, type_string, op_count
+FROM ranked
+WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
+ORDER BY type_string, op_count DESC
 `;
 
 export function getAccountQueryTypes(): string[] {

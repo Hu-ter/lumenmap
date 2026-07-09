@@ -60,6 +60,7 @@ export const ACCOUNT_QUERY_TYPES = [
 ];
 
 export const TOP_ACCOUNT_LIMIT = 200;
+export const TOP_ACCOUNTS_PER_TYPE = 70;
 export const TOP_CONTRACT_LIMIT = 200;
 export const UNKNOWN_ENTITY_TOP_N = 12;
 
@@ -67,7 +68,7 @@ export const TREEMAP_VIEWS = [
   {
     id: "events",
     label: "Operation Types",
-    description: "Drill into payment, trade, trustline, and Soroban operation types.",
+    description: "Category → operation type → top accounts or contracts.",
   },
   {
     id: "actors",

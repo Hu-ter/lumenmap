@@ -98,6 +98,26 @@ export function getMockActivityData(): {
         op_count: 180_000,
       },
       {
+        account_id: "GBMoneyGramMoneyGramMoneyGramMoneyGramMoneyGramM",
+        type_string: "path_payment_strict_send",
+        op_count: 180_000,
+      },
+      {
+        account_id: "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL",
+        type_string: "path_payment_strict_send",
+        op_count: 95_000,
+      },
+      {
+        account_id: "GANCHORWALLETANCHORWALLETANCHORWALLETANCHORWALL",
+        type_string: "path_payment_strict_receive",
+        op_count: 120_000,
+      },
+      {
+        account_id: "GA5ZSEJYB37JRC5FFQI7QTYVHZV5J3C2TZL7Q5W5K3V5Y3Y3Y3Y3Y",
+        type_string: "path_payment_strict_receive",
+        op_count: 51_000,
+      },
+      {
         account_id: "GLOBSTRWALLETLOBSTRWALLETLOBSTRWALLETLOBSTRWALL",
         type_string: "create_account",
         op_count: 95_000,
