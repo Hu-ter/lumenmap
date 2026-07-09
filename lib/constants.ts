@@ -61,12 +61,14 @@ export const ACCOUNT_QUERY_TYPES = [
 
 export const TOP_ACCOUNTS_PER_TYPE = 70;
 export const TOP_CONTRACT_LIMIT = 200;
+export const TOP_SOROBAN_FUNCTIONS = 100;
+export const TOP_CONTRACTS_PER_FUNCTION = 70;
 
 export const TREEMAP_VIEWS = [
   {
     id: "events",
     label: "Operation Types",
-    description: "Category → operation type → top accounts or contracts.",
+    description: "Category → operation type or Soroban function → accounts or contracts.",
   },
   {
     id: "actors",

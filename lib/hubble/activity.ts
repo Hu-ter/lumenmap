@@ -11,6 +11,10 @@ import {
   mapAccountRows,
   mapCategoryRows,
   mapContractRows,
+  mapSorobanFunctionContractRows,
+  mapSorobanFunctionRows,
+  sorobanFunctionContractQuery,
+  sorobanFunctionQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
@@ -46,19 +50,31 @@ async function fetchFromHubble(
 ): Promise<RawQueryResults> {
   const params = { start, end };
 
-  const [categoryRows, contractRows, accountRows] = await Promise.all([
+  const [
+    categoryRows,
+    contractRows,
+    accountRows,
+    sorobanFunctionRows,
+    sorobanFunctionContractRows,
+  ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
     runQuery<Record<string, unknown>>(accountQuery, {
       ...params,
       types: getAccountQueryTypes(),
     }),
+    runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
+    runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
   ]);
 
   return {
     categories: mapCategoryRows(categoryRows),
     contracts: mapContractRows(contractRows),
     accounts: mapAccountRows(accountRows),
+    sorobanFunctions: mapSorobanFunctionRows(sorobanFunctionRows),
+    sorobanFunctionContracts: mapSorobanFunctionContractRows(
+      sorobanFunctionContractRows,
+    ),
   };
 }
 
@@ -76,7 +92,7 @@ async function fetchHomeDomains(ids: string[]) {
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v8:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v9:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -114,6 +130,8 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,
+    sorobanFunctions: raw.sorobanFunctions,
+    sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis,
     treemaps,
   };

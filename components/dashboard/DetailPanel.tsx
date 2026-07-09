@@ -90,7 +90,11 @@ export function DetailPanel() {
 
         {selectedNode.meta?.eventType ? (
           <div>
-            <p className="mb-1 text-xs text-zinc-500">Operation type</p>
+            <p className="mb-1 text-xs text-zinc-500">
+              {selectedNode.meta.category === "soroban"
+                ? "Contract function"
+                : "Operation type"}
+            </p>
             <p className="font-mono text-xs text-zinc-300">
               {selectedNode.meta.eventType}
             </p>

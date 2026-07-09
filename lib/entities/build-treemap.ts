@@ -10,6 +10,8 @@ import type {
   CategoryRow,
   ContractRow,
   EntityInfo,
+  SorobanFunctionContractRow,
+  SorobanFunctionRow,
   TreemapNode,
 } from "@/lib/types";
 
@@ -17,6 +19,8 @@ interface BuildTreemapInput {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
+  sorobanFunctions: SorobanFunctionRow[];
+  sorobanFunctionContracts: SorobanFunctionContractRow[];
   labels?: Record<string, EntityInfo>;
 }
 
@@ -140,46 +144,82 @@ function buildAccountLeavesForEventType(
   return buildAccountLeavesFromRows(rows, group, labels);
 }
 
+function buildContractLeavesForFunction(
+  rows: SorobanFunctionContractRow[],
+  functionName: string,
+  labels?: BuildTreemapInput["labels"],
+): TreemapNode[] {
+  return buildContractLeaves(
+    rows
+      .filter((row) => row.function_name === functionName)
+      .map((row) => ({
+        contract_id: row.contract_id,
+        op_count: row.op_count,
+      })),
+    labels,
+  );
+}
+
+function buildSorobanFunctionLeaves(input: BuildTreemapInput): TreemapNode[] {
+  const color = CATEGORY_COLORS.soroban;
+
+  return [...input.sorobanFunctions]
+    .sort((a, b) => b.op_count - a.op_count)
+    .map((row) => {
+      const contractChildren = buildContractLeavesForFunction(
+        input.sorobanFunctionContracts,
+        row.function_name,
+        input.labels,
+      );
+
+      return {
+        name: row.function_name.replaceAll("_", " "),
+        value: row.op_count,
+        color,
+        ...(contractChildren.length > 0 ? { children: contractChildren } : {}),
+        meta: {
+          type: "entity" as const,
+          category: "soroban",
+          opCount: row.op_count,
+          eventType: row.function_name,
+          childCount: contractChildren.length || undefined,
+        },
+      };
+    });
+}
+
 function buildTypeLeaves(
   input: BuildTreemapInput,
   group: string,
 ): TreemapNode[] {
+  if (group === "soroban") {
+    return buildSorobanFunctionLeaves(input);
+  }
+
   const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
 
   return input.categories
     .filter((row) => getGroupForType(row.type_string) === group)
     .sort((a, b) => b.op_count - a.op_count)
     .map((row) => {
-      let children: TreemapNode[] | undefined;
-
-      if (group === "soroban") {
-        const contractChildren = buildContractLeaves(input.contracts, input.labels);
-        if (contractChildren.length > 0) {
-          children = contractChildren;
-        }
-      } else {
-        const accountChildren = buildAccountLeavesForEventType(
-          input.accounts,
-          row.type_string,
-          group,
-          input.labels,
-        );
-        if (accountChildren.length > 0) {
-          children = accountChildren;
-        }
-      }
+      const accountChildren = buildAccountLeavesForEventType(
+        input.accounts,
+        row.type_string,
+        group,
+        input.labels,
+      );
 
       return {
         name: row.type_string.replaceAll("_", " "),
         value: row.op_count,
         color,
-        ...(children ? { children } : {}),
+        ...(accountChildren.length > 0 ? { children: accountChildren } : {}),
         meta: {
           type: "entity" as const,
           category: group,
           opCount: row.op_count,
           eventType: row.type_string,
-          childCount: children?.length,
+          childCount: accountChildren.length || undefined,
         },
       };
     });

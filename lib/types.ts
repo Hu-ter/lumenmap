@@ -31,6 +31,17 @@ export interface AccountRow {
   op_count: number;
 }
 
+export interface SorobanFunctionRow {
+  function_name: string;
+  op_count: number;
+}
+
+export interface SorobanFunctionContractRow {
+  function_name: string;
+  contract_id: string;
+  op_count: number;
+}
+
 export interface ActivityKpis {
   totalOps: number;
   sorobanShare: number;
@@ -73,6 +84,8 @@ export interface ActivityResponse {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
+  sorobanFunctions: SorobanFunctionRow[];
+  sorobanFunctionContracts: SorobanFunctionContractRow[];
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
 }

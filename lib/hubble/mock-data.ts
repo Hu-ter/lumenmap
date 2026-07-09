@@ -1,9 +1,17 @@
-import type { AccountRow, CategoryRow, ContractRow } from "@/lib/types";
+import type {
+  AccountRow,
+  CategoryRow,
+  ContractRow,
+  SorobanFunctionContractRow,
+  SorobanFunctionRow,
+} from "@/lib/types";
 
 export function getMockActivityData(): {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
+  sorobanFunctions: SorobanFunctionRow[];
+  sorobanFunctionContracts: SorobanFunctionContractRow[];
 } {
   return {
     categories: [
@@ -126,6 +134,36 @@ export function getMockActivityData(): {
         account_id: "GDEXMARKETMAKERDEXMARKETMAKERDEXMARKETMAKERDEX",
         type_string: "liquidity_pool_deposit",
         op_count: 72_000,
+      },
+    ],
+    sorobanFunctions: [
+      { function_name: "swap", op_count: 1_420_000 },
+      { function_name: "transfer", op_count: 980_000 },
+      { function_name: "deposit", op_count: 640_000 },
+      { function_name: "withdraw", op_count: 420_000 },
+      { function_name: "harvest", op_count: 310_000 },
+      { function_name: "upload_wasm", op_count: 50_000 },
+    ],
+    sorobanFunctionContracts: [
+      {
+        function_name: "swap",
+        contract_id: "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2",
+        op_count: 820_000,
+      },
+      {
+        function_name: "swap",
+        contract_id: "CPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOENIXPHOEN",
+        op_count: 600_000,
+      },
+      {
+        function_name: "transfer",
+        contract_id: "CSTELLARUSDCSTELLARUSDCSTELLARUSDCSTELLARUSDCST",
+        op_count: 980_000,
+      },
+      {
+        function_name: "deposit",
+        contract_id: "CBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLENDPOOLBLEND",
+        op_count: 640_000,
       },
     ],
   };
