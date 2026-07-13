@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   DashboardProvider,
@@ -32,15 +33,20 @@ function DashboardContent() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stellar/20 text-stellar-light">
-              <span className="text-lg font-bold">★</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="LumenMap"
+              width={44}
+              height={44}
+              className="shrink-0"
+              priority
+            />
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Stellar Network Activity
+                LumenMap
               </h1>
               <p className="text-sm text-zinc-400">
-                Contract, company, and operation volume across mainnet.
+                Stellar network activity across mainnet.
               </p>
             </div>
             <Badge>Mainnet</Badge>

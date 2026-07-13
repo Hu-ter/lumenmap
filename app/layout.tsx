@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stellar Network Treemap",
+  title: "LumenMap",
   description:
-    "Explore Stellar mainnet activity with contract and company treemap analytics.",
+    "Stellar network activity dashboard. Daily volume, active wallets, top dApps, and treemap analytics.",
 };
 
 export default function RootLayout({
