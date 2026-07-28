@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "protect:main": "node scripts/configure-main-protection.mjs",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
   },
