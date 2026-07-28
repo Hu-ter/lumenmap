@@ -6,14 +6,17 @@ import {
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  getUsdcPaymentVolumeParams,
   mapAccountMetadataRows,
   mapAccountRows,
   mapCategoryRows,
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapUsdcPaymentVolumeRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  usdcPaymentVolumeQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
@@ -55,6 +58,7 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    usdcPaymentVolumeRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -64,6 +68,10 @@ async function fetchFromHubble(
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    runQuery<Record<string, unknown>>(usdcPaymentVolumeQuery, {
+      ...params,
+      assets: getUsdcPaymentVolumeParams(),
+    }),
   ]);
 
   return {
@@ -74,6 +82,7 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
   };
 }
 
@@ -97,7 +106,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v11:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -123,6 +132,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     accounts: raw.accounts,
     sorobanFunctions: raw.sorobanFunctions,
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
+    usdcPaymentVolume: raw.usdcPaymentVolume,
     kpis,
     treemaps,
   };

@@ -42,6 +42,24 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
+export interface AssetIdentity {
+  code: string;
+  issuer: string;
+}
+
+export interface UsdcPaymentVolumeAssetRow {
+  asset: AssetIdentity;
+  amount: number;
+}
+
+export interface UsdcPaymentVolume {
+  amount: number;
+  unit: "USDC";
+  assetSetId: string;
+  methodology: string;
+  assets: UsdcPaymentVolumeAssetRow[];
+}
+
 export interface ActivityKpis {
   totalOps: number;
   sorobanShare: number;
@@ -69,7 +87,7 @@ export interface TreemapNode {
   meta?: TreemapNodeMeta;
 }
 
-import type { TreemapViewId } from "@/lib/constants";
+
 
 export interface ActivityTreemaps {
   events: TreemapNode;
@@ -86,6 +104,7 @@ export interface ActivityResponse {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
 }
