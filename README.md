@@ -91,7 +91,8 @@ Operation count is available today. Payment volume is not.
 
 ```text
 Browser
-  → GET /api/activity?period=1d|7d|30d|month
+  → GET /api/v1/activity?period=1d|7d|30d|month
+  → app/api/activity/_handler.ts (shared by /api/v1/activity and /api/activity)
   → lib/hubble/activity.ts
       → BigQuery queries
       → in-memory cache, 15 min TTL
@@ -169,15 +170,23 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
 
 ## API
 
-### `GET /api/activity`
+### `GET /api/v1/activity`
+
+Versioned activity and treemap data. This is the stable public contract. New
+metrics and schema additions within v1 will be additive only.
 
 | Param | Values | Default |
 | --- | --- | --- |
 | `period` | `1d`, `7d`, `30d`, `month` | `1d` |
 
+#### Success response (`200`)
+
 ```json
 {
   "period": "1d",
+  "start": "2026-07-29T00:00:00.000Z",
+  "end": "2026-07-29T23:59:59.999Z",
+  "source": "hubble",
   "kpis": {
     "totalOps": 1234567,
     "sorobanShare": 0.42,
@@ -187,17 +196,43 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
   "treemaps": {
     "events": { "name": "Network Activity", "children": [] },
     "actors": { "name": "Accounts & Contracts", "children": [] }
-  }
+  },
+  "categories": [],
+  "contracts": [],
+  "accounts": [],
+  "sorobanFunctions": [],
+  "sorobanFunctionContracts": []
 }
 ```
 
-Response also includes `categories`, `contracts`, `accounts`, `sorobanFunctions`, and `sorobanFunctionContracts`.
+Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
+
+#### Error responses
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| `400` | `{ "error": "Unsupported period: <value>" }` | `period` query param is present but not one of the supported values |
+| `500` | `{ "error": "Failed to fetch activity data" }` | Unexpected provider failure |
+| `503` | `{ "error": "Activity provider is not configured" }` | BigQuery credentials are missing or invalid |
+
+Internal provider error messages are never leaked; only the documented public
+messages above are returned.
+
+### `GET /api/activity` (deprecated alias)
+
+The unversioned `GET /api/activity` route is retained as a deprecated alias of
+`GET /api/v1/activity`. It accepts the same `period` parameter, returns the
+same response shape, and applies the same validation and error contract. It is
+implemented by re-exporting the versioned route handler, so behavior is
+identical.
+
+`/api/activity` will be removed in a future release. New consumers should use
+`/api/v1/activity`.
 
 ### Planned endpoints
 
 | Endpoint | Description |
 | --- | --- |
-| `GET /api/v1/activity` | Versioned activity and treemap data |
 | `GET /api/v1/timeseries` | Operations and active wallets over time |
 | `GET /api/v1/dapps` | Top contracts by protocol |
 
@@ -230,7 +265,9 @@ npm run sync:directory
 ```text
 app/
   page.tsx
-  api/activity/route.ts
+  api/activity/route.ts            (deprecated alias → _handler.ts)
+  api/activity/_handler.ts         (shared handler for both routes)
+  api/v1/activity/route.ts         (versioned route → _handler.ts)
 components/dashboard/
 lib/hubble/
 lib/entities/
