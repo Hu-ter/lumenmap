@@ -3,8 +3,8 @@
 :root {
   --background: #0b0e14;
   --foreground: #f4f4f5;
-  --stellar: #7b61ff;
-  --stellar-light: #9b87ff;
+  --stellar: #6f52f0;
+  --stellar-light: #8f78f0;
   --card: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.1);
 }
