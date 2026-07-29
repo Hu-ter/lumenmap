@@ -74,6 +74,23 @@ export interface ActivityTreemaps {
   actors: TreemapNode;
 }
 
+export interface TimeseriesBucket {
+  timestamp: string;
+  label: string;
+  transactions: number;
+  operations: number;
+  isPartial?: boolean;
+}
+
+export interface ActivityTimeseries {
+  granularity: "hour" | "day";
+  buckets: TimeseriesBucket[];
+  totals: {
+    transactions: number;
+    operations: number;
+  };
+}
+
 export interface ActivityResponse {
   period: Period;
   start: string;
@@ -86,6 +103,7 @@ export interface ActivityResponse {
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  timeseries?: ActivityTimeseries;
 }
 
 export interface SelectedNode {
