@@ -315,6 +315,7 @@ export function buildTreemap(input: BuildTreemapInput): TreemapNode {
 export function buildKpis(
   categories: CategoryRow[],
   contracts: ContractRow[],
+  totalActiveContracts?: number,
 ): ActivityKpis {
   const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
   const groupTotals = getGroupTotals(categories);
@@ -330,7 +331,8 @@ export function buildKpis(
     topCategory: topCategoryEntry
       ? (GROUP_LABELS[topCategoryEntry[0]] ?? topCategoryEntry[0])
       : "N/A",
-    activeContracts: contracts.length,
+    activeContracts:
+      totalActiveContracts ?? contracts.length,
   };
 }
 

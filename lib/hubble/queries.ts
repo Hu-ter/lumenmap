@@ -115,6 +115,14 @@ WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC
 `;
 
+export const totalActiveContractsQuery = `
+SELECT COUNT(DISTINCT contract_id) AS total_active_contracts
+FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
+WHERE hour_agg BETWEEN @start AND @end
+  AND contract_id IS NOT NULL
+  AND contract_id != ''
+`;
+
 export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
@@ -125,6 +133,7 @@ export type RawQueryResults = {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  totalActiveContracts: number;
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {

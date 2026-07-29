@@ -14,6 +14,7 @@ import {
   mapSorobanFunctionRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  totalActiveContractsQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
@@ -55,6 +56,7 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    totalActiveContractsRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -64,7 +66,13 @@ async function fetchFromHubble(
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    runQuery<Record<string, unknown>>(totalActiveContractsQuery, params),
   ]);
+
+  const totalActiveContracts =
+    totalActiveContractsRows.length > 0
+      ? Number(totalActiveContractsRows[0].total_active_contracts)
+      : 0;
 
   return {
     categories: mapCategoryRows(categoryRows),
@@ -74,6 +82,7 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    totalActiveContracts,
   };
 }
 
@@ -107,7 +116,11 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   const start = range.start.toISOString();
   const end = range.end.toISOString();
   const raw = await fetchFromHubble(start, end);
-  const kpis = buildKpis(raw.categories, raw.contracts);
+  const kpis = buildKpis(
+    raw.categories,
+    raw.contracts,
+    raw.totalActiveContracts,
+  );
   const labels = await resolveEntityLabels(collectTreemapIds(raw), {
     fetchHomeDomains,
   });
