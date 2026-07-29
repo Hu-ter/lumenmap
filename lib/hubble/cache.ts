@@ -1,4 +1,11 @@
+type Clock = () => number;
+
 const cache = new Map<string, { data: unknown; expires: number }>();
+let now: Clock = () => Date.now();
+
+export function setClock(clock: Clock): void {
+  now = clock;
+}
 
 export function getCached<T>(key: string): T | null {
   const entry = cache.get(key);
@@ -6,7 +13,7 @@ export function getCached<T>(key: string): T | null {
     return null;
   }
 
-  if (Date.now() > entry.expires) {
+  if (now() > entry.expires) {
     cache.delete(key);
     return null;
   }
@@ -21,6 +28,16 @@ export function setCache(
 ): void {
   cache.set(key, {
     data,
-    expires: Date.now() + ttlSeconds * 1000,
+    expires: now() + ttlSeconds * 1000,
   });
+  pruneCache();
+}
+
+export function pruneCache(): void {
+  const currentTime = now();
+  for (const [key, entry] of cache) {
+    if (currentTime > entry.expires) {
+      cache.delete(key);
+    }
+  }
 }
