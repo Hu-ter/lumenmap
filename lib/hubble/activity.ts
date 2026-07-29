@@ -1,4 +1,4 @@
-import { getBigQueryClient } from "@/lib/hubble/client";
+import { executeQuery } from "@/lib/hubble/executor";
 import { getCached, setCache } from "@/lib/hubble/cache";
 import {
   ACCOUNT_QUERY_TYPES,
@@ -26,23 +26,6 @@ import {
 import { resolvePeriod } from "@/lib/periods";
 import type { ActivityResponse, Period } from "@/lib/types";
 
-async function runQuery<T>(
-  query: string,
-  params: Record<string, unknown>,
-): Promise<T[]> {
-  const client = getBigQueryClient();
-  if (!client) {
-    throw new Error("BigQuery client is not configured");
-  }
-
-  const [rows] = await client.query({
-    query,
-    params,
-  });
-
-  return rows as T[];
-}
-
 async function fetchFromHubble(
   start: string,
   end: string,
@@ -56,14 +39,14 @@ async function fetchFromHubble(
     sorobanFunctionRows,
     sorobanFunctionContractRows,
   ] = await Promise.all([
-    runQuery<Record<string, unknown>>(categoryQuery, params),
-    runQuery<Record<string, unknown>>(contractQuery, params),
-    runQuery<Record<string, unknown>>(accountQuery, {
+    executeQuery<Record<string, unknown>>(categoryQuery, params),
+    executeQuery<Record<string, unknown>>(contractQuery, params),
+    executeQuery<Record<string, unknown>>(accountQuery, {
       ...params,
       types: ACCOUNT_QUERY_TYPES,
     }),
-    runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
-    runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    executeQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
+    executeQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
   ]);
 
   return {
@@ -82,7 +65,7 @@ async function fetchHomeDomains(ids: string[]) {
     return {};
   }
 
-  const rows = await runQuery<Record<string, unknown>>(accountMetadataQuery, {
+  const rows = await executeQuery<Record<string, unknown>>(accountMetadataQuery, {
     ids,
   });
 
