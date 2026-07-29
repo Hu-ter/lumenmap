@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
-import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
+import type { ActivityResponse, ApiErrorResponse, Period, SelectedNode } from "@/lib/types";
 
 interface DashboardContextValue {
   period: Period;
@@ -23,8 +23,8 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
 async function fetchActivity(period: Period): Promise<ActivityResponse> {
   const response = await fetch(`/api/activity?period=${period}`);
   if (!response.ok) {
-    const body = (await response.json()) as { error?: string };
-    throw new Error(body.error ?? "Failed to load activity data");
+    const body = (await response.json()) as ApiErrorResponse;
+    throw new Error(body.message ?? "Failed to load activity data");
   }
   return response.json() as Promise<ActivityResponse>;
 }
