@@ -42,11 +42,16 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
+export interface ActiveSourceAccountsRow {
+  active_accounts: number;
+}
+
 export interface ActivityKpis {
   totalOps: number;
   sorobanShare: number;
   topCategory: string;
   activeContracts: number;
+  activeAccounts: number;
 }
 
 export interface TreemapNodeMeta {

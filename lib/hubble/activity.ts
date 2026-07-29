@@ -3,11 +3,13 @@ import { getCached, setCache } from "@/lib/hubble/cache";
 import {
   accountQuery,
   accountMetadataQuery,
+  activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
   mapAccountMetadataRows,
   mapAccountRows,
+  mapActiveSourceAccountsRows,
   mapCategoryRows,
   mapContractRows,
   mapSorobanFunctionContractRows,
@@ -55,6 +57,7 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    activeSourceAccountRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -64,6 +67,7 @@ async function fetchFromHubble(
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    runQuery<Record<string, unknown>>(activeSourceAccountsQuery, params),
   ]);
 
   return {
@@ -74,6 +78,7 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
   };
 }
 
@@ -107,7 +112,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   const start = range.start.toISOString();
   const end = range.end.toISOString();
   const raw = await fetchFromHubble(start, end);
-  const kpis = buildKpis(raw.categories, raw.contracts);
+  const kpis = buildKpis(raw.categories, raw.contracts, raw.activeSourceAccounts);
   const labels = await resolveEntityLabels(collectTreemapIds(raw), {
     fetchHomeDomains,
   });
