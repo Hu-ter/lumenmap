@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -21,11 +24,27 @@ export function NetworkTreemap() {
     data,
     isLoading,
     isError,
+    isFetching,
     error,
+    refetch,
     period,
     treemapView,
     setSelectedNode,
   } = useDashboard();
+  const [isRetrying, setIsRetrying] = useState(false);
+  const retryPending = isRetrying || isFetching;
+
+  const handleRetry = async () => {
+    if (retryPending) {
+      return;
+    }
+    setIsRetrying(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -47,8 +66,24 @@ export function NetworkTreemap() {
           <CardTitle>Network Treemap</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[360px] items-center justify-center rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center text-sm text-red-200">
-            {error?.message ?? "Unable to load treemap data."}
+          <div className="flex h-[360px] flex-col items-center justify-center gap-4 rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center text-sm text-red-200">
+            <p role="alert">{error?.message ?? "Unable to load treemap data."}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRetry}
+              disabled={retryPending}
+              aria-busy={retryPending}
+              aria-label={retryPending ? "Retrying network activity data" : "Retry loading network activity data"}
+              className="gap-2 border-red-500/30 text-red-100 hover:bg-red-500/10"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${retryPending ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
+              {retryPending ? "Retrying…" : "Retry"}
+            </Button>
           </div>
         </CardContent>
       </Card>
