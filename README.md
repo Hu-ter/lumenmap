@@ -157,13 +157,15 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 
 | Variable | Description |
 | --- | --- |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
-| `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (local development) |
+| `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON (Vercel deployments) |
 | `CACHE_TTL_SECONDS` | Cache TTL in seconds. Default: 900 |
 
-Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
+Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).  
+Deployment & Rollback guide: [Vercel Environment & Rollback Runbook](docs/vercel-runbook.md).
 
 Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contributor needs their own GCP credentials.
+
 
 ---
 
