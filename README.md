@@ -249,6 +249,7 @@ scripts/
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
 | `npm run test:hubble` | BigQuery query smoke test |
+| `npm run test:issues` | Validate GitHub issue templates |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
 
 ---
