@@ -24,6 +24,7 @@ export function NetworkTreemap() {
     error,
     period,
     treemapView,
+    metric,
     setSelectedNode,
   } = useDashboard();
 
@@ -55,7 +56,15 @@ export function NetworkTreemap() {
     );
   }
 
-  const activeTreemap = data.treemaps[treemapView];
+  const metricTreemaps = data.treemaps[metric] ?? data.treemaps;
+  const activeTreemap =
+    metricTreemaps?.[treemapView] ?? data.treemaps[treemapView];
+
+  const isEmpty =
+    !activeTreemap ||
+    !activeTreemap.children ||
+    activeTreemap.children.length === 0 ||
+    (activeTreemap.value ?? 0) <= 0;
 
   return (
     <Card>
@@ -84,13 +93,31 @@ export function NetworkTreemap() {
         </div>
       </CardHeader>
       <CardContent>
-        <div
-          key={`${period}-${treemapView}`}
-          className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
-        >
-          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
-        </div>
+        {isEmpty ? (
+          <div className="flex h-[420px] sm:h-[520px] lg:h-[600px] flex-col items-center justify-center rounded-xl border border-white/5 bg-black/20 p-6 text-center">
+            <p className="text-base font-medium text-zinc-300">
+              {metric === "usdc"
+                ? "No USDC payment volume recorded for this period."
+                : "No network activity recorded for this period."}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Try selecting a different time range or metric option.
+            </p>
+          </div>
+        ) : (
+          <div
+            key={`${period}-${treemapView}-${metric}`}
+            className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
+          >
+            <D3Treemap
+              root={activeTreemap}
+              metric={metric}
+              onSelect={setSelectedNode}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+

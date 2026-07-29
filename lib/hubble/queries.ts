@@ -11,6 +11,8 @@ import type {
   ContractRow,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  UsdcAccountRow,
+  UsdcCategoryRow,
 } from "@/lib/types";
 
 export interface QueryParams {
@@ -125,7 +127,10 @@ export type RawQueryResults = {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcCategories?: UsdcCategoryRow[];
+  usdcAccounts?: UsdcAccountRow[];
 };
+
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
   return rows.map((row) => ({
@@ -167,6 +172,113 @@ export function mapSorobanFunctionContractRows(
     op_count: Number(row.op_count),
   }));
 }
+
+export const usdcCategoryQuery = `
+SELECT
+  type_string,
+  SUM(usdc_amount) AS amount
+FROM (
+  SELECT
+    type_string,
+    CASE
+      WHEN type_string = 'payment'
+        AND asset_code = 'USDC'
+        AND asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(amount AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND dest_asset_code = 'USDC'
+        AND dest_asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(COALESCE(dest_amount, amount) AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND source_asset_code = 'USDC'
+        AND source_asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(source_amount AS NUMERIC)
+
+      ELSE 0
+    END AS usdc_amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN ('payment', 'path_payment_strict_receive', 'path_payment_strict_send')
+)
+WHERE usdc_amount > 0
+GROUP BY type_string
+ORDER BY amount DESC
+`;
+
+export const usdcAccountQuery = `
+WITH usdc_ops AS (
+  SELECT
+    op_source_account AS account_id,
+    type_string,
+    CASE
+      WHEN type_string = 'payment'
+        AND asset_code = 'USDC'
+        AND asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(amount AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND dest_asset_code = 'USDC'
+        AND dest_asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(COALESCE(dest_amount, amount) AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND source_asset_code = 'USDC'
+        AND source_asset_issuer IN UNNEST(@canonicalUsdcIssuers)
+      THEN CAST(source_amount AS NUMERIC)
+
+      ELSE 0
+    END AS usdc_amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN ('payment', 'path_payment_strict_receive', 'path_payment_strict_send')
+),
+aggregated AS (
+  SELECT
+    account_id,
+    type_string,
+    SUM(usdc_amount) AS amount
+  FROM usdc_ops
+  WHERE usdc_amount > 0
+  GROUP BY account_id, type_string
+),
+ranked AS (
+  SELECT
+    account_id,
+    type_string,
+    amount,
+    ROW_NUMBER() OVER (
+      PARTITION BY type_string
+      ORDER BY amount DESC
+    ) AS rank
+  FROM aggregated
+)
+SELECT account_id, type_string, amount
+FROM ranked
+WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
+ORDER BY type_string, amount DESC
+`;
+
+export function mapUsdcCategoryRows(
+  rows: Record<string, unknown>[],
+): UsdcCategoryRow[] {
+  return rows.map((row) => ({
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
+}
+
+export function mapUsdcAccountRows(
+  rows: Record<string, unknown>[],
+): UsdcAccountRow[] {
+  return rows.map((row) => ({
+    account_id: String(row.account_id),
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
+}
+
 
 export const accountMetadataQuery = `
 SELECT

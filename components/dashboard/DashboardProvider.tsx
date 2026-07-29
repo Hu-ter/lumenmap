@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { TreemapViewId } from "@/lib/constants";
+import { createContext, useContext, useMemo, useState } from "react";
+import type { TreemapMetricId, TreemapViewId } from "@/lib/constants";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
 
 interface DashboardContextValue {
@@ -10,6 +10,8 @@ interface DashboardContextValue {
   setPeriod: (period: Period) => void;
   treemapView: TreemapViewId;
   setTreemapView: (view: TreemapViewId) => void;
+  metric: TreemapMetricId;
+  setMetric: (metric: TreemapMetricId) => void;
   data?: ActivityResponse;
   isLoading: boolean;
   isError: boolean;
@@ -30,13 +32,25 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriod] = useState<Period>("1d");
-  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
+  const [period, setPeriodState] = useState<Period>("1d");
+  const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
+  const [metric, setMetricState] = useState<TreemapMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
-  useEffect(() => {
+  const setPeriod = (nextPeriod: Period) => {
+    setPeriodState(nextPeriod);
     setSelectedNode(null);
-  }, [period, treemapView]);
+  };
+
+  const setTreemapView = (nextView: TreemapViewId) => {
+    setTreemapViewState(nextView);
+    setSelectedNode(null);
+  };
+
+  const setMetric = (nextMetric: TreemapMetricId) => {
+    setMetricState(nextMetric);
+    setSelectedNode(null);
+  };
 
   const query = useQuery({
     queryKey: ["activity", period],
@@ -50,6 +64,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setPeriod,
       treemapView,
       setTreemapView,
+      metric,
+      setMetric,
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
@@ -60,6 +76,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     [
       period,
       treemapView,
+      metric,
       query.data,
       query.isLoading,
       query.isError,
@@ -72,6 +89,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>
   );
 }
+
+
 
 export function useDashboard() {
   const context = useContext(DashboardContext);

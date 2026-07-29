@@ -5,12 +5,14 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import type { TreemapMetricId } from "@/lib/constants";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface D3TreemapProps {
   root: TreemapNode;
+  metric?: TreemapMetricId;
   onSelect: (node: SelectedNode) => void;
 }
 
@@ -35,10 +37,10 @@ function resolveColor(node: TreemapNode): string {
 }
 
 function getNodeValue(node: TreemapNode): number {
-  return node.value ?? node.meta?.opCount ?? 0;
+  return node.value ?? node.meta?.amount ?? node.meta?.opCount ?? 0;
 }
 
-export function D3Treemap({ root, onSelect }: D3TreemapProps) {
+export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
@@ -129,6 +131,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       const original = tileLookup.get(data.id ?? data.name) ?? data;
       const value = node.value ?? 0;
       const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
+      const unit = original.meta?.unit ?? (metric === "usdc" ? "USDC" : "ops");
 
       onSelect({
         name: data.name,
@@ -138,7 +141,9 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           ...original.meta,
           type: original.meta?.type ?? "entity",
           id: original.meta?.id ?? original.id,
-          opCount: value,
+          opCount: unit === "ops" ? value : original.meta?.opCount,
+          amount: unit === "USDC" ? value : original.meta?.amount,
+          unit,
           childCount: original.children?.length ?? original.meta?.childCount,
         },
       });
@@ -147,7 +152,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
         setPath((current) => [...current, original]);
       }
     },
-    [levelTotal, onSelect, tileLookup],
+    [levelTotal, metric, onSelect, tileLookup],
   );
 
   const navigateTo = (index: number) => {
@@ -193,6 +198,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           const original = tileLookup.get(data.id ?? data.name) ?? data;
           const value = node.value ?? 0;
           const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
+          const unit = original.meta?.unit ?? (metric === "usdc" ? "USDC" : "ops");
           const color = resolveColor(data);
           const nodeId = `${data.id ?? data.name}-${node.x0}-${node.y0}`;
           const isHovered = hoveredId === nodeId;
@@ -203,6 +209,11 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           const showValue = width > 110 && height > (showIdentity ? 88 : 64);
 
           const canDrill = Boolean(original?.children?.length);
+
+          const formattedValue =
+            unit === "USDC"
+              ? `${formatNumber(value)} USDC`
+              : formatNumber(value);
 
           return (
             <g
@@ -258,7 +269,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)}
+                    {formattedValue}
                   </text>
                   <text
                     x={10}
@@ -273,8 +284,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               ) : null}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${unit} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${unit} · ${formatPercent(share)}`}
               </title>
             </g>
           );
@@ -284,3 +295,4 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
     </div>
   );
 }
+

@@ -42,6 +42,17 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
+export interface UsdcCategoryRow {
+  type_string: string;
+  amount: number;
+}
+
+export interface UsdcAccountRow {
+  account_id: string;
+  type_string: string;
+  amount: number;
+}
+
 export interface ActivityKpis {
   totalOps: number;
   sorobanShare: number;
@@ -56,6 +67,8 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  amount?: number;
+  unit?: string;
   childCount?: number;
   eventType?: string;
 }
@@ -69,11 +82,16 @@ export interface TreemapNode {
   meta?: TreemapNodeMeta;
 }
 
-import type { TreemapViewId } from "@/lib/constants";
+export interface MetricTreemaps {
+  events: TreemapNode;
+  actors: TreemapNode;
+}
 
 export interface ActivityTreemaps {
   events: TreemapNode;
   actors: TreemapNode;
+  ops?: MetricTreemaps;
+  usdc?: MetricTreemaps;
 }
 
 export interface ActivityResponse {
@@ -86,6 +104,8 @@ export interface ActivityResponse {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcCategories?: UsdcCategoryRow[];
+  usdcAccounts?: UsdcAccountRow[];
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
 }
@@ -96,3 +116,4 @@ export interface SelectedNode {
   share: number;
   meta?: TreemapNodeMeta;
 }
+

@@ -1,5 +1,6 @@
 import { getBigQueryClient } from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
+import { CANONICAL_USDC_ISSUERS } from "@/lib/constants";
 import {
   accountQuery,
   accountMetadataQuery,
@@ -12,8 +13,12 @@ import {
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapUsdcAccountRows,
+  mapUsdcCategoryRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  usdcAccountQuery,
+  usdcCategoryQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
@@ -48,6 +53,7 @@ async function fetchFromHubble(
   end: string,
 ): Promise<RawQueryResults> {
   const params = { start, end };
+  const usdcParams = { ...params, canonicalUsdcIssuers: CANONICAL_USDC_ISSUERS };
 
   const [
     categoryRows,
@@ -55,6 +61,8 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    usdcCategoryRows,
+    usdcAccountRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -64,6 +72,12 @@ async function fetchFromHubble(
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    runQuery<Record<string, unknown>>(usdcCategoryQuery, usdcParams).catch(
+      () => [],
+    ),
+    runQuery<Record<string, unknown>>(usdcAccountQuery, usdcParams).catch(
+      () => [],
+    ),
   ]);
 
   return {
@@ -74,6 +88,8 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    usdcCategories: mapUsdcCategoryRows(usdcCategoryRows),
+    usdcAccounts: mapUsdcAccountRows(usdcAccountRows),
   };
 }
 
@@ -97,7 +113,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v11:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -123,6 +139,8 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     accounts: raw.accounts,
     sorobanFunctions: raw.sorobanFunctions,
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
+    usdcCategories: raw.usdcCategories,
+    usdcAccounts: raw.usdcAccounts,
     kpis,
     treemaps,
   };
@@ -130,3 +148,4 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   setCache(cacheKey, response);
   return response;
 }
+

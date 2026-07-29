@@ -8,7 +8,7 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data } = useDashboard();
+  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
 
   if (!selectedNode) {
     return (
@@ -18,8 +18,7 @@ export function DetailPanel() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-zinc-500">
-            Select a treemap tile to view operation volume, category, and
-            identity details.
+            Select a treemap tile to view volume, category, and identity details.
           </p>
         </CardContent>
       </Card>
@@ -34,6 +33,12 @@ export function DetailPanel() {
         : data?.period === "30d"
           ? "Last 30 days"
           : "This month";
+
+  const isUsdc = selectedNode.meta?.unit === "USDC" || metric === "usdc";
+  const valueLabel = isUsdc ? "USDC Volume" : "Operations";
+  const valueDisplay = isUsdc
+    ? `${formatNumber(selectedNode.value)} USDC`
+    : formatNumber(selectedNode.value);
 
   return (
     <Card className="h-full">
@@ -59,9 +64,9 @@ export function DetailPanel() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-            <p className="text-xs text-zinc-500">Operations</p>
+            <p className="text-xs text-zinc-500">{valueLabel}</p>
             <p className="text-lg font-semibold text-white">
-              {formatNumber(selectedNode.value)}
+              {valueDisplay}
             </p>
           </div>
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
@@ -71,6 +76,7 @@ export function DetailPanel() {
             </p>
           </div>
         </div>
+
 
         {selectedNode.meta?.protocol ? (
           <div>
