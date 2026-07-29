@@ -46,24 +46,6 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   restore_footprint: "soroban",
 };
 
-export const ACCOUNT_QUERY_TYPES = [
-  "payment",
-  "path_payment_strict_receive",
-  "path_payment_strict_send",
-  "manage_buy_offer",
-  "manage_sell_offer",
-  "create_passive_sell_offer",
-  "change_trust",
-  "create_account",
-  "liquidity_pool_deposit",
-  "liquidity_pool_withdraw",
-];
-
-export const TOP_ACCOUNTS_PER_TYPE = 70;
-export const TOP_CONTRACT_LIMIT = 200;
-export const TOP_SOROBAN_FUNCTIONS = 100;
-export const TOP_CONTRACTS_PER_FUNCTION = 70;
-
 export const TREEMAP_VIEWS = [
   {
     id: "events",

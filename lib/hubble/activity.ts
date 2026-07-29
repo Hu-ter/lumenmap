@@ -1,11 +1,11 @@
 import { getBigQueryClient } from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
 import {
+  ACCOUNT_QUERY_TYPES,
   accountQuery,
   accountMetadataQuery,
   categoryQuery,
   contractQuery,
-  getAccountQueryTypes,
   mapAccountMetadataRows,
   mapAccountRows,
   mapCategoryRows,
@@ -60,7 +60,7 @@ async function fetchFromHubble(
     runQuery<Record<string, unknown>>(contractQuery, params),
     runQuery<Record<string, unknown>>(accountQuery, {
       ...params,
-      types: getAccountQueryTypes(),
+      types: ACCOUNT_QUERY_TYPES,
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
