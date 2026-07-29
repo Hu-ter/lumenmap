@@ -6,6 +6,14 @@ const TOP_ACCOUNTS_PER_TYPE = 70;
 const TOP_CONTRACT_LIMIT = 200;
 const TOP_CONTRACTS_PER_FUNCTION = 70;
 const TOP_SOROBAN_FUNCTIONS = 100;
+const DESTINATION_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "create_account",
+  "account_merge",
+];
+
 const ACCOUNT_QUERY_TYPES = [
   "payment",
   "path_payment_strict_receive",
@@ -96,6 +104,26 @@ FROM ranked
 WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC`;
 
+const destinationAccountQuery = `
+SELECT COUNT(DISTINCT destination_account) AS active_destination_count
+FROM (
+  SELECT
+    CASE type_string
+      WHEN 'payment' THEN details.to
+      WHEN 'path_payment_strict_receive' THEN details.to
+      WHEN 'path_payment_strict_send' THEN details.to
+      WHEN 'create_account' THEN details.new_account
+      WHEN 'account_merge' THEN details.into
+    END AS destination_account
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN UNNEST(@types)
+)
+WHERE destination_account IS NOT NULL
+  AND destination_account != ''
+  AND STARTS_WITH(destination_account, 'G')
+`;
+
 const end = new Date().toISOString();
 const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const baseParams = { start, end };
@@ -117,6 +145,11 @@ const queries = [
     name: "sorobanFunctionContractQuery",
     sql: sorobanFunctionContractQuery,
     params: baseParams,
+  },
+  {
+    name: "destinationAccountQuery",
+    sql: destinationAccountQuery,
+    params: { ...baseParams, types: DESTINATION_QUERY_TYPES },
   },
 ];
 

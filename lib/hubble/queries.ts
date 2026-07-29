@@ -1,5 +1,6 @@
 import {
   ACCOUNT_QUERY_TYPES,
+  DESTINATION_QUERY_TYPES,
   TOP_ACCOUNTS_PER_TYPE,
   TOP_CONTRACT_LIMIT,
   TOP_CONTRACTS_PER_FUNCTION,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/constants";
 import type {
   AccountRow,
+  ActiveDestinationCountRow,
   CategoryRow,
   ContractRow,
   SorobanFunctionContractRow,
@@ -115,6 +117,30 @@ WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC
 `;
 
+export const activeDestinationCountQuery = `
+SELECT COUNT(DISTINCT destination_account) AS active_destination_count
+FROM (
+  SELECT
+    CASE type_string
+      WHEN 'payment' THEN details.to
+      WHEN 'path_payment_strict_receive' THEN details.to
+      WHEN 'path_payment_strict_send' THEN details.to
+      WHEN 'create_account' THEN details.new_account
+      WHEN 'account_merge' THEN details.into
+    END AS destination_account
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN UNNEST(@types)
+)
+WHERE destination_account IS NOT NULL
+  AND destination_account != ''
+  AND STARTS_WITH(destination_account, 'G')
+`;
+
+export function getDestinationQueryTypes(): string[] {
+  return DESTINATION_QUERY_TYPES;
+}
+
 export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
@@ -185,4 +211,13 @@ export function mapAccountMetadataRows(
     account_id: String(row.account_id),
     home_domain: String(row.home_domain),
   }));
+}
+
+export function mapActiveDestinationCountRow(
+  rows: Record<string, unknown>[],
+): ActiveDestinationCountRow {
+  return {
+    active_destination_count:
+      rows.length > 0 ? Number(rows[0].active_destination_count) : 0,
+  };
 }
