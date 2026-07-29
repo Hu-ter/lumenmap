@@ -1,3 +1,5 @@
+import type { MetricId } from "@/lib/metrics";
+
 export type Period = "1d" | "7d" | "30d" | "month";
 
 export type DataSource = "hubble";
@@ -58,6 +60,7 @@ export interface TreemapNodeMeta {
   opCount?: number;
   childCount?: number;
   eventType?: string;
+  metricId?: MetricId;
 }
 
 export interface TreemapNode {
@@ -95,4 +98,5 @@ export interface SelectedNode {
   value: number;
   share: number;
   meta?: TreemapNodeMeta;
+  metricId?: MetricId;
 }

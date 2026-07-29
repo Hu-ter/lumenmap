@@ -1,6 +1,7 @@
 "use client";
 
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { getMetricContract } from "@/lib/metrics";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
@@ -24,8 +25,10 @@ export function NetworkTreemap() {
     error,
     period,
     treemapView,
+    metricId,
     setSelectedNode,
   } = useDashboard();
+  const activeMetric = getMetricContract(metricId);
 
   if (isLoading) {
     return (
@@ -88,7 +91,7 @@ export function NetworkTreemap() {
           key={`${period}-${treemapView}`}
           className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
         >
-          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
+          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} metricContract={activeMetric} />
         </div>
       </CardContent>
     </Card>

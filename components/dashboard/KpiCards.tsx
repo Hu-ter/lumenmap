@@ -5,36 +5,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
-
-const KPI_CONFIG = [
-  {
-    key: "totalOps",
-    title: "Total Operations",
-    icon: Activity,
-    format: (value: number) => formatNumber(value),
-  },
-  {
-    key: "sorobanShare",
-    title: "Soroban Share",
-    icon: Zap,
-    format: (value: number) => formatPercent(value),
-  },
-  {
-    key: "topCategory",
-    title: "Top Category",
-    icon: Layers,
-    format: (value: string) => value,
-  },
-  {
-    key: "activeContracts",
-    title: "Active Contracts",
-    icon: Boxes,
-    format: (value: number) => formatNumber(value),
-  },
-] as const;
+import { getMetricContract, formatMetricCompact } from "@/lib/metrics";
 
 export function KpiCards() {
-  const { data, isLoading } = useDashboard();
+  const { data, isLoading, metricId } = useDashboard();
+  const activeMetric = getMetricContract(metricId);
+
+  const KPI_CONFIG = [
+    {
+      key: "totalOps",
+      title: `Total ${activeMetric.label}`,
+      icon: Activity,
+      format: (value: number) => formatMetricCompact(value, activeMetric),
+    },
+    {
+      key: "sorobanShare",
+      title: "Soroban Share",
+      icon: Zap,
+      format: (value: number) => formatPercent(value),
+    },
+    {
+      key: "topCategory",
+      title: "Top Category",
+      icon: Layers,
+      format: (value: string) => value,
+    },
+    {
+      key: "activeContracts",
+      title: "Active Contracts",
+      icon: Boxes,
+      format: (value: number) => formatNumber(value),
+    },
+  ] as const;
 
   if (isLoading || !data) {
     return (

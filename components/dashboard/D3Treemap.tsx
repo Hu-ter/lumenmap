@@ -5,13 +5,16 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import type { MetricContract } from "@/lib/metrics";
+import { formatMetricCompact, formatMetricFull, METRICS } from "@/lib/metrics";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
-import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
+import { formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface D3TreemapProps {
   root: TreemapNode;
   onSelect: (node: SelectedNode) => void;
+  metricContract?: MetricContract;
 }
 
 interface LayoutNode extends HierarchyNode<TreemapNode> {
@@ -38,7 +41,8 @@ function getNodeValue(node: TreemapNode): number {
   return node.value ?? node.meta?.opCount ?? 0;
 }
 
-export function D3Treemap({ root, onSelect }: D3TreemapProps) {
+export function D3Treemap({ root, onSelect, metricContract }: D3TreemapProps) {
+  const mc = metricContract ?? METRICS.operations;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
@@ -258,7 +262,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)}
+                    {formatMetricCompact(value, mc)}
                   </text>
                   <text
                     x={10}
@@ -273,8 +277,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               ) : null}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatMetricFull(value, mc)} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatMetricFull(value, mc)} · ${formatPercent(share)}`}
               </title>
             </g>
           );
