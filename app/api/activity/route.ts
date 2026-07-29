@@ -7,7 +7,12 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const periodParam = searchParams.get("period");
-  const period = isValidPeriod(periodParam) ? periodParam : "1d";
+
+  if (periodParam !== null && !isValidPeriod(periodParam)) {
+    return NextResponse.json({ error: "Invalid period" }, { status: 400 });
+  }
+
+  const period = periodParam ?? "1d";
 
   try {
     const data = await getActivityData(period);
