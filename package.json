@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
   },
