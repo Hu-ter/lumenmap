@@ -41,6 +41,7 @@ function getNodeValue(node: TreemapNode): number {
 export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -180,6 +181,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
       <div ref={chartRef} className="min-h-0 flex-1">
         <svg
+          ref={svgRef}
           width={size.width}
           height={size.height}
           className="block overflow-hidden rounded-lg"

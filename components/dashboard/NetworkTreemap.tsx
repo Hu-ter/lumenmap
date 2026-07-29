@@ -4,6 +4,7 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
+import { ExportControls } from "@/components/dashboard/ExportControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -60,12 +61,15 @@ export function NetworkTreemap() {
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4">
-        <div>
-          <CardTitle>Network Treemap</CardTitle>
-          <p className="text-xs text-zinc-500">
-            Switch views to explore operation types or top accounts and
-            contracts.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle>Network Treemap</CardTitle>
+            <p className="text-xs text-zinc-500">
+              Switch views to explore operation types or top accounts and
+              contracts.
+            </p>
+          </div>
+          <ExportControls />
         </div>
         <TreemapViewSelector />
         <div className="flex flex-wrap gap-2">
@@ -86,6 +90,7 @@ export function NetworkTreemap() {
       <CardContent>
         <div
           key={`${period}-${treemapView}`}
+          data-treemap-container="true"
           className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
         >
           <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
