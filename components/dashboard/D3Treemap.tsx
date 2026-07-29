@@ -5,6 +5,7 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,42 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           role="img"
           aria-label="Network activity treemap"
         >
+          <defs>
+            {PATTERN_DEFS.map((p) => (
+              <pattern
+                key={p.id}
+                id={p.id}
+                x="0"
+                y="0"
+                width={p.width}
+                height={p.height}
+                patternUnits="userSpaceOnUse"
+                patternTransform={p.patternTransform}
+              >
+                {p.shapes.map((shape, i) =>
+                  shape.type === "circle" ? (
+                    <circle
+                      key={i}
+                      cx={shape.cx}
+                      cy={shape.cy}
+                      r={shape.r}
+                      fill={shape.fill}
+                    />
+                  ) : (
+                    <line
+                      key={i}
+                      x1={shape.x1}
+                      y1={shape.y1}
+                      x2={shape.x2}
+                      y2={shape.y2}
+                      stroke={shape.stroke}
+                      strokeWidth={shape.strokeWidth}
+                    />
+                  )
+                )}
+              </pattern>
+            ))}
+          </defs>
         {leaves.map((node) => {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
@@ -222,6 +259,19 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                 rx={6}
                 opacity={isHovered ? 1 : 0.92}
               />
+              {(() => {
+                const patternId = getCategoryPatternId(data.meta?.category);
+                return patternId ? (
+                  <rect
+                    width={width}
+                    height={height}
+                    rx={6}
+                    fill={`url(#${patternId})`}
+                    opacity={PATTERN_OPACITY}
+                    pointerEvents="none"
+                  />
+                ) : null;
+              })()}
               {showLabel ? (
                 <text
                   x={10}
@@ -273,8 +323,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               ) : null}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}${data.meta?.category ? ` · ${data.meta.category}` : ""}`
+                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}${data.meta?.category ? ` · ${data.meta.category}` : ""}`}
               </title>
             </g>
           );
