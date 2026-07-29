@@ -13,6 +13,8 @@
     "start": "next start",
     "lint": "eslint",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
+    "test:visual": "npx tsx scripts/test-visual-regression.mjs",
+    "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
   },
   "dependencies": {
@@ -32,10 +34,16 @@
     "@tailwindcss/postcss": "^4",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^20",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "pixelmatch": "^7.2.0",
+    "playwright": "^1.62.0",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^24.43.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

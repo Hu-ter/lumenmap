@@ -248,6 +248,9 @@ scripts/
 | `npm run build` | Production build |
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
+| `npm test` | Run operation-to-category mapping tests |
+| `npm run test:visual` | Verify mobile visual-regression baselines (320, 360, 390px) |
+| `npm run test:visual:update` | Update mobile visual-regression PNG baselines |
 | `npm run test:hubble` | BigQuery query smoke test |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
 

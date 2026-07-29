@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
 
@@ -20,8 +20,11 @@ interface DashboardContextValue {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
-async function fetchActivity(period: Period): Promise<ActivityResponse> {
-  const response = await fetch(`/api/activity?period=${period}`);
+async function fetchActivity(period: Period, mockState?: string | null): Promise<ActivityResponse> {
+  const url = mockState
+    ? `/api/activity?period=${period}&mockState=${mockState}`
+    : `/api/activity?period=${period}`;
+  const response = await fetch(url);
   if (!response.ok) {
     const body = (await response.json()) as { error?: string };
     throw new Error(body.error ?? "Failed to load activity data");
@@ -30,19 +33,48 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriod] = useState<Period>("1d");
-  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+  const [period, setPeriodState] = useState<Period>("1d");
+  const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
 
-  useEffect(() => {
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const mockState = searchParams?.get("mockState");
+
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(() => {
+    if (mockState === "selected") {
+      return {
+        name: "Soroswap Router",
+        value: 3200,
+        share: 27.12,
+        meta: {
+          type: "contract",
+          id: "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2",
+          category: "soroban",
+          protocol: "Soroswap",
+          opCount: 3200,
+        },
+      };
+    }
+    return null;
+  });
+
+  const setPeriod = (p: Period) => {
+    setPeriodState(p);
     setSelectedNode(null);
-  }, [period, treemapView]);
+  };
+
+  const setTreemapView = (v: TreemapViewId) => {
+    setTreemapViewState(v);
+    setSelectedNode(null);
+  };
 
   const query = useQuery({
-    queryKey: ["activity", period],
-    queryFn: () => fetchActivity(period),
+    queryKey: ["activity", period, mockState],
+    queryFn: () => fetchActivity(period, mockState),
+    enabled: mockState !== "loading",
     staleTime: 60_000,
   });
+
+  const isLoading = mockState === "loading" || query.isLoading;
 
   const value = useMemo(
     () => ({
@@ -51,8 +83,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       treemapView,
       setTreemapView,
       data: query.data,
-      isLoading: query.isLoading,
-      isError: query.isError,
+      isLoading,
+      isError: mockState !== "loading" && query.isError,
       error: query.error,
       selectedNode,
       setSelectedNode,
@@ -61,7 +93,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       period,
       treemapView,
       query.data,
-      query.isLoading,
+      isLoading,
+      mockState,
       query.isError,
       query.error,
       selectedNode,
