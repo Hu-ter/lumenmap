@@ -5,6 +5,7 @@ import {
   accountMetadataQuery,
   categoryQuery,
   contractQuery,
+  dataThroughQuery,
   getAccountQueryTypes,
   mapAccountMetadataRows,
   mapAccountRows,
@@ -43,10 +44,14 @@ async function runQuery<T>(
   return rows as T[];
 }
 
+interface FetchResult extends RawQueryResults {
+  dataThrough: string;
+}
+
 async function fetchFromHubble(
   start: string,
   end: string,
-): Promise<RawQueryResults> {
+): Promise<FetchResult> {
   const params = { start, end };
 
   const [
@@ -55,6 +60,7 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    dataThroughRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -64,6 +70,7 @@ async function fetchFromHubble(
     }),
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    runQuery<{ latest_timestamp: string }>(dataThroughQuery, {}),
   ]);
 
   return {
@@ -74,6 +81,8 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    dataThrough:
+      dataThroughRows[0]?.latest_timestamp ?? end,
   };
 }
 
@@ -118,6 +127,10 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     start,
     end,
     source: "hubble",
+    freshness: {
+      dataThrough: raw.dataThrough,
+      lastRefreshed: new Date().toISOString(),
+    },
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,

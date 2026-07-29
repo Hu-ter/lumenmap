@@ -76,11 +76,17 @@ export interface ActivityTreemaps {
   actors: TreemapNode;
 }
 
+export interface FreshnessMetadata {
+  dataThrough: string;
+  lastRefreshed: string;
+}
+
 export interface ActivityResponse {
   period: Period;
   start: string;
   end: string;
   source: DataSource;
+  freshness: FreshnessMetadata;
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
