@@ -1,4 +1,4 @@
-import { getBigQueryClient } from "@/lib/hubble/client";
+import { getBigQueryClient, hasBigQueryCredentials } from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
 import {
   accountQuery,
@@ -16,7 +16,6 @@ import {
   sorobanFunctionQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
-import { hasBigQueryCredentials } from "@/lib/hubble/client";
 import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
 import {
   collectTreemapIds,
@@ -25,27 +24,78 @@ import {
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
 import type { ActivityResponse, Period } from "@/lib/types";
+import {
+  classifyError,
+  endTimer,
+  logError,
+  logInfo,
+  startTimer,
+} from "@/lib/log";
 
 async function runQuery<T>(
+  name: string,
   query: string,
   params: Record<string, unknown>,
+  correlationId: string,
 ): Promise<T[]> {
-  const client = getBigQueryClient();
-  if (!client) {
-    throw new Error("BigQuery client is not configured");
-  }
+  const timer = startTimer();
 
-  const [rows] = await client.query({
-    query,
-    params,
+  logInfo({
+    event: "activity.query.start",
+    correlationId,
+    queryName: name,
   });
 
-  return rows as T[];
+  const client = getBigQueryClient();
+  if (!client) {
+    const errorMsg = "BigQuery client is not configured";
+    logError({
+      event: "activity.query.error",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      errorClass: "validation",
+      errorMessage: errorMsg,
+    });
+    throw new Error(errorMsg);
+  }
+
+  try {
+    const [rows] = await client.query({
+      query,
+      params,
+    });
+
+    logInfo({
+      event: "activity.query.complete",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      rowCount: rows.length,
+    });
+
+    return rows as T[];
+  } catch (error) {
+    const errorClass = classifyError(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    logError({
+      event: "activity.query.error",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      errorClass,
+      errorMessage,
+    });
+
+    throw error;
+  }
 }
 
 async function fetchFromHubble(
   start: string,
   end: string,
+  correlationId: string,
 ): Promise<RawQueryResults> {
   const params = { start, end };
 
@@ -56,14 +106,14 @@ async function fetchFromHubble(
     sorobanFunctionRows,
     sorobanFunctionContractRows,
   ] = await Promise.all([
-    runQuery<Record<string, unknown>>(categoryQuery, params),
-    runQuery<Record<string, unknown>>(contractQuery, params),
-    runQuery<Record<string, unknown>>(accountQuery, {
+    runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
+    runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
+    runQuery<Record<string, unknown>>("account", accountQuery, {
       ...params,
       types: getAccountQueryTypes(),
-    }),
-    runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
-    runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
+    }, correlationId),
+    runQuery<Record<string, unknown>>("sorobanFunction", sorobanFunctionQuery, params, correlationId),
+    runQuery<Record<string, unknown>>("sorobanFunctionContract", sorobanFunctionContractQuery, params, correlationId),
   ]);
 
   return {
@@ -77,19 +127,25 @@ async function fetchFromHubble(
   };
 }
 
-async function fetchHomeDomains(ids: string[]) {
+async function fetchHomeDomains(ids: string[], correlationId: string) {
   if (ids.length === 0) {
     return {};
   }
 
-  const rows = await runQuery<Record<string, unknown>>(accountMetadataQuery, {
-    ids,
-  });
+  const rows = await runQuery<Record<string, unknown>>(
+    "accountMetadata",
+    accountMetadataQuery,
+    { ids },
+    correlationId,
+  );
 
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
 }
 
-export async function getActivityData(period: Period): Promise<ActivityResponse> {
+export async function getActivityData(
+  period: Period,
+  correlationId: string,
+): Promise<ActivityResponse> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
@@ -101,17 +157,60 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
+    logInfo({
+      event: "activity.cache.hit",
+      correlationId,
+      period,
+    });
     return cached;
   }
 
+  logInfo({
+    event: "activity.cache.miss",
+    correlationId,
+    period,
+  });
+
   const start = range.start.toISOString();
   const end = range.end.toISOString();
-  const raw = await fetchFromHubble(start, end);
-  const kpis = buildKpis(raw.categories, raw.contracts);
-  const labels = await resolveEntityLabels(collectTreemapIds(raw), {
-    fetchHomeDomains,
+
+  const fetchTimer = startTimer();
+  const raw = await fetchFromHubble(start, end, correlationId);
+  logInfo({
+    event: "activity.fetch.complete",
+    correlationId,
+    period,
+    durationMs: endTimer(fetchTimer),
   });
+
+  const kpiTimer = startTimer();
+  const kpis = buildKpis(raw.categories, raw.contracts);
+  logInfo({
+    event: "activity.kpi.build",
+    correlationId,
+    period,
+    durationMs: endTimer(kpiTimer),
+  });
+
+  const labelTimer = startTimer();
+  const labels = await resolveEntityLabels(collectTreemapIds(raw), {
+    fetchHomeDomains: (ids) => fetchHomeDomains(ids, correlationId),
+  });
+  logInfo({
+    event: "activity.label.resolve",
+    correlationId,
+    period,
+    durationMs: endTimer(labelTimer),
+  });
+
+  const treemapTimer = startTimer();
   const treemaps = buildAllTreemaps({ ...raw, labels });
+  logInfo({
+    event: "activity.treemap.build",
+    correlationId,
+    period,
+    durationMs: endTimer(treemapTimer),
+  });
 
   const response: ActivityResponse = {
     period,
