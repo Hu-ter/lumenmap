@@ -2,11 +2,9 @@
 
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import {
-  DashboardProvider,
-  useDashboard,
-} from "@/components/dashboard/DashboardProvider";
+import { DashboardProvider, useDashboard } from "@/components/dashboard/DashboardProvider";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
+import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
@@ -55,6 +53,8 @@ function DashboardContent() {
         </div>
         <PeriodSelector />
       </header>
+
+      <FreshnessWarning />
 
       <KpiCards />
 
