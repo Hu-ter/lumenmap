@@ -1,6 +1,8 @@
 "use client";
 
+import { format } from "date-fns";
 import Image from "next/image";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DashboardProvider,
@@ -18,12 +20,37 @@ function DataSourceNotice() {
     return null;
   }
 
+  const sourceTime = data.sourceTimestamp
+    ? new Date(data.sourceTimestamp)
+    : null;
+  const periodEnd = new Date(data.end);
+  const isBehind = sourceTime && periodEnd > sourceTime;
+
   return (
-    <p className="text-xs text-zinc-500">
-      Data source:{" "}
-      <span className="text-zinc-300">Hubble BigQuery</span>
-      {" · Hubble updates in intraday batches"}
-    </p>
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-zinc-500">
+        Data source:{" "}
+        <span className="text-zinc-300">Hubble BigQuery</span>
+        {sourceTime
+          ? ` · Latest data: ${format(sourceTime, "MMM d, yyyy HH:mm UTC")}`
+          : ""}
+      </p>
+      {!data.isPeriodComplete && (
+        <p className="flex items-center gap-1.5 text-xs text-amber-400">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {data.period === "1d"
+            ? "Today's data is still being indexed and may be incomplete."
+            : "This period is still accumulating data and may be incomplete."}
+        </p>
+      )}
+      {isBehind && (
+        <p className="flex items-center gap-1.5 text-xs text-zinc-400">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          Latest available data may be delayed relative to the period
+          end
+        </p>
+      )}
+    </div>
   );
 }
 

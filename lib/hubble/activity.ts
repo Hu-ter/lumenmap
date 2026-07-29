@@ -6,6 +6,7 @@ import {
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
   mapCategoryRows,
@@ -89,6 +90,18 @@ async function fetchHomeDomains(ids: string[]) {
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
 }
 
+async function fetchLatestDataTimestamp(): Promise<string | null> {
+  const rows = await runQuery<
+    Record<string, unknown>
+  >(latestDataTimestampQuery, {});
+
+  if (rows.length === 0 || rows[0].latest_timestamp == null) {
+    return null;
+  }
+
+  return String(rows[0].latest_timestamp);
+}
+
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
@@ -112,12 +125,17 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     fetchHomeDomains,
   });
   const treemaps = buildAllTreemaps({ ...raw, labels });
+  const sourceTimestamp = await fetchLatestDataTimestamp();
+  const now = new Date();
+  const isPeriodComplete = range.end.getTime() <= now.getTime();
 
   const response: ActivityResponse = {
     period,
     start,
     end,
     source: "hubble",
+    sourceTimestamp: sourceTimestamp ?? "",
+    isPeriodComplete,
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,

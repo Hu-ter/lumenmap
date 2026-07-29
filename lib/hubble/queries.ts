@@ -168,6 +168,11 @@ export function mapSorobanFunctionContractRows(
   }));
 }
 
+export const latestDataTimestampQuery = `
+SELECT MAX(closed_at) AS latest_timestamp
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+`;
+
 export const accountMetadataQuery = `
 SELECT
   account_id,

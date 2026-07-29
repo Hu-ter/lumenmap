@@ -81,6 +81,8 @@ export interface ActivityResponse {
   start: string;
   end: string;
   source: DataSource;
+  sourceTimestamp: string;
+  isPeriodComplete: boolean;
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
