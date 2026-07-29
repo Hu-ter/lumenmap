@@ -1,6 +1,22 @@
-export type Period = "1d" | "7d" | "30d" | "month";
+import type {
+  ActivityKpis,
+  ActivityProvenance,
+  ActivityResponse,
+  DataSource,
+  Metric,
+  Period,
+  TreemapNode,
+} from "@/lib/schemas/activity-response";
 
-export type DataSource = "hubble";
+export type {
+  ActivityKpis,
+  ActivityProvenance,
+  ActivityResponse,
+  DataSource,
+  Metric,
+  Period,
+  TreemapNode,
+};
 
 export type TreemapNodeType =
   | "root"
@@ -42,13 +58,6 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
-export interface ActivityKpis {
-  totalOps: number;
-  sorobanShare: number;
-  topCategory: string;
-  activeContracts: number;
-}
-
 export interface TreemapNodeMeta {
   type: TreemapNodeType;
   id?: string;
@@ -60,35 +69,7 @@ export interface TreemapNodeMeta {
   eventType?: string;
 }
 
-export interface TreemapNode {
-  id?: string;
-  name: string;
-  value?: number;
-  color?: string;
-  children?: TreemapNode[];
-  meta?: TreemapNodeMeta;
-}
-
-import type { TreemapViewId } from "@/lib/constants";
-
-export interface ActivityTreemaps {
-  events: TreemapNode;
-  actors: TreemapNode;
-}
-
-export interface ActivityResponse {
-  period: Period;
-  start: string;
-  end: string;
-  source: DataSource;
-  categories: CategoryRow[];
-  contracts: ContractRow[];
-  accounts: AccountRow[];
-  sorobanFunctions: SorobanFunctionRow[];
-  sorobanFunctionContracts: SorobanFunctionContractRow[];
-  kpis: ActivityKpis;
-  treemaps: ActivityTreemaps;
-}
+export type ActivityTreemaps = ActivityResponse["treemaps"];
 
 export interface SelectedNode {
   name: string;

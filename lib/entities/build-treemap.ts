@@ -325,12 +325,24 @@ export function buildKpis(
   )[0];
 
   return {
-    totalOps,
-    sorobanShare: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
+    totalOps: {
+      kind: "operations",
+      unit: "ops",
+      value: totalOps,
+    },
+    sorobanShare: {
+      kind: "share",
+      unit: "percent",
+      value: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
+    },
     topCategory: topCategoryEntry
       ? (GROUP_LABELS[topCategoryEntry[0]] ?? topCategoryEntry[0])
       : "N/A",
-    activeContracts: contracts.length,
+    activeContracts: {
+      kind: "entity_count",
+      unit: "count",
+      value: contracts.length,
+    },
   };
 }
 

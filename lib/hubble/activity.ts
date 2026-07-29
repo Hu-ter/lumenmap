@@ -97,7 +97,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v11:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -118,6 +118,12 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     start,
     end,
     source: "hubble",
+    provenance: {
+      source: "hubble",
+      methodology:
+        "Operation counts aggregated from Hubble BigQuery enriched_history_operations and hourly_soroban_fee_agg_contract for the selected period window.",
+      generatedAt: new Date().toISOString(),
+    },
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,

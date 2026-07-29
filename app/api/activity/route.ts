@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getActivityData } from "@/lib/hubble/activity";
 import { isValidPeriod } from "@/lib/periods";
+import {
+  ActivityResponseValidationError,
+  publicValidationErrorBody,
+  validateActivityResponse,
+} from "@/lib/schemas/validate-activity-response";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +16,14 @@ export async function GET(request: Request) {
 
   try {
     const data = await getActivityData(period);
-    return NextResponse.json(data);
+    const validated = validateActivityResponse(data);
+    return NextResponse.json(validated);
   } catch (error) {
+    if (error instanceof ActivityResponseValidationError) {
+      console.error(`[activity] ${error.diagnostic}`);
+      return NextResponse.json(publicValidationErrorBody(), { status: 500 });
+    }
+
     const message =
       error instanceof Error ? error.message : "Failed to fetch activity data";
 
