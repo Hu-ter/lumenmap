@@ -186,6 +186,16 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           role="img"
           aria-label="Network activity treemap"
         >
+        <style>{`
+          g[tabindex]:focus-visible { outline: none; }
+          g[tabindex]:focus-visible .focus-ring { display: block; }
+          g[tabindex]:focus-visible .tile-rect {
+            stroke: #0B0E14 !important;
+            stroke-width: 2.5 !important;
+            opacity: 1 !important;
+          }
+          .focus-ring { display: none; }
+        `}</style>
         {leaves.map((node) => {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
@@ -208,12 +218,34 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
             <g
               key={nodeId}
               transform={`translate(${node.x0},${node.y0})`}
+              tabIndex={0}
+              role="button"
+              aria-label={`${data.name} — ${formatNumber(value)} ops`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNodeClick(node);
+                }
+              }}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => handleNodeClick(node)}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
             >
               <rect
+                className="focus-ring"
+                x={-2.5}
+                y={-2.5}
+                width={width + 5}
+                height={height + 5}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                rx={8.5}
+                pointerEvents="none"
+              />
+              <rect
+                className="tile-rect"
                 width={width}
                 height={height}
                 fill={color}
