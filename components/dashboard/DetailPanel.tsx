@@ -4,7 +4,9 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StellarExpertLink } from "@/components/dashboard/StellarExpertLink";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
+import { buildStellarExpertUrl } from "@/lib/stellar-expert";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
@@ -34,6 +36,11 @@ export function DetailPanel() {
         : data?.period === "30d"
           ? "Last 30 days"
           : "This month";
+
+  const address = selectedNode.meta?.id;
+  const expertHref = address
+    ? buildStellarExpertUrl(address, selectedNode.meta?.type)
+    : null;
 
   return (
     <Card className="h-full">
@@ -79,12 +86,18 @@ export function DetailPanel() {
           </div>
         ) : null}
 
-        {selectedNode.meta?.id ? (
-          <div>
+        {address ? (
+          <div className="space-y-2">
             <p className="mb-1 text-xs text-zinc-500">Address</p>
             <p className="break-all font-mono text-xs text-zinc-300">
-              {selectedNode.meta.id}
+              {address}
             </p>
+            {expertHref ? (
+              <StellarExpertLink
+                address={address}
+                type={selectedNode.meta?.type}
+              />
+            ) : null}
           </div>
         ) : null}
 
