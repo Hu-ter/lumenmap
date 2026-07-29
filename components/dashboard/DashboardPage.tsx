@@ -6,6 +6,7 @@ import {
   DashboardProvider,
   useDashboard,
 } from "@/components/dashboard/DashboardProvider";
+import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
@@ -55,6 +56,8 @@ function DashboardContent() {
         </div>
         <PeriodSelector />
       </header>
+
+      <DashboardSearch />
 
       <KpiCards />
 

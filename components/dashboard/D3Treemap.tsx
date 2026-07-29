@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 interface D3TreemapProps {
   root: TreemapNode;
   onSelect: (node: SelectedNode) => void;
+  /**
+   * Breadcrumb path under root (excludes root) applied on mount.
+   * Remount the component (via `key`) to apply a new focus path.
+   */
+  initialPath?: TreemapNode[];
+  /** Tile identity to highlight after a search focus. */
+  highlightKey?: string | null;
 }
 
 interface LayoutNode extends HierarchyNode<TreemapNode> {
@@ -38,12 +45,20 @@ function getNodeValue(node: TreemapNode): number {
   return node.value ?? node.meta?.opCount ?? 0;
 }
 
-export function D3Treemap({ root, onSelect }: D3TreemapProps) {
+export function D3Treemap({
+  root,
+  onSelect,
+  initialPath = [],
+  highlightKey = null,
+}: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
-  const [path, setPath] = useState<TreemapNode[]>([]);
+  const [path, setPath] = useState<TreemapNode[]>(initialPath);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeHighlight, setActiveHighlight] = useState<string | null>(
+    highlightKey,
+  );
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -130,6 +145,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       const value = node.value ?? 0;
       const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
 
+      setActiveHighlight(null);
+
       onSelect({
         name: data.name,
         value,
@@ -151,6 +168,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   );
 
   const navigateTo = (index: number) => {
+    setActiveHighlight(null);
     if (index < 0) {
       setPath([]);
       return;
@@ -197,6 +215,12 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           const nodeId = `${data.id ?? data.name}-${node.x0}-${node.y0}`;
           const isHovered = hoveredId === nodeId;
           const identity = original.meta?.id ?? original.id;
+          const tileKey = identity ?? data.name;
+          const isFocused =
+            Boolean(activeHighlight) &&
+            (tileKey === activeHighlight ||
+              identity === activeHighlight ||
+              data.name === activeHighlight);
           const showLabel = width > 72 && height > 44;
           const showIdentity =
             Boolean(identity) && width > 100 && height > 72 && showLabel;
@@ -217,10 +241,12 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                 width={width}
                 height={height}
                 fill={color}
-                stroke={isHovered ? "#ffffff" : "#0B0E14"}
-                strokeWidth={isHovered ? 2 : 1.5}
+                stroke={
+                  isFocused ? "#F8FAFC" : isHovered ? "#ffffff" : "#0B0E14"
+                }
+                strokeWidth={isFocused ? 3 : isHovered ? 2 : 1.5}
                 rx={6}
-                opacity={isHovered ? 1 : 0.92}
+                opacity={isFocused ? 1 : isHovered ? 1 : 0.92}
               />
               {showLabel ? (
                 <text

@@ -1,8 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import type { TreemapViewId } from "@/lib/constants";
+import { findTreemapPath, type SearchResult } from "@/lib/search";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
 
 interface DashboardContextValue {
@@ -16,6 +23,9 @@ interface DashboardContextValue {
   error: Error | null;
   selectedNode: SelectedNode | null;
   setSelectedNode: (node: SelectedNode | null) => void;
+  /** Active search focus used to open treemap context. */
+  focusRequest: SearchResult | null;
+  selectSearchResult: (result: SearchResult) => void;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -29,20 +39,82 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
   return response.json() as Promise<ActivityResponse>;
 }
 
-export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriod] = useState<Period>("1d");
-  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+function searchResultToSelectedNode(result: SearchResult): SelectedNode {
+  return {
+    name: result.label,
+    value: result.opCount ?? 0,
+    share: 0,
+    meta: {
+      type: result.nodeType,
+      id: result.id ?? result.issuer,
+      category: result.category,
+      protocol: result.protocol,
+      opCount: result.opCount,
+    },
+  };
+}
 
-  useEffect(() => {
-    setSelectedNode(null);
-  }, [period, treemapView]);
+function selectedNodeFromSearch(
+  data: ActivityResponse | undefined,
+  result: SearchResult,
+): SelectedNode {
+  const root = data?.treemaps[result.treemapView];
+  if (root) {
+    const path = findTreemapPath(root, result);
+    if (path && path.length > 0) {
+      const matched = path[path.length - 1];
+      const value = matched.value ?? matched.meta?.opCount ?? result.opCount ?? 0;
+      return {
+        name: matched.name,
+        value,
+        share: matched.meta?.share ?? 0,
+        meta: {
+          ...matched.meta,
+          type: matched.meta?.type ?? result.nodeType,
+          id: matched.meta?.id ?? matched.id ?? result.id ?? result.issuer,
+          opCount: value,
+          childCount: matched.children?.length ?? matched.meta?.childCount,
+          protocol: matched.meta?.protocol ?? result.protocol,
+          category: matched.meta?.category ?? result.category,
+        },
+      };
+    }
+  }
+  return searchResultToSelectedNode(result);
+}
+
+export function DashboardProvider({ children }: { children: React.ReactNode }) {
+  const [period, setPeriodState] = useState<Period>("1d");
+  const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+  const [focusRequest, setFocusRequest] = useState<SearchResult | null>(null);
 
   const query = useQuery({
     queryKey: ["activity", period],
     queryFn: () => fetchActivity(period),
     staleTime: 60_000,
   });
+
+  const setPeriod = useCallback((next: Period) => {
+    setPeriodState(next);
+    setSelectedNode(null);
+    setFocusRequest(null);
+  }, []);
+
+  const setTreemapView = useCallback((view: TreemapViewId) => {
+    setTreemapViewState(view);
+    setSelectedNode(null);
+    setFocusRequest(null);
+  }, []);
+
+  const selectSearchResult = useCallback(
+    (result: SearchResult) => {
+      setTreemapViewState(result.treemapView);
+      setFocusRequest(result);
+      setSelectedNode(selectedNodeFromSearch(query.data, result));
+    },
+    [query.data],
+  );
 
   const value = useMemo(
     () => ({
@@ -56,15 +128,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       error: query.error,
       selectedNode,
       setSelectedNode,
+      focusRequest,
+      selectSearchResult,
     }),
     [
       period,
+      setPeriod,
       treemapView,
+      setTreemapView,
       query.data,
       query.isLoading,
       query.isError,
       query.error,
       selectedNode,
+      focusRequest,
+      selectSearchResult,
     ],
   );
 

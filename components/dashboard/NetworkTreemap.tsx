@@ -1,11 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { findTreemapPath } from "@/lib/search";
+import type { TreemapNode } from "@/lib/types";
 
 const CATEGORY_LEGEND = [
   { key: "soroban", label: "Soroban" },
@@ -16,6 +19,37 @@ const CATEGORY_LEGEND = [
   { key: "other", label: "Other" },
 ];
 
+function resolveFocusNavigation(
+  root: TreemapNode,
+  focusRequest: NonNullable<ReturnType<typeof useDashboard>["focusRequest"]>,
+): { initialPath: TreemapNode[]; highlightKey: string | null } {
+  const fullPath = findTreemapPath(root, focusRequest);
+  if (!fullPath || fullPath.length < 2) {
+    return { initialPath: [], highlightKey: null };
+  }
+
+  const matched = fullPath[fullPath.length - 1];
+  const parentPath = fullPath.slice(1, -1);
+  const highlightKey = matched.meta?.id ?? matched.id ?? matched.name;
+
+  // Drill into category nodes; otherwise show the matched tile at its parent level.
+  if (
+    focusRequest.type === "category" &&
+    matched.children &&
+    matched.children.length > 0
+  ) {
+    return {
+      initialPath: fullPath.slice(1),
+      highlightKey,
+    };
+  }
+
+  return {
+    initialPath: parentPath,
+    highlightKey,
+  };
+}
+
 export function NetworkTreemap() {
   const {
     data,
@@ -25,7 +59,20 @@ export function NetworkTreemap() {
     period,
     treemapView,
     setSelectedNode,
+    focusRequest,
   } = useDashboard();
+
+  const activeTreemap = data?.treemaps[treemapView];
+
+  const focusNavigation = useMemo(() => {
+    if (!activeTreemap || !focusRequest) {
+      return { initialPath: [] as TreemapNode[], highlightKey: null as string | null };
+    }
+    if (focusRequest.treemapView !== treemapView) {
+      return { initialPath: [] as TreemapNode[], highlightKey: null as string | null };
+    }
+    return resolveFocusNavigation(activeTreemap, focusRequest);
+  }, [activeTreemap, focusRequest, treemapView]);
 
   if (isLoading) {
     return (
@@ -40,7 +87,7 @@ export function NetworkTreemap() {
     );
   }
 
-  if (isError || !data) {
+  if (isError || !data || !activeTreemap) {
     return (
       <Card>
         <CardHeader>
@@ -55,7 +102,11 @@ export function NetworkTreemap() {
     );
   }
 
-  const activeTreemap = data.treemaps[treemapView];
+  const treemapKey = [
+    period,
+    treemapView,
+    focusRequest?.key ?? "none",
+  ].join(":");
 
   return (
     <Card>
@@ -64,7 +115,7 @@ export function NetworkTreemap() {
           <CardTitle>Network Treemap</CardTitle>
           <p className="text-xs text-zinc-500">
             Switch views to explore operation types or top accounts and
-            contracts.
+            contracts. Use search to jump to a known identity.
           </p>
         </div>
         <TreemapViewSelector />
@@ -84,11 +135,14 @@ export function NetworkTreemap() {
         </div>
       </CardHeader>
       <CardContent>
-        <div
-          key={`${period}-${treemapView}`}
-          className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
-        >
-          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
+        <div className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3">
+          <D3Treemap
+            key={treemapKey}
+            root={activeTreemap}
+            onSelect={setSelectedNode}
+            initialPath={focusNavigation.initialPath}
+            highlightKey={focusNavigation.highlightKey}
+          />
         </div>
       </CardContent>
     </Card>
