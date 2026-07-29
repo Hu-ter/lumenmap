@@ -25,6 +25,10 @@ export interface ContractRow {
   op_count: number;
 }
 
+export interface ActiveContractCountRow {
+  active_contract_count: number;
+}
+
 export interface AccountRow {
   account_id: string;
   type_string: string;

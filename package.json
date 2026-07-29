@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "eslint",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
+    "test": "vitest run",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
   },
   "dependencies": {
@@ -37,6 +38,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.10"
   }
 }
