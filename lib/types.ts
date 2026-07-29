@@ -42,6 +42,11 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
+export interface NativePaymentVolume {
+  amount: string;
+  unit: "XLM";
+}
+
 export interface ActivityKpis {
   totalOps: number;
   sorobanShare: number;

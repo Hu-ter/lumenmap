@@ -11,6 +11,7 @@ import type {
   ContractRow,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  NativePaymentVolume,
 } from "@/lib/types";
 
 export interface QueryParams {
@@ -115,6 +116,28 @@ WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC
 `;
 
+export const nativePaymentVolumeQuery = `
+SELECT
+  COALESCE(
+    CAST(
+      SUM(
+        CASE
+          WHEN type_string = 'payment' AND asset_type = 'native' THEN
+            IF(amount IS NULL OR amount < 0 OR IS_INF(amount) OR IS_NAN(amount), 0, amount)
+          WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send') AND asset_type = 'native' THEN
+            IF(amount IS NULL OR amount < 0 OR IS_INF(amount) OR IS_NAN(amount), 0, amount)
+          WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send') AND source_asset_type = 'native' THEN
+            IF(source_amount IS NULL OR source_amount < 0 OR IS_INF(source_amount) OR IS_NAN(source_amount), 0, source_amount)
+          ELSE 0
+        END
+      ) AS BIGNUMERIC
+    ),
+    0
+  ) AS volume_xlm
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+WHERE closed_at BETWEEN @start AND @end
+`;
+
 export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
@@ -166,6 +189,17 @@ export function mapSorobanFunctionContractRows(
     contract_id: String(row.contract_id),
     op_count: Number(row.op_count),
   }));
+}
+
+export function mapNativePaymentVolumeRow(
+  rows: Record<string, unknown>[],
+): NativePaymentVolume {
+  const first = rows[0];
+  const value = first?.volume_xlm != null ? String(first.volume_xlm) : "0";
+  return {
+    amount: value,
+    unit: "XLM",
+  };
 }
 
 export const accountMetadataQuery = `
