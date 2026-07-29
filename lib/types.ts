@@ -78,6 +78,7 @@ export interface ActivityTreemaps {
 
 export interface ActivityResponse {
   period: Period;
+  timezone: string;
   start: string;
   end: string;
   source: DataSource;

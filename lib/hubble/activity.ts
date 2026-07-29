@@ -115,6 +115,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
 
   const response: ActivityResponse = {
     period,
+    timezone: "UTC",
     start,
     end,
     source: "hubble",

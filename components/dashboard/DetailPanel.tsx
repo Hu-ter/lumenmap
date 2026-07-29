@@ -28,12 +28,12 @@ export function DetailPanel() {
 
   const periodLabel =
     data?.period === "1d"
-      ? "Today"
+      ? "Today (UTC)"
       : data?.period === "7d"
-        ? "Last 7 days"
+        ? "Last 7 days (UTC)"
         : data?.period === "30d"
-          ? "Last 30 days"
-          : "This month";
+          ? "Last 30 days (UTC)"
+          : "This month (UTC)";
 
   return (
     <Card className="h-full">
