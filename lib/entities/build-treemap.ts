@@ -1,6 +1,9 @@
 import {
   CATEGORY_COLORS,
   GROUP_LABELS,
+  TOP_ACCOUNTS_PER_TYPE,
+  TOP_CONTRACTS_PER_FUNCTION,
+  TOP_CONTRACT_LIMIT,
   TYPE_TO_GROUP,
 } from "@/lib/constants";
 import { getDisplayName, lookupEntity } from "@/lib/entities/registry";
@@ -12,6 +15,7 @@ import type {
   EntityInfo,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  TreemapCoverage,
   TreemapNode,
 } from "@/lib/types";
 
@@ -160,6 +164,51 @@ function buildContractLeavesForFunction(
   );
 }
 
+/**
+ * Build coverage metadata for a capped treemap parent node.
+ * The synthetic remainder node is excluded from the named-child calculation.
+ *
+ * @param children - The named child nodes (remainder excluded).
+ * @param parentValue - The parent node's total value.
+ * @param configuredLimit - The configured top-N limit.
+ * @param namedChildValue - Optional pre-calculated sum of child values.
+ * @returns Coverage metadata, or undefined when there are no children.
+ */
+export function buildCoverage(
+  children: TreemapNode[],
+  parentValue: number,
+  configuredLimit: number,
+  namedChildValue?: number,
+): TreemapCoverage | undefined {
+  // Only calculate when there are capped children
+  if (children.length === 0) {
+    return undefined;
+  }
+
+  const childValue =
+    namedChildValue ??
+    children.reduce((sum, child) => sum + (child.value ?? child.meta?.opCount ?? 0), 0);
+
+  // Zero-value parent: explicit non-NaN rule
+  if (parentValue === 0) {
+    return {
+      namedChildValue: 0,
+      parentValue: 0,
+      coveragePercent: 0,
+      namedEntityCount: children.length,
+      configuredLimit,
+    };
+  }
+
+  return {
+    namedChildValue: childValue,
+    parentValue,
+    coveragePercent: (childValue / parentValue) * 100,
+    namedEntityCount: children.length,
+    configuredLimit,
+  };
+}
+
 function buildSorobanFunctionLeaves(input: BuildTreemapInput): TreemapNode[] {
   const color = CATEGORY_COLORS.soroban;
 
@@ -172,6 +221,15 @@ function buildSorobanFunctionLeaves(input: BuildTreemapInput): TreemapNode[] {
         input.labels,
       );
 
+      const coverage =
+        contractChildren.length > 0
+          ? buildCoverage(
+              contractChildren,
+              row.op_count,
+              TOP_CONTRACTS_PER_FUNCTION,
+            )
+          : undefined;
+
       return {
         name: row.function_name.replaceAll("_", " "),
         value: row.op_count,
@@ -183,6 +241,7 @@ function buildSorobanFunctionLeaves(input: BuildTreemapInput): TreemapNode[] {
           opCount: row.op_count,
           eventType: row.function_name,
           childCount: contractChildren.length || undefined,
+          coverage,
         },
       };
     });
@@ -209,6 +268,15 @@ function buildTypeLeaves(
         input.labels,
       );
 
+      const coverage =
+        accountChildren.length > 0
+          ? buildCoverage(
+              accountChildren,
+              row.op_count,
+              TOP_ACCOUNTS_PER_TYPE,
+            )
+          : undefined;
+
       return {
         name: row.type_string.replaceAll("_", " "),
         value: row.op_count,
@@ -220,6 +288,7 @@ function buildTypeLeaves(
           opCount: row.op_count,
           eventType: row.type_string,
           childCount: accountChildren.length || undefined,
+          coverage,
         },
       };
     });
@@ -247,6 +316,36 @@ function buildCategoryGroupChildren(
   return buildTypeLeaves(input, group);
 }
 
+function buildGroupCoverage(
+  group: string,
+  value: number,
+  children: TreemapNode[],
+): TreemapCoverage | undefined {
+  if (children.length === 0) {
+    return undefined;
+  }
+
+  // Determine the applicable top-N limit for this group
+  let configuredLimit: number | null = null;
+  if (group === "soroban") {
+    // Soroban contracts are capped at TOP_CONTRACT_LIMIT
+    configuredLimit = TOP_CONTRACT_LIMIT;
+  } else if (
+    group === "payments" ||
+    group === "dex" ||
+    group === "trustlines"
+  ) {
+    // Accounts per type are capped at TOP_ACCOUNTS_PER_TYPE
+    configuredLimit = TOP_ACCOUNTS_PER_TYPE;
+  }
+
+  if (configuredLimit === null) {
+    return undefined;
+  }
+
+  return buildCoverage(children, value, configuredLimit);
+}
+
 function buildGroupedTreemap(
   input: BuildTreemapInput,
   getCategoryChildren: (group: string) => TreemapNode[],
@@ -261,6 +360,7 @@ function buildGroupedTreemap(
     }
 
     const categoryChildren = getCategoryChildren(group);
+    const coverage = buildGroupCoverage(group, value, categoryChildren);
 
     return [
       {
@@ -273,6 +373,7 @@ function buildGroupedTreemap(
           opCount: value,
           share: totalOps > 0 ? (value / totalOps) * 100 : 0,
           childCount: categoryChildren.length,
+          coverage,
         },
         children: categoryChildren,
       },
