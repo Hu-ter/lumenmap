@@ -12,6 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "type-check": "next typegen && tsc --noEmit",
+    "test": "echo 'No tests configured'",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
   },
