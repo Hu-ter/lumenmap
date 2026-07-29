@@ -38,7 +38,7 @@ export function KpiCards() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
         {KPI_CONFIG.map((item) => (
           <Card key={item.key}>
             <CardHeader>
@@ -54,7 +54,7 @@ export function KpiCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
       {KPI_CONFIG.map((item) => {
         const Icon = item.icon;
         const value = data.kpis[item.key];
