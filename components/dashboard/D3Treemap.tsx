@@ -44,6 +44,27 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const [size, setSize] = useState({ width: 800, height: 480 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const announcementTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const announce = useCallback((message: string) => {
+    if (announcementTimeoutRef.current) {
+      clearTimeout(announcementTimeoutRef.current);
+    }
+    setAnnouncement("");
+    announcementTimeoutRef.current = setTimeout(() => {
+      setAnnouncement(message);
+    }, 200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (announcementTimeoutRef.current) {
+        clearTimeout(announcementTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -143,20 +164,51 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
         },
       });
 
+      const childCount = original.children?.length ?? original.meta?.childCount ?? 0;
+      const childrenText = childCount > 0 ? `${childCount} children available` : "no children";
+      const selectionText = `Selected ${data.name}. Level ${path.length + 1}. Value: ${formatNumber(value)} operations (${formatPercent(share)} share of level). Available children: ${childrenText}.`;
+
       if (original.children && original.children.length > 0) {
+        const newPath = [root, ...path, original];
+        const pathString = newPath.map((n) => n.name).join(" > ");
+        announce(`${selectionText} Drilled down. New path: ${pathString}.`);
         setPath((current) => [...current, original]);
+      } else {
+        announce(selectionText);
       }
     },
-    [levelTotal, onSelect, tileLookup],
+    [levelTotal, onSelect, tileLookup, path, root, announce],
   );
 
-  const navigateTo = (index: number) => {
-    if (index < 0) {
-      setPath([]);
-      return;
-    }
-    setPath((current) => current.slice(0, index + 1));
-  };
+  const navigateTo = useCallback(
+    (index: number) => {
+      let targetNode: TreemapNode;
+      let newPath: TreemapNode[];
+      if (index < 0) {
+        targetNode = root;
+        newPath = [root];
+      } else {
+        targetNode = path[index];
+        newPath = [root, ...path.slice(0, index + 1)];
+      }
+
+      const value = getNodeValue(targetNode);
+      const level = index < 0 ? 0 : index + 1;
+      const childCount = targetNode.children?.length ?? targetNode.meta?.childCount ?? 0;
+      const pathString = newPath.map((n) => n.name).join(" > ");
+      const childrenText = childCount > 0 ? `${childCount} children available` : "no children";
+
+      const announcementText = `Navigated to ${targetNode.name} via breadcrumbs. Level ${level}. Value: ${formatNumber(value)} operations. Current path: ${pathString}. Available children: ${childrenText}.`;
+      announce(announcementText);
+
+      if (index < 0) {
+        setPath([]);
+        return;
+      }
+      setPath((current) => current.slice(0, index + 1));
+    },
+    [root, path, announce],
+  );
 
   const breadcrumbs = [root, ...path];
 
@@ -204,23 +256,37 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
           const canDrill = Boolean(original?.children?.length);
 
+          const isFocused = focusedId === nodeId;
+
           return (
             <g
               key={nodeId}
               transform={`translate(${node.x0},${node.y0})`}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
+              onFocus={() => setFocusedId(nodeId)}
+              onBlur={() => setFocusedId(null)}
               onClick={() => handleNodeClick(node)}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
+              tabIndex={0}
+              role="button"
+              aria-label={`${data.name}, Level ${path.length + 1}, ${formatNumber(value)} operations. ${canDrill ? "Has sub-items." : "Leaf node."}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNodeClick(node);
+                }
+              }}
+              className="outline-none"
             >
               <rect
                 width={width}
                 height={height}
                 fill={color}
-                stroke={isHovered ? "#ffffff" : "#0B0E14"}
-                strokeWidth={isHovered ? 2 : 1.5}
+                stroke={isHovered || isFocused ? "#ffffff" : "#0B0E14"}
+                strokeWidth={isHovered || isFocused ? 2 : 1.5}
                 rx={6}
-                opacity={isHovered ? 1 : 0.92}
+                opacity={isHovered || isFocused ? 1 : 0.92}
               />
               {showLabel ? (
                 <text
@@ -280,6 +346,25 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           );
         })}
         </svg>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: "0",
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          borderWidth: "0",
+        }}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {announcement}
       </div>
     </div>
   );
