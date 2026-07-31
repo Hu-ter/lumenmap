@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
 
@@ -34,9 +34,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
-  useEffect(() => {
+  // Reset the selection whenever the metric (period) or hierarchy view
+  // changes, using the compare-during-render pattern instead of an effect.
+  const journeyKey = `${period}-${treemapView}`;
+  const [prevJourneyKey, setPrevJourneyKey] = useState(journeyKey);
+  if (prevJourneyKey !== journeyKey) {
+    setPrevJourneyKey(journeyKey);
     setSelectedNode(null);
-  }, [period, treemapView]);
+  }
 
   const query = useQuery({
     queryKey: ["activity", period],

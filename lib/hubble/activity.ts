@@ -1,5 +1,10 @@
-import { getBigQueryClient } from "@/lib/hubble/client";
+import {
+  getBigQueryClient,
+  hasBigQueryCredentials,
+  isFixtureMode,
+} from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
+import { getFixtureActivityData } from "@/lib/fixtures/activity";
 import {
   accountQuery,
   accountMetadataQuery,
@@ -16,7 +21,6 @@ import {
   sorobanFunctionQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
-import { hasBigQueryCredentials } from "@/lib/hubble/client";
 import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
 import {
   collectTreemapIds,
@@ -90,6 +94,12 @@ async function fetchHomeDomains(ids: string[]) {
 }
 
 export async function getActivityData(period: Period): Promise<ActivityResponse> {
+  // Fixture mode returns deterministic local data so the dashboard (and
+  // the Playwright e2e suite) runs without GCP credentials or network.
+  if (isFixtureMode()) {
+    return getFixtureActivityData(period);
+  }
+
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",

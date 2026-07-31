@@ -18,11 +18,17 @@ function DataSourceNotice() {
     return null;
   }
 
+  const isFixture = data.source === "fixture";
+
   return (
     <p className="text-xs text-zinc-500">
       Data source:{" "}
-      <span className="text-zinc-300">Hubble BigQuery</span>
-      {" · Hubble updates in intraday batches"}
+      <span className="text-zinc-300">
+        {isFixture ? "Local fixture data" : "Hubble BigQuery"}
+      </span>
+      {isFixture
+        ? " · Deterministic data for local development and tests"
+        : " · Hubble updates in intraday batches"}
     </p>
   );
 }

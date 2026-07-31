@@ -169,6 +169,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
             <Button
               variant="ghost"
               size="sm"
+              data-testid="treemap-breadcrumb"
               className="h-7 px-2 text-xs text-zinc-300 hover:text-white"
               onClick={() => navigateTo(index - 1)}
             >
@@ -207,6 +208,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           return (
             <g
               key={nodeId}
+              data-testid="treemap-tile"
+              data-node-name={data.name}
               transform={`translate(${node.x0},${node.y0})`}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}

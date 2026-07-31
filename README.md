@@ -160,6 +160,7 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
 | `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON |
 | `CACHE_TTL_SECONDS` | Cache TTL in seconds. Default: 900 |
+| `LUMENMAP_DATA_SOURCE` | Set to `fixture` to serve deterministic local fixture data instead of querying BigQuery. No GCP credentials required. Used by the e2e suite. |
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
 
@@ -248,8 +249,30 @@ scripts/
 | `npm run build` | Production build |
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
+| `npm run test:e2e` | Playwright e2e suite against fixture data (builds and starts the app automatically) |
 | `npm run test:hubble` | BigQuery query smoke test |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
+
+---
+
+## End-to-end tests
+
+Browser-level regression tests live in [`e2e/`](e2e) and run with
+[Playwright](https://playwright.dev) against deterministic fixture data.
+The suite covers the primary user journey: initial dashboard load, metric
+(period) changes, treemap hierarchy views, tile selection, drill-down,
+breadcrumb navigation, and the details panel — with network access to
+anything outside localhost disabled.
+
+```bash
+npx playwright install chromium  # one-time browser install
+npm run test:e2e                 # builds and serves the app in fixture mode
+```
+
+`playwright.config.ts` starts the production server with
+`LUMENMAP_DATA_SOURCE=fixture` and blank GCP credentials, so the suite runs
+without a BigQuery service account and produces the same results on every
+run, locally and in CI (see `.github/workflows/e2e.yml`).
 
 ---
 

@@ -1,6 +1,6 @@
 export type Period = "1d" | "7d" | "30d" | "month";
 
-export type DataSource = "hubble";
+export type DataSource = "hubble" | "fixture";
 
 export type TreemapNodeType =
   | "root"
@@ -68,8 +68,6 @@ export interface TreemapNode {
   children?: TreemapNode[];
   meta?: TreemapNodeMeta;
 }
-
-import type { TreemapViewId } from "@/lib/constants";
 
 export interface ActivityTreemaps {
   events: TreemapNode;
