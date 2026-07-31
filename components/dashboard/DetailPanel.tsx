@@ -4,11 +4,28 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data } = useDashboard();
+  const { selectedNode, setSelectedNode, data, isLoading } = useDashboard();
+
+  if (isLoading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <Skeleton className="h-4 w-14" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!selectedNode) {
     return (

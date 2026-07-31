@@ -10,9 +10,14 @@ import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function DataSourceNotice() {
-  const { data } = useDashboard();
+  const { data, isLoading } = useDashboard();
+
+  if (isLoading) {
+    return <Skeleton className="h-4 w-64 max-w-full" />;
+  }
 
   if (!data) {
     return null;

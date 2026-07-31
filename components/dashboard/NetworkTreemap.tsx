@@ -27,36 +27,6 @@ export function NetworkTreemap() {
     setSelectedNode,
   } = useDashboard();
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Network Treemap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[520px] w-full rounded-xl" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Network Treemap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-[360px] items-center justify-center rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center text-sm text-red-200">
-            {error?.message ?? "Unable to load treemap data."}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const activeTreemap = data.treemaps[treemapView];
-
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4">
@@ -84,12 +54,25 @@ export function NetworkTreemap() {
         </div>
       </CardHeader>
       <CardContent>
-        <div
-          key={`${period}-${treemapView}`}
-          className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
-        >
-          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
-        </div>
+        {isLoading ? (
+          <div
+            aria-hidden="true"
+            className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
+          >
+            <Skeleton className="h-full w-full rounded-lg" />
+          </div>
+        ) : isError || !data ? (
+          <div className="flex h-[420px] sm:h-[520px] lg:h-[600px] items-center justify-center rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center text-sm text-red-200">
+            {error?.message ?? "Unable to load treemap data."}
+          </div>
+        ) : (
+          <div
+            key={`${period}-${treemapView}`}
+            className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
+          >
+            <D3Treemap root={data.treemaps[treemapView]} onSelect={setSelectedNode} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

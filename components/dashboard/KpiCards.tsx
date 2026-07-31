@@ -41,11 +41,12 @@ export function KpiCards() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {KPI_CONFIG.map((item) => (
           <Card key={item.key}>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
               <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4 rounded-full" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-32 max-w-full" />
             </CardContent>
           </Card>
         ))}
