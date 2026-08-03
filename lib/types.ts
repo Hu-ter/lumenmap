@@ -2,6 +2,8 @@ export type Period = "1d" | "7d" | "30d" | "month";
 
 export type DataSource = "hubble";
 
+export type MetricId = "ops" | "xlm_volume";
+
 export type TreemapNodeType =
   | "root"
   | "category"
@@ -18,6 +20,7 @@ export interface EntityInfo {
 export interface CategoryRow {
   type_string: string;
   op_count: number;
+  xlm_volume?: number;
 }
 
 export interface ContractRow {
@@ -29,6 +32,7 @@ export interface AccountRow {
   account_id: string;
   type_string: string;
   op_count: number;
+  xlm_volume?: number;
 }
 
 export interface SorobanFunctionRow {
@@ -56,6 +60,7 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  xlmVolume?: number;
   childCount?: number;
   eventType?: string;
 }
@@ -72,6 +77,8 @@ export interface TreemapNode {
 export interface ActivityTreemaps {
   events: TreemapNode;
   actors: TreemapNode;
+  xlm_events: TreemapNode;
+  xlm_actors: TreemapNode;
 }
 
 export interface ActivityResponse {
@@ -79,6 +86,8 @@ export interface ActivityResponse {
   start: string;
   end: string;
   source: DataSource;
+  sourceTimestamp: string;
+  isPeriodComplete: boolean;
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
@@ -91,6 +100,7 @@ export interface ActivityResponse {
 export interface ApiErrorResponse {
   code: string;
   message: string;
+  supported?: Period[];
 }
 
 export interface SelectedNode {
