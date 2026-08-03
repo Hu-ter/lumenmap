@@ -1,14 +1,15 @@
-import { describe, expect, it } from "vitest";
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 
 import { isValidPeriod } from "./periods";
 
 describe("isValidPeriod", () => {
-  it("accepts supported periods and rejects unsupported values", () => {
-    expect(isValidPeriod("1d")).toBe(true);
-    expect(isValidPeriod("7d")).toBe(true);
-    expect(isValidPeriod("30d")).toBe(true);
-    expect(isValidPeriod("month")).toBe(true);
-    expect(isValidPeriod("1y")).toBe(false);
-    expect(isValidPeriod(null)).toBe(false);
+  test("accepts supported periods and rejects unsupported values", () => {
+    assert.equal(isValidPeriod("1d"), true);
+    assert.equal(isValidPeriod("7d"), true);
+    assert.equal(isValidPeriod("30d"), true);
+    assert.equal(isValidPeriod("month"), true);
+    assert.equal(isValidPeriod("1y"), false);
+    assert.equal(isValidPeriod(null), false);
   });
 });

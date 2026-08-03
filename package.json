@@ -16,7 +16,12 @@
     "test": "tsx --test lib/search/search.test.ts",
 
     "typecheck": "tsc --noEmit",
+
     "test": "vitest run",
+
+
+    "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
+    "protect:main": "node scripts/configure-main-protection.mjs",
 
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs"
@@ -44,8 +49,12 @@
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
 
+
     "tsx": "^4.23.1",
     "typescript": "^5"
+
+
+    "tsx": "^4.23.5",
 
     "typescript": "^5",
     "vitest": "^4.1.10"

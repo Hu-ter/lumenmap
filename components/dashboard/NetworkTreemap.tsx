@@ -5,6 +5,7 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
+import { TreemapMetricSelector } from "@/components/dashboard/TreemapMetricSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { findTreemapPath } from "@/lib/search";
@@ -58,6 +59,7 @@ export function NetworkTreemap() {
     error,
     period,
     treemapView,
+    metric,
     setSelectedNode,
     focusRequest,
   } = useDashboard();
@@ -102,11 +104,17 @@ export function NetworkTreemap() {
     );
   }
 
+
   const treemapKey = [
     period,
     treemapView,
     focusRequest?.key ?? "none",
   ].join(":");
+
+  const activeTreemap = metric === "xlm_volume"
+    ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
+    : data.treemaps[treemapView];
+
 
   return (
     <Card>
@@ -119,6 +127,7 @@ export function NetworkTreemap() {
           </p>
         </div>
         <TreemapViewSelector />
+        <TreemapMetricSelector />
         <div className="flex flex-wrap gap-2">
           {CATEGORY_LEGEND.map((item) => (
             <span
@@ -135,6 +144,7 @@ export function NetworkTreemap() {
         </div>
       </CardHeader>
       <CardContent>
+
         <div className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3">
           <D3Treemap
             key={treemapKey}
@@ -143,6 +153,19 @@ export function NetworkTreemap() {
             initialPath={focusNavigation.initialPath}
             highlightKey={focusNavigation.highlightKey}
           />
+
+        <div
+          key={`${period}-${treemapView}-${metric}`}
+          className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
+        >
+          {activeTreemap.children && activeTreemap.children.length > 0 ? (
+            <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+              No data for this metric and view combination.
+            </div>
+          )}
+
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 # LumenMap
 
-**Stellar network activity dashboard.** Block explorers list transactions one by one. LumenMap shows what the network is doing as a whole: daily volume, active wallets, top dApps, and how activity splits across payments, DEX, Soroban, and more.
+**Stellar network activity dashboard.** Block explorers list transactions one by one. LumenMap shows what the network is doing as a whole: operation activity, top dApps, and how activity splits across payments, DEX, Soroban, and more.
 
 > Open source · [github.com/lumenmap](https://github.com/lumenmap) · Version: **0.1**
 
@@ -10,11 +10,11 @@
 | --- | --- |
 | How busy is the network? | Total operations for the day, week, or month |
 | What is happening on chain? | Share of payments, DEX, Soroban, trustlines, and account ops |
-| Which wallets are active? | Top accounts by volume, with known names where available |
+| Which accounts drive activity? | Top source accounts by operation count, with known names where available |
 | Which dApps are used most? | Top Soroban contracts and protocols, ranked and drillable |
 | What does this address mean? | Labels from the entity registry, Stellar Expert, and Hubble metadata |
 
-The treemap is the center of the product. Tile size is share of activity. Color is category. Click to go from broad categories down to specific wallets and contracts.
+The treemap is the center of the product. Tile size is share of operation activity. Color is category. Click to go from broad categories down to specific wallets and contracts.
 
 ## Why not just use an explorer?
 
@@ -24,16 +24,16 @@ Explorers are built to look up a single address or transaction. LumenMap is buil
 
 ## Current version
 
-Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/docs/data/analytics/hubble) on BigQuery.
+Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/docs/data/analytics/hubble) on BigQuery. Definitions, coverage rules, and limitations are in the [versioned metric methodology](docs/metric-methodology.md).
 
 ### Available now
 
 - Hierarchical treemap with D3 squarified layout, drill-down, and breadcrumbs
 - Two views: **Operation Types** and **Accounts & Contracts**
 - Period filters: 1 day, 7 days, 30 days, calendar month
-- KPI cards: total operations, Soroban share, top category, active contracts
+- KPI cards: total operations, Soroban share, top category, active contracts (top-200 observed contracts)
 - Entity labels for known wallets and contracts
-- Detail panel with share, operation count, protocol, and address
+- Detail panel with share, activity count, protocol, and address
 - Responsive dark layout
 
 ### Coming next
@@ -45,7 +45,7 @@ Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/d
 - Payment volume in XLM and USDC
 - Public API
 
-Operation count is available today. Payment volume is not.
+Operation count is available today. Transaction count, active-account count, payment volume, and TVL are not. See the [metric methodology](docs/metric-methodology.md) before comparing metrics.
 
 ---
 
@@ -91,7 +91,8 @@ Operation count is available today. Payment volume is not.
 
 ```text
 Browser
-  → GET /api/activity?period=1d|7d|30d|month
+  → GET /api/v1/activity?period=1d|7d|30d|month
+  → app/api/activity/_handler.ts (shared by /api/v1/activity and /api/activity)
   → lib/hubble/activity.ts
       → BigQuery queries
       → in-memory cache, 15 min TTL
@@ -159,7 +160,7 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | --- | --- |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
 | `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON |
-| `CACHE_TTL_SECONDS` | Cache TTL in seconds. Default: 900 |
+| `CACHE_TTL_SECONDS` | Cache TTL in seconds. Supported range: 1–86,400. Default: 900 (invalid, negative, zero, or over-limit values fall back to default) |
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
 
@@ -169,15 +170,25 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
 
 ## API
 
-### `GET /api/activity`
+### `GET /api/v1/activity`
+
+Versioned activity and treemap data. This is the stable public contract. New
+metrics and schema additions within v1 will be additive only.
 
 | Param | Values | Default |
 | --- | --- | --- |
 | `period` | `1d`, `7d`, `30d`, `month` | `1d` |
 
+#### Success response (`200`)
+
 ```json
 {
   "period": "1d",
+  "start": "2026-07-29T00:00:00.000Z",
+  "end": "2026-07-29T23:59:59.999Z",
+  "source": "hubble",
+  "sourceTimestamp": "2026-07-29T22:45:00.000Z",
+  "isPeriodComplete": false,
   "kpis": {
     "totalOps": 1234567,
     "sorobanShare": 0.42,
@@ -186,18 +197,45 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
   },
   "treemaps": {
     "events": { "name": "Network Activity", "children": [] },
-    "actors": { "name": "Accounts & Contracts", "children": [] }
-  }
+    "actors": { "name": "Accounts & Contracts", "children": [] },
+    "xlm_events": { "name": "Network Activity", "children": [] },
+    "xlm_actors": { "name": "Accounts & Contracts", "children": [] }
+  },
+  "categories": [],
+  "contracts": [],
+  "accounts": [],
+  "sorobanFunctions": [],
+  "sorobanFunctionContracts": []
 }
 ```
 
-Response also includes `categories`, `contracts`, `accounts`, `sorobanFunctions`, and `sorobanFunctionContracts`.
+Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
+
+#### Error responses
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| `400` | `{ "code": "INVALID_PERIOD", "message": "Unsupported activity period.", "supported": ["1d", "7d", "30d", "month"] }` | `period` query param is present but not one of the supported values |
+| `500` | `{ "code": "INTERNAL_ERROR", "message": "An unexpected error occurred. Please try again later." }` | Provider configuration or query failure |
+
+Internal provider error messages are never leaked; only the documented public
+messages above are returned.
+
+### `GET /api/activity` (deprecated alias)
+
+The unversioned `GET /api/activity` route is retained as a deprecated alias of
+`GET /api/v1/activity`. It accepts the same `period` parameter, returns the
+same response shape, and applies the same validation and error contract. It is
+implemented by re-exporting the versioned route handler, so behavior is
+identical.
+
+`/api/activity` will be removed in a future release. New consumers should use
+`/api/v1/activity`.
 
 ### Planned endpoints
 
 | Endpoint | Description |
 | --- | --- |
-| `GET /api/v1/activity` | Versioned activity and treemap data |
 | `GET /api/v1/timeseries` | Operations and active wallets over time |
 | `GET /api/v1/dapps` | Top contracts by protocol |
 
@@ -230,7 +268,9 @@ npm run sync:directory
 ```text
 app/
   page.tsx
-  api/activity/route.ts
+  api/activity/route.ts            (deprecated alias → _handler.ts)
+  api/activity/_handler.ts         (shared handler for both routes)
+  api/v1/activity/route.ts         (versioned route → _handler.ts)
 components/dashboard/
 lib/hubble/
 lib/entities/
@@ -257,9 +297,7 @@ scripts/
 
 ## Data notes
 
-- Hubble refreshes in intraday batches. Numbers can lag behind live chain state.
-- API responses are cached for 15 minutes by default.
-- Queries use date filters and top-N limits to keep BigQuery cost down.
+Metric definitions, current-period coverage, Hubble freshness limits, source fields, and top-N qualifications are documented in the [versioned metric methodology](docs/metric-methodology.md). In particular, Hubble refreshes in intraday batches, current periods are provisional, and API responses are cached for 15 minutes by default.
 
 ## Activity categories
 

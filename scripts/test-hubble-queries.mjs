@@ -34,7 +34,8 @@ const ACCOUNT_QUERY_TYPES = [
 ];
 
 const categoryQuery = `
-SELECT type_string, COUNT(*) AS op_count
+SELECT type_string, COUNT(*) AS op_count,
+SUM(CASE WHEN asset_type = 'native' THEN CAST(amount AS FLOAT64) ELSE 0 END) AS xlm_volume
 FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
 WHERE closed_at BETWEEN @start AND @end
 GROUP BY type_string
@@ -55,13 +56,14 @@ WITH ranked AS (
     op_source_account AS account_id,
     type_string,
     COUNT(*) AS op_count,
+    SUM(CASE WHEN asset_type = 'native' THEN CAST(amount AS FLOAT64) ELSE 0 END) AS xlm_volume,
     ROW_NUMBER() OVER (PARTITION BY type_string ORDER BY COUNT(*) DESC) AS rank
   FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
   WHERE closed_at BETWEEN @start AND @end
     AND type_string IN UNNEST(@types)
   GROUP BY account_id, type_string
 )
-SELECT account_id, type_string, op_count FROM ranked
+SELECT account_id, type_string, op_count, xlm_volume FROM ranked
 WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
 ORDER BY type_string, op_count DESC`;
 
