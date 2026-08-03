@@ -139,7 +139,7 @@ Dataset: `crypto-stellar.crypto_stellar_dbt`
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.x (use `nvm use` to activate the version in `.nvmrc`)
 - Google Cloud project with BigQuery API enabled
 - Service account with BigQuery User role
 
@@ -248,8 +248,10 @@ scripts/
 | `npm run build` | Production build |
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
+| `npm test` | Deterministic unit tests (single run, no external credentials) |
 | `npm run test:hubble` | BigQuery query smoke test |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
+| `npm run typecheck` | TypeScript type-check (uses project tsconfig, no emitted files) |
 
 ---
 

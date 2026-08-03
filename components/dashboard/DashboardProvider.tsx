@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+
 import {
   createContext,
   useCallback,
@@ -11,6 +12,11 @@ import {
 import type { TreemapViewId } from "@/lib/constants";
 import { findTreemapPath, type SearchResult } from "@/lib/search";
 import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
+
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { TreemapViewId } from "@/lib/constants";
+import type { ActivityResponse, ApiErrorResponse, Period, SelectedNode } from "@/lib/types";
+
 
 interface DashboardContextValue {
   period: Period;
@@ -33,8 +39,8 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
 async function fetchActivity(period: Period): Promise<ActivityResponse> {
   const response = await fetch(`/api/activity?period=${period}`);
   if (!response.ok) {
-    const body = (await response.json()) as { error?: string };
-    throw new Error(body.error ?? "Failed to load activity data");
+    const body = (await response.json()) as ApiErrorResponse;
+    throw new Error(body.message ?? "Failed to load activity data");
   }
   return response.json() as Promise<ActivityResponse>;
 }
@@ -87,7 +93,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriodState] = useState<Period>("1d");
   const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+
   const [focusRequest, setFocusRequest] = useState<SearchResult | null>(null);
+
+
+  const handleSetPeriod = useCallback((newPeriod: Period) => {
+    setSelectedNode(null);
+    setPeriod(newPeriod);
+  }, []);
+
+  const handleSetTreemapView = useCallback((newView: TreemapViewId) => {
+    setSelectedNode(null);
+    setTreemapView(newView);
+  }, []);
+
 
   const query = useQuery({
     queryKey: ["activity", period],
@@ -119,9 +138,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       period,
-      setPeriod,
+      setPeriod: handleSetPeriod,
       treemapView,
-      setTreemapView,
+      setTreemapView: handleSetTreemapView,
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
@@ -133,9 +152,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       period,
+
       setPeriod,
       treemapView,
       setTreemapView,
+
+      handleSetPeriod,
+      treemapView,
+      handleSetTreemapView,
+
       query.data,
       query.isLoading,
       query.isError,
