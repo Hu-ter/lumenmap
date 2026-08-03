@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { handleActivityRequest, parseActivityPeriod } from "./route";
+import { GET as legacyGET } from "./route";
+import {
+  GET as sharedGET,
+  handleActivityRequest,
+  parseActivityPeriod,
+} from "./_handler";
+import { GET as v1GET } from "../v1/activity/route";
 import type { ActivityResponse, Period } from "@/lib/types";
 
 const supportedPeriods: Period[] = ["1d", "7d", "30d", "month"];
@@ -60,7 +66,12 @@ describe("parseActivityPeriod", () => {
   });
 });
 
-describe("GET /api/activity", () => {
+describe("GET /api/activity and /api/v1/activity", () => {
+  test("legacy and v1 routes share the same handler", () => {
+    assert.equal(legacyGET, sharedGET);
+    assert.equal(v1GET, sharedGET);
+  });
+
   test("returns 200 and defaults to 1d when period is missing", async () => {
     const calls: Period[] = [];
     const response = await handleActivityRequest(
@@ -113,6 +124,45 @@ describe("GET /api/activity", () => {
         supported: supportedPeriods,
       });
       assert.equal(callCount, 0);
+    }
+  });
+
+  test("returns identical successful responses for legacy and v1 paths", async () => {
+    const fetchActivityData = async (period: Period) => mockActivityResponse(period);
+    const injectedLegacy = await handleActivityRequest(
+      new Request("http://localhost/api/activity?period=7d"),
+      fetchActivityData,
+    );
+    const injectedV1 = await handleActivityRequest(
+      new Request("http://localhost/api/v1/activity?period=7d"),
+      fetchActivityData,
+    );
+
+    assert.equal(legacyGET, v1GET);
+    assert.equal(injectedLegacy.status, 200);
+    assert.equal(injectedV1.status, 200);
+    assert.deepEqual(await injectedLegacy.json(), await injectedV1.json());
+  });
+
+  test("returns a safe provider error response", async () => {
+    const originalConsoleError = console.error;
+    console.error = () => {};
+
+    try {
+      const response = await handleActivityRequest(
+        new Request("http://localhost/api/v1/activity?period=30d"),
+        async () => {
+          throw new Error("BigQuery query failed with backend detail");
+        },
+      );
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(await response.json(), {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected error occurred. Please try again later.",
+      });
+    } finally {
+      console.error = originalConsoleError;
     }
   });
 });
