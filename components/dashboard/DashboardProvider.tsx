@@ -3,13 +3,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
-import type { ActivityResponse, ApiErrorResponse, Period, SelectedNode } from "@/lib/types";
+import type {
+  ActivityResponse,
+  ApiErrorResponse,
+  MetricId,
+  Period,
+  SelectedNode,
+} from "@/lib/types";
 
 interface DashboardContextValue {
   period: Period;
   setPeriod: (period: Period) => void;
   treemapView: TreemapViewId;
   setTreemapView: (view: TreemapViewId) => void;
+  metric: MetricId;
+  setMetric: (metric: MetricId) => void;
   data?: ActivityResponse;
   isLoading: boolean;
   isError: boolean;
@@ -32,6 +40,7 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriod] = useState<Period>("1d");
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
+  const [metric, setMetric] = useState<MetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
@@ -42,6 +51,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleSetTreemapView = useCallback((newView: TreemapViewId) => {
     setSelectedNode(null);
     setTreemapView(newView);
+  }, []);
+
+  const handleSetMetric = useCallback((newMetric: MetricId) => {
+    setSelectedNode(null);
+    setMetric(newMetric);
   }, []);
 
   const query = useQuery({
@@ -56,6 +70,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setPeriod: handleSetPeriod,
       treemapView,
       setTreemapView: handleSetTreemapView,
+      metric,
+      setMetric: handleSetMetric,
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
@@ -68,6 +84,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       handleSetPeriod,
       treemapView,
       handleSetTreemapView,
+      metric,
+      handleSetMetric,
       query.data,
       query.isLoading,
       query.isError,

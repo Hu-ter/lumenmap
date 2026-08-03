@@ -1,17 +1,48 @@
 import { NextResponse } from "next/server";
 import { getActivityData } from "@/lib/hubble/activity";
-import { isValidPeriod } from "@/lib/periods";
-import type { ApiErrorResponse } from "@/lib/types";
+import { isValidPeriod, PERIOD_OPTIONS } from "@/lib/periods";
+import type { ActivityResponse, ApiErrorResponse, Period } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+const SUPPORTED_PERIODS = PERIOD_OPTIONS.map((period) => period.value);
+
+export function parseActivityPeriod(periodParam: string | null):
+  | { ok: true; period: Period }
+  | { ok: false; body: ApiErrorResponse; status: 400 } {
+  if (periodParam === null) {
+    return { ok: true, period: "1d" };
+  }
+
+  if (!isValidPeriod(periodParam)) {
+    return {
+      ok: false,
+      body: {
+        code: "INVALID_PERIOD",
+        message: "Unsupported activity period.",
+        supported: SUPPORTED_PERIODS,
+      },
+      status: 400,
+    };
+  }
+
+  return { ok: true, period: periodParam };
+}
+
+export async function handleActivityRequest(
+  request: Request,
+  fetchActivityData: (period: Period) => Promise<ActivityResponse> = getActivityData,
+) {
   const { searchParams } = new URL(request.url);
   const periodParam = searchParams.get("period");
-  const period = isValidPeriod(periodParam) ? periodParam : "1d";
+  const parsed = parseActivityPeriod(periodParam);
+
+  if (!parsed.ok) {
+    return NextResponse.json(parsed.body, { status: parsed.status });
+  }
 
   try {
-    const data = await getActivityData(period);
+    const data = await fetchActivityData(parsed.period);
     return NextResponse.json(data);
   } catch (error) {
     const message =
@@ -25,4 +56,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json(body, { status: 500 });
   }
+}
+
+export async function GET(request: Request) {
+  return handleActivityRequest(request);
 }
