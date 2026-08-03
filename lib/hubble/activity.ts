@@ -7,6 +7,7 @@ import {
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
   mapActiveSourceAccountsRows,
@@ -26,7 +27,8 @@ import {
   resolveEntityLabels,
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
-import type { ActivityResponse, Period } from "@/lib/types";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
+import type { ActivityDataset, Period } from "@/lib/types";
 
 async function runQuery<T>(
   query: string,
@@ -94,7 +96,19 @@ async function fetchHomeDomains(ids: string[]) {
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
 }
 
-export async function getActivityData(period: Period): Promise<ActivityResponse> {
+async function fetchLatestDataTimestamp(): Promise<string | null> {
+  const rows = await runQuery<
+    Record<string, unknown>
+  >(latestDataTimestampQuery, {});
+
+  if (rows.length === 0 || rows[0].latest_timestamp == null) {
+    return null;
+  }
+
+  return String(rows[0].latest_timestamp);
+}
+
+export async function getActivityData(period: Period): Promise<ActivityDataset> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
@@ -102,9 +116,9 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v12:${period}:${range.start.toISOString()}`;
 
-  const cached = getCached<ActivityResponse>(cacheKey);
+  const cached = getCached<ActivityDataset>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -117,12 +131,17 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     fetchHomeDomains,
   });
   const treemaps = buildAllTreemaps({ ...raw, labels });
+  const sourceTimestamp = await fetchLatestDataTimestamp();
+  const now = new Date();
+  const isPeriodComplete = range.end.getTime() <= now.getTime();
 
-  const response: ActivityResponse = {
+  const response: ActivityDataset = {
     period,
     start,
     end,
     source: "hubble",
+    sourceTimestamp: sourceTimestamp ?? "",
+    isPeriodComplete,
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,
@@ -130,6 +149,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis,
     treemaps,
+    metricProvenance: buildActivityMetricProvenance(),
   };
 
   setCache(cacheKey, response);
