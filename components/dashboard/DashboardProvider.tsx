@@ -53,9 +53,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       period,
-      setPeriod,
+      setPeriod: handleSetPeriod,
       treemapView,
-      setTreemapView,
+      setTreemapView: handleSetTreemapView,
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
@@ -65,7 +65,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       period,
+      handleSetPeriod,
       treemapView,
+      handleSetTreemapView,
       query.data,
       query.isLoading,
       query.isError,
