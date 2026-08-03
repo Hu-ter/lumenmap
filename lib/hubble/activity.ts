@@ -25,6 +25,7 @@ import {
   resolveEntityLabels,
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
 import type { ActivityResponse, Period } from "@/lib/types";
 
 async function runQuery<T>(
@@ -110,7 +111,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v11:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityResponse>(cacheKey);
   if (cached) {
@@ -143,6 +144,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis,
     treemaps,
+    metricProvenance: buildActivityMetricProvenance(),
   };
 
   setCache(cacheKey, response);
