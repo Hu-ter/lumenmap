@@ -6,7 +6,7 @@ import type { TreemapViewId } from "@/lib/constants";
 import type {
   ActivityResponse,
   ApiErrorResponse,
-  MetricId,
+  DashboardMetricId,
   Period,
   SelectedNode,
 } from "@/lib/types";
@@ -16,8 +16,8 @@ interface DashboardContextValue {
   setPeriod: (period: Period) => void;
   treemapView: TreemapViewId;
   setTreemapView: (view: TreemapViewId) => void;
-  metric: MetricId;
-  setMetric: (metric: MetricId) => void;
+  metric: DashboardMetricId;
+  setMetric: (metric: DashboardMetricId) => void;
   data?: ActivityResponse;
   isLoading: boolean;
   isError: boolean;
@@ -40,7 +40,7 @@ async function fetchActivity(period: Period): Promise<ActivityResponse> {
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriod] = useState<Period>("1d");
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-  const [metric, setMetric] = useState<MetricId>("ops");
+  const [metric, setMetric] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
@@ -53,7 +53,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setTreemapView(newView);
   }, []);
 
-  const handleSetMetric = useCallback((newMetric: MetricId) => {
+  const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
     setSelectedNode(null);
     setMetric(newMetric);
   }, []);
