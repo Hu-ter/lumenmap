@@ -227,6 +227,76 @@ metrics and schema additions within v1 will be additive only.
       }
     }
   },
+  "metricProvenance": {
+    "operation_count": {
+      "metric": "operation_count",
+      "methodology": {
+        "id": "operations",
+        "version": "1.0.0",
+        "href": "docs/metric-methodology.md#operations"
+      },
+      "source": {
+        "provider": "hubble",
+        "dataset": "crypto-stellar.crypto_stellar_dbt",
+        "tables": [
+          "enriched_history_operations",
+          "enriched_history_operations_soroban",
+          "hourly_soroban_fee_agg_contract"
+        ]
+      },
+      "aggregation": {
+        "kind": "count",
+        "function": "COUNT(*)",
+        "granularity": "selected_period",
+        "dimensions": ["type_string"]
+      },
+      "coverage": {
+        "network": "stellar_mainnet",
+        "constraints": [
+          {
+            "kind": "partial_period",
+            "completenessField": "isPeriodComplete"
+          },
+          {
+            "kind": "top_n",
+            "appliesTo": "account_children",
+            "limit": 70,
+            "partitionBy": "type_string"
+          }
+        ]
+      }
+    },
+    "asset_volume": {
+      "metric": "asset_volume",
+      "methodology": {
+        "id": "payment-volume",
+        "version": "1.0.0",
+        "href": "docs/metric-methodology.md#payment-volume"
+      },
+      "source": {
+        "provider": "hubble",
+        "dataset": "crypto-stellar.crypto_stellar_dbt",
+        "tables": ["enriched_history_operations"]
+      },
+      "aggregation": {
+        "kind": "sum",
+        "field": "amount",
+        "granularity": "selected_period",
+        "dimensions": ["type_string", "asset_identity"]
+      },
+      "coverage": {
+        "network": "stellar_mainnet",
+        "constraints": [
+          {
+            "kind": "filter",
+            "field": "asset_type",
+            "operator": "equals",
+            "value": "native"
+          }
+        ]
+      }
+    }
+  },
   "categories": [],
   "contracts": [],
   "accounts": [],
@@ -245,6 +315,12 @@ as counts through the public TypeScript contract.
 | `transaction_count` | Transaction count | `number` | Contract only |
 | `asset_volume` | Explicit native or issued asset | decimal `string` | XLM implemented |
 | `tvl` | Explicit valuation asset | decimal `string` | Contract only |
+
+Use a treemap's `metric` as the key into `metricProvenance`. Coverage
+constraints are discriminated by `kind`; the serialized response can represent
+inclusive time bounds, partial periods, source lag, filters, and top-N limits
+without requiring consumers to parse prose. The example abbreviates repeated
+coverage constraints; the response includes every applicable constraint.
 
 Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
 

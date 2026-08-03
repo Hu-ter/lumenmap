@@ -46,6 +46,107 @@ type MetricVariant<M extends MetricId> = Extract<MetricContract, { metric: M }>;
 export type MetricValue<M extends MetricId> = MetricVariant<M>["value"];
 export type MetricUnit<M extends MetricId> = MetricVariant<M>["unit"];
 
+export type MetricMethodology = {
+  operation_count: {
+    id: "operations";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#operations";
+  };
+  transaction_count: {
+    id: "transactions";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#transactions";
+  };
+  asset_volume: {
+    id: "payment-volume";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#payment-volume";
+  };
+  tvl: {
+    id: "total-value-locked";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#total-value-locked-tvl";
+  };
+};
+
+export type MetricAggregation = {
+  operation_count: {
+    kind: "count";
+    function: "COUNT(*)";
+    granularity: "selected_period";
+    dimensions: ["type_string"];
+  };
+  transaction_count: {
+    kind: "count_distinct";
+    field: "transaction_hash";
+    granularity: "selected_period";
+    dimensions: [];
+  };
+  asset_volume: {
+    kind: "sum";
+    field: "amount";
+    granularity: "selected_period";
+    dimensions: ["type_string", "asset_identity"];
+  };
+  tvl: {
+    kind: "snapshot_sum";
+    granularity: "point_in_time";
+    dimensions: ["protocol", "asset_identity"];
+  };
+};
+
+export type CoverageConstraint =
+  | {
+      kind: "time_bounds";
+      semantics: "inclusive";
+      startField: "start";
+      endField: "end";
+    }
+  | {
+      kind: "partial_period";
+      completenessField: "isPeriodComplete";
+    }
+  | {
+      kind: "source_lag";
+      watermarkField: "sourceTimestamp";
+    }
+  | {
+      kind: "top_n";
+      appliesTo:
+        | "account_children"
+        | "contract_children"
+        | "soroban_function_children"
+        | "contracts_per_function";
+      limit: number;
+      partitionBy?: "type_string" | "function_name";
+    }
+  | {
+      kind: "filter";
+      field: "asset_type";
+      operator: "equals";
+      value: "native";
+    };
+
+export type MetricProvenance<M extends MetricId> = {
+  metric: M;
+  methodology: MetricMethodology[M];
+  source: {
+    provider: "hubble";
+    dataset: "crypto-stellar.crypto_stellar_dbt";
+    tables: string[];
+  };
+  aggregation: MetricAggregation[M];
+  coverage: {
+    network: "stellar_mainnet";
+    constraints: CoverageConstraint[];
+  };
+};
+
+export interface ActivityMetricProvenance {
+  operation_count: MetricProvenance<"operation_count">;
+  asset_volume: MetricProvenance<"asset_volume">;
+}
+
 export const OPERATION_COUNT_UNIT = {
   kind: "count",
   subject: "operation",
@@ -152,6 +253,7 @@ export interface ActivityResponse {
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  metricProvenance: ActivityMetricProvenance;
 }
 
 export interface ApiErrorResponse {
