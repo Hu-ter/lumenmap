@@ -16,7 +16,7 @@
     "test:e2e:headed": "playwright test --headed",
 
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test lib/**/*.test.ts",
+    "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
     "protect:main": "node scripts/configure-main-protection.mjs",
 
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
