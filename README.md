@@ -159,7 +159,7 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | --- | --- |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
 | `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON |
-| `CACHE_TTL_SECONDS` | Cache TTL in seconds. Default: 900 |
+| `CACHE_TTL_SECONDS` | Cache TTL in seconds. Supported range: 1–86,400. Default: 900 (invalid, negative, zero, or over-limit values fall back to default) |
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
 
