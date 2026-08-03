@@ -32,10 +32,32 @@ function mockActivityResponse(period: Period): ActivityResponse {
       activeContracts: 0,
     },
     treemaps: {
-      events: { name: "Events" },
-      actors: { name: "Actors" },
-      xlm_events: { name: "XLM Events" },
-      xlm_actors: { name: "XLM Actors" },
+      events: {
+        name: "Events",
+        metric: "operation_count",
+        unit: { kind: "count", subject: "operation" },
+      },
+      actors: {
+        name: "Actors",
+        metric: "operation_count",
+        unit: { kind: "count", subject: "operation" },
+      },
+      xlm_events: {
+        name: "XLM Events",
+        metric: "asset_volume",
+        unit: {
+          kind: "asset",
+          asset: { type: "native", code: "XLM" },
+        },
+      },
+      xlm_actors: {
+        name: "XLM Actors",
+        metric: "asset_volume",
+        unit: {
+          kind: "asset",
+          asset: { type: "native", code: "XLM" },
+        },
+      },
     },
   };
 }

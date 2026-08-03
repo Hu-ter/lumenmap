@@ -196,10 +196,36 @@ metrics and schema additions within v1 will be additive only.
     "activeContracts": 89
   },
   "treemaps": {
-    "events": { "name": "Network Activity", "children": [] },
-    "actors": { "name": "Accounts & Contracts", "children": [] },
-    "xlm_events": { "name": "Network Activity", "children": [] },
-    "xlm_actors": { "name": "Accounts & Contracts", "children": [] }
+    "events": {
+      "name": "Network Activity",
+      "children": [],
+      "metric": "operation_count",
+      "unit": { "kind": "count", "subject": "operation" }
+    },
+    "actors": {
+      "name": "Accounts & Contracts",
+      "children": [],
+      "metric": "operation_count",
+      "unit": { "kind": "count", "subject": "operation" }
+    },
+    "xlm_events": {
+      "name": "Network Activity",
+      "children": [],
+      "metric": "asset_volume",
+      "unit": {
+        "kind": "asset",
+        "asset": { "type": "native", "code": "XLM" }
+      }
+    },
+    "xlm_actors": {
+      "name": "Accounts & Contracts",
+      "children": [],
+      "metric": "asset_volume",
+      "unit": {
+        "kind": "asset",
+        "asset": { "type": "native", "code": "XLM" }
+      }
+    }
   },
   "categories": [],
   "contracts": [],
@@ -208,6 +234,17 @@ metrics and schema additions within v1 will be additive only.
   "sorobanFunctionContracts": []
 }
 ```
+
+Each treemap is self-describing. Count metrics use numeric node values, while
+asset-denominated metrics use decimal strings so their values cannot be treated
+as counts through the public TypeScript contract.
+
+| Metric identifier | Unit | Node value | Availability |
+| --- | --- | --- | --- |
+| `operation_count` | Operation count | `number` | Implemented |
+| `transaction_count` | Transaction count | `number` | Contract only |
+| `asset_volume` | Explicit native or issued asset | decimal `string` | XLM implemented |
+| `tvl` | Explicit valuation asset | decimal `string` | Contract only |
 
 Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
 

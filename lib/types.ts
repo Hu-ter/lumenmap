@@ -2,7 +2,59 @@ export type Period = "1d" | "7d" | "30d" | "month";
 
 export type DataSource = "hubble";
 
-export type MetricId = "ops" | "xlm_volume";
+/** Stable identifiers used by the public treemap contract. */
+export type MetricId =
+  | "operation_count"
+  | "transaction_count"
+  | "asset_volume"
+  | "tvl";
+
+/** Internal selector values for the two metrics currently backed by queries. */
+export type DashboardMetricId = "ops" | "xlm_volume";
+
+export type CountUnit =
+  | { kind: "count"; subject: "operation" }
+  | { kind: "count"; subject: "transaction" };
+
+export type AssetIdentity =
+  | { type: "native"; code: "XLM" }
+  | { type: "issued"; code: string; issuer: string };
+
+export type AssetUnit = { kind: "asset"; asset: AssetIdentity };
+
+/**
+ * A discriminated metric contract keeps identifiers, serialized values, and
+ * units coupled. Asset amounts are strings so consumers cannot accidentally
+ * treat them as count values.
+ */
+export type MetricContract =
+  | {
+      metric: "operation_count";
+      value: number;
+      unit: { kind: "count"; subject: "operation" };
+    }
+  | {
+      metric: "transaction_count";
+      value: number;
+      unit: { kind: "count"; subject: "transaction" };
+    }
+  | { metric: "asset_volume"; value: string; unit: AssetUnit }
+  | { metric: "tvl"; value: string; unit: AssetUnit };
+
+type MetricVariant<M extends MetricId> = Extract<MetricContract, { metric: M }>;
+
+export type MetricValue<M extends MetricId> = MetricVariant<M>["value"];
+export type MetricUnit<M extends MetricId> = MetricVariant<M>["unit"];
+
+export const OPERATION_COUNT_UNIT = {
+  kind: "count",
+  subject: "operation",
+} as const satisfies MetricUnit<"operation_count">;
+
+export const XLM_ASSET_UNIT = {
+  kind: "asset",
+  asset: { type: "native", code: "XLM" },
+} as const satisfies MetricUnit<"asset_volume">;
 
 export type TreemapNodeType =
   | "root"
@@ -65,20 +117,25 @@ export interface TreemapNodeMeta {
   eventType?: string;
 }
 
-export interface TreemapNode {
+export interface TreemapNode<TValue extends number | string = number> {
   id?: string;
   name: string;
-  value?: number;
+  value?: TValue;
   color?: string;
-  children?: TreemapNode[];
+  children?: TreemapNode<TValue>[];
   meta?: TreemapNodeMeta;
 }
 
+export type TreemapPayload<M extends MetricId> = TreemapNode<MetricValue<M>> & {
+  metric: M;
+  unit: MetricUnit<M>;
+};
+
 export interface ActivityTreemaps {
-  events: TreemapNode;
-  actors: TreemapNode;
-  xlm_events: TreemapNode;
-  xlm_actors: TreemapNode;
+  events: TreemapPayload<"operation_count">;
+  actors: TreemapPayload<"operation_count">;
+  xlm_events: TreemapPayload<"asset_volume">;
+  xlm_actors: TreemapPayload<"asset_volume">;
 }
 
 export interface ActivityResponse {

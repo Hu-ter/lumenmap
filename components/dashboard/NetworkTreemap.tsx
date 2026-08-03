@@ -7,6 +7,7 @@ import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector"
 import { TreemapMetricSelector } from "@/components/dashboard/TreemapMetricSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { TreemapNode } from "@/lib/types";
 
 const CATEGORY_LEGEND = [
   { key: "soroban", label: "Soroban" },
@@ -16,6 +17,17 @@ const CATEGORY_LEGEND = [
   { key: "account", label: "Account Ops" },
   { key: "other", label: "Other" },
 ];
+
+function toChartNode(node: TreemapNode<number | string>): TreemapNode {
+  const { value, children, ...rest } = node;
+  return {
+    ...rest,
+    ...(value !== undefined ? { value: Number(value) } : {}),
+    ...(children
+      ? { children: children.map(toChartNode) }
+      : {}),
+  };
+}
 
 export function NetworkTreemap() {
   const {
@@ -57,9 +69,10 @@ export function NetworkTreemap() {
     );
   }
 
-  const activeTreemap = metric === "xlm_volume"
+  const activePayload = metric === "xlm_volume"
     ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
     : data.treemaps[treemapView];
+  const activeTreemap = toChartNode(activePayload);
 
   return (
     <Card>
