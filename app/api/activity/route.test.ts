@@ -9,6 +9,7 @@ import {
 } from "./_handler";
 import { GET as v1GET } from "../v1/activity/route";
 import type { ActivityResponse, Period } from "@/lib/types";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
 
 const supportedPeriods: Period[] = ["1d", "7d", "30d", "month"];
 
@@ -59,6 +60,7 @@ function mockActivityResponse(period: Period): ActivityResponse {
         },
       },
     },
+    metricProvenance: buildActivityMetricProvenance(),
   };
 }
 
@@ -106,7 +108,12 @@ describe("GET /api/activity and /api/v1/activity", () => {
 
     assert.equal(response.status, 200);
     assert.deepEqual(calls, ["1d"]);
-    assert.equal((await response.json()).period, "1d");
+    const body = (await response.json()) as ActivityResponse;
+    assert.equal(body.period, "1d");
+    assert.equal(
+      body.metricProvenance[body.treemaps.events.metric].methodology.id,
+      "operations",
+    );
   });
 
   test("returns 200 for each supported period", async () => {
