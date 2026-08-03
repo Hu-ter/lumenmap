@@ -35,25 +35,28 @@ function mockActivityDataset(period: Period): ActivityDataset {
     sorobanFunctions: [],
     sorobanFunctionContracts: [],
     kpis: {
-      totalOps: 0,
-      sorobanShare: 0,
+      totalOps: { kind: "operations", unit: "ops", value: 0 },
+      sorobanShare: { kind: "share", unit: "percent", value: 0 },
       topCategory: "none",
-      activeContracts: 0,
+      activeContracts: { kind: "entity_count", unit: "count", value: 0 },
     },
     treemaps: {
       events: {
         name: "Events",
+        value: 0,
         metric: "operation_count",
         unit: { kind: "count", subject: "operation" },
       },
       actors: {
         name: "Actors",
+        value: 0,
         metric: "operation_count",
         unit: { kind: "count", subject: "operation" },
       },
       xlm_events: {
         name: "XLM Events",
         metric: "asset_volume",
+        value: "0",
         unit: {
           kind: "asset",
           asset: { type: "native", code: "XLM" },
@@ -62,6 +65,7 @@ function mockActivityDataset(period: Period): ActivityDataset {
       xlm_actors: {
         name: "XLM Actors",
         metric: "asset_volume",
+        value: "0",
         unit: {
           kind: "asset",
           asset: { type: "native", code: "XLM" },
@@ -263,6 +267,28 @@ describe("GET /api/activity and /api/v1/activity", () => {
       assert.deepEqual(await response.json(), {
         code: "INTERNAL_ERROR",
         message: "An unexpected error occurred. Please try again later.",
+      });
+    } finally {
+      console.error = originalConsoleError;
+    }
+  });
+
+  test("returns a safe schema validation error response", async () => {
+    const originalConsoleError = console.error;
+    console.error = () => {};
+
+    try {
+      const invalidDataset = mockActivityDataset("1d");
+      invalidDataset.sourceTimestamp = "not-a-timestamp";
+
+      const response = await handleActivityRequest(
+        new Request("http://localhost/api/v1/activity?period=1d"),
+        async () => invalidDataset,
+      );
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(await response.json(), {
+        error: "Activity response failed validation",
       });
     } finally {
       console.error = originalConsoleError;

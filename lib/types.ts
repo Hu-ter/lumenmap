@@ -200,10 +200,22 @@ export interface SorobanFunctionContractRow {
 }
 
 export interface ActivityKpis {
-  totalOps: number;
-  sorobanShare: number;
+  totalOps: {
+    kind: "operations";
+    unit: "ops";
+    value: number;
+  };
+  sorobanShare: {
+    kind: "share";
+    unit: "percent";
+    value: number;
+  };
   topCategory: string;
-  activeContracts: number;
+  activeContracts: {
+    kind: "entity_count";
+    unit: "count";
+    value: number;
+  };
 }
 
 export interface TreemapNodeMeta {
