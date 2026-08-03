@@ -88,6 +88,11 @@ export interface ActivityResponse {
   treemaps: ActivityTreemaps;
 }
 
+export interface ApiErrorResponse {
+  code: string;
+  message: string;
+}
+
 export interface SelectedNode {
   name: string;
   value: number;

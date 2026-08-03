@@ -139,7 +139,7 @@ Dataset: `crypto-stellar.crypto_stellar_dbt`
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.x (use `nvm use` to activate the version in `.nvmrc`)
 - Google Cloud project with BigQuery API enabled
 - Service account with BigQuery User role
 
@@ -159,8 +159,12 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | --- | --- |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
 | `GCP_SERVICE_ACCOUNT_KEY` | Base64-encoded service account JSON |
+
 | `CACHE_TTL_SECONDS` | Cache TTL in seconds. Default: 900 |
 | `LUMENMAP_DATA_SOURCE` | Set to `fixture` to serve deterministic local fixture data instead of querying BigQuery. No GCP credentials required. Used by the e2e suite. |
+
+| `CACHE_TTL_SECONDS` | Cache TTL in seconds. Supported range: 1–86,400. Default: 900 (invalid, negative, zero, or over-limit values fall back to default) |
+
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
 
@@ -249,9 +253,14 @@ scripts/
 | `npm run build` | Production build |
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
+
 | `npm run test:e2e` | Playwright e2e suite against fixture data (builds and starts the app automatically) |
+
+| `npm test` | Deterministic unit tests (single run, no external credentials) |
+
 | `npm run test:hubble` | BigQuery query smoke test |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
+| `npm run typecheck` | TypeScript type-check (uses project tsconfig, no emitted files) |
 
 ---
 
