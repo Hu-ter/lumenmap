@@ -139,7 +139,7 @@ Dataset: `crypto-stellar.crypto_stellar_dbt`
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 20.x (use `nvm use` to activate the version in `.nvmrc`)
 - Google Cloud project with BigQuery API enabled
 - Service account with BigQuery User role
 
