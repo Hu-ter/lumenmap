@@ -1,6 +1,6 @@
 # LumenMap
 
-**Stellar network activity dashboard.** Block explorers list transactions one by one. LumenMap shows what the network is doing as a whole: daily volume, active wallets, top dApps, and how activity splits across payments, DEX, Soroban, and more.
+**Stellar network activity dashboard.** Block explorers list transactions one by one. LumenMap shows what the network is doing as a whole: operation activity, top dApps, and how activity splits across payments, DEX, Soroban, and more.
 
 > Open source · [github.com/lumenmap](https://github.com/lumenmap) · Version: **0.1**
 
@@ -10,11 +10,11 @@
 | --- | --- |
 | How busy is the network? | Total operations for the day, week, or month |
 | What is happening on chain? | Share of payments, DEX, Soroban, trustlines, and account ops |
-| Which wallets are active? | Top accounts by volume, with known names where available |
+| Which accounts drive activity? | Top source accounts by operation count, with known names where available |
 | Which dApps are used most? | Top Soroban contracts and protocols, ranked and drillable |
 | What does this address mean? | Labels from the entity registry, Stellar Expert, and Hubble metadata |
 
-The treemap is the center of the product. Tile size is share of activity. Color is category. Click to go from broad categories down to specific wallets and contracts.
+The treemap is the center of the product. Tile size is share of operation activity. Color is category. Click to go from broad categories down to specific wallets and contracts.
 
 ## Why not just use an explorer?
 
@@ -24,16 +24,16 @@ Explorers are built to look up a single address or transaction. LumenMap is buil
 
 ## Current version
 
-Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/docs/data/analytics/hubble) on BigQuery.
+Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/docs/data/analytics/hubble) on BigQuery. Definitions, coverage rules, and limitations are in the [versioned metric methodology](docs/metric-methodology.md).
 
 ### Available now
 
 - Hierarchical treemap with D3 squarified layout, drill-down, and breadcrumbs
 - Two views: **Operation Types** and **Accounts & Contracts**
 - Period filters: 1 day, 7 days, 30 days, calendar month
-- KPI cards: total operations, Soroban share, top category, active contracts
+- KPI cards: total operations, Soroban share, top category, active contracts (top-200 observed contracts)
 - Entity labels for known wallets and contracts
-- Detail panel with share, operation count, protocol, and address
+- Detail panel with share, activity count, protocol, and address
 - Responsive dark layout
 
 ### Coming next
@@ -45,7 +45,7 @@ Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/d
 - Payment volume in XLM and USDC
 - Public API
 
-Operation count is available today. Payment volume is not.
+Operation count is available today. Transaction count, active-account count, payment volume, and TVL are not. See the [metric methodology](docs/metric-methodology.md) before comparing metrics.
 
 ---
 
@@ -257,9 +257,7 @@ scripts/
 
 ## Data notes
 
-- Hubble refreshes in intraday batches. Numbers can lag behind live chain state.
-- API responses are cached for 15 minutes by default.
-- Queries use date filters and top-N limits to keep BigQuery cost down.
+Metric definitions, current-period coverage, Hubble freshness limits, source fields, and top-N qualifications are documented in the [versioned metric methodology](docs/metric-methodology.md). In particular, Hubble refreshes in intraday batches, current periods are provisional, and API responses are cached for 15 minutes by default.
 
 ## Activity categories
 
