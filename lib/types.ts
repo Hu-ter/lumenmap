@@ -69,8 +69,6 @@ export interface TreemapNode {
   meta?: TreemapNodeMeta;
 }
 
-import type { TreemapViewId } from "@/lib/constants";
-
 export interface ActivityTreemaps {
   events: TreemapNode;
   actors: TreemapNode;
@@ -88,6 +86,11 @@ export interface ActivityResponse {
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+}
+
+export interface ApiErrorResponse {
+  code: string;
+  message: string;
 }
 
 export interface SelectedNode {
