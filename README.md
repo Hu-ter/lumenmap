@@ -172,8 +172,9 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
 
 ### `GET /api/v1/activity`
 
-Versioned activity and treemap data. This is the stable public contract. New
-metrics and schema additions within v1 will be additive only.
+Compact visualization-ready activity data used by the dashboard. This response
+contains KPI cards, treemap drill-down/detail data, freshness, and metric
+provenance without duplicating entities as raw research rows.
 
 | Param | Values | Default |
 | --- | --- | --- |
@@ -296,12 +297,7 @@ metrics and schema additions within v1 will be additive only.
         ]
       }
     }
-  },
-  "categories": [],
-  "contracts": [],
-  "accounts": [],
-  "sorobanFunctions": [],
-  "sorobanFunctionContracts": []
+  }
 }
 ```
 
@@ -324,7 +320,38 @@ coverage constraints; the response includes every applicable constraint.
 
 Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
 
-#### Error responses
+### `GET /api/v1/activity/raw`
+
+Explicit raw-research surface for consumers that need the rows used to build
+the compact visualization response. It accepts the same `period` parameter and
+returns freshness metadata plus the five raw collections under `rows`:
+
+```json
+{
+  "period": "1d",
+  "start": "2026-07-29T00:00:00.000Z",
+  "end": "2026-07-29T23:59:59.999Z",
+  "source": "hubble",
+  "sourceTimestamp": "2026-07-29T22:45:00.000Z",
+  "isPeriodComplete": false,
+  "rows": {
+    "categories": [],
+    "contracts": [],
+    "accounts": [],
+    "sorobanFunctions": [],
+    "sorobanFunctionContracts": []
+  }
+}
+```
+
+This endpoint intentionally omits `kpis`, `treemaps`, and `metricProvenance`.
+Use `/api/v1/activity` for dashboard and visualization consumers so entity data
+is not transferred twice.
+
+### Shared error responses
+
+Both versioned activity surfaces use the same validation and safe provider
+error contract.
 
 | Status | Body | Condition |
 | --- | --- | --- |
