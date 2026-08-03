@@ -5,8 +5,10 @@ import { getMetricContract } from "@/lib/metrics";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
 import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector";
+import { TreemapMetricSelector } from "@/components/dashboard/TreemapMetricSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { TreemapNode } from "@/lib/types";
 
 const CATEGORY_LEGEND = [
   { key: "soroban", label: "Soroban" },
@@ -17,6 +19,17 @@ const CATEGORY_LEGEND = [
   { key: "other", label: "Other" },
 ];
 
+function toChartNode(node: TreemapNode<number | string>): TreemapNode {
+  const { value, children, ...rest } = node;
+  return {
+    ...rest,
+    ...(value !== undefined ? { value: Number(value) } : {}),
+    ...(children
+      ? { children: children.map(toChartNode) }
+      : {}),
+  };
+}
+
 export function NetworkTreemap() {
   const {
     data,
@@ -25,7 +38,7 @@ export function NetworkTreemap() {
     error,
     period,
     treemapView,
-    metricId,
+    metric,
     setSelectedNode,
   } = useDashboard();
   const activeMetric = getMetricContract(metricId);
@@ -58,7 +71,10 @@ export function NetworkTreemap() {
     );
   }
 
-  const activeTreemap = data.treemaps[treemapView];
+  const activePayload = metric === "xlm_volume"
+    ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
+    : data.treemaps[treemapView];
+  const activeTreemap = toChartNode(activePayload);
 
   return (
     <Card>
@@ -71,6 +87,7 @@ export function NetworkTreemap() {
           </p>
         </div>
         <TreemapViewSelector />
+        <TreemapMetricSelector />
         <div className="flex flex-wrap gap-2">
           {CATEGORY_LEGEND.map((item) => (
             <span
@@ -88,10 +105,16 @@ export function NetworkTreemap() {
       </CardHeader>
       <CardContent>
         <div
-          key={`${period}-${treemapView}`}
+          key={`${period}-${treemapView}-${metric}`}
           className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
         >
-          <D3Treemap root={activeTreemap} onSelect={setSelectedNode} metricContract={activeMetric} />
+          {activeTreemap.children && activeTreemap.children.length > 0 ? (
+            <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+              No data for this metric and view combination.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

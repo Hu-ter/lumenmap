@@ -9,8 +9,7 @@ import { formatPercent } from "@/lib/utils";
 import { getMetricContract, formatMetricFull } from "@/lib/metrics";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data, metricId } = useDashboard();
-  const activeMetric = getMetricContract(selectedNode?.metricId ?? metricId);
+  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
 
   if (!selectedNode) {
     return (
@@ -61,7 +60,9 @@ export function DetailPanel() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-            <p className="text-xs text-zinc-500">{activeMetric.label}</p>
+            <p className="text-xs text-zinc-500">
+              {metric === "xlm_volume" ? "XLM volume" : "Activity count"}
+            </p>
             <p className="text-lg font-semibold text-white">
               {formatMetricFull(selectedNode.value, activeMetric)}
             </p>
