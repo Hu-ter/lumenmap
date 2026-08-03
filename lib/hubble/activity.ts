@@ -6,6 +6,7 @@ import {
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
   mapCategoryRows,
@@ -153,9 +154,9 @@ export async function getActivityData(
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v12:${period}:${range.start.toISOString()}`;
 
-  const cached = getCached<ActivityResponse>(cacheKey);
+  const cached = getCached<ActivityDataset>(cacheKey);
   if (cached) {
     logInfo({
       event: "activity.cache.hit",
@@ -212,11 +213,13 @@ export async function getActivityData(
     durationMs: endTimer(treemapTimer),
   });
 
-  const response: ActivityResponse = {
+  const response: ActivityDataset = {
     period,
     start,
     end,
     source: "hubble",
+    sourceTimestamp: sourceTimestamp ?? "",
+    isPeriodComplete,
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,
@@ -224,6 +227,7 @@ export async function getActivityData(
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis,
     treemaps,
+    metricProvenance: buildActivityMetricProvenance(),
   };
 
   setCache(cacheKey, response);
