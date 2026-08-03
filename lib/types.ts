@@ -239,18 +239,37 @@ export interface ActivityTreemaps {
   xlm_actors: TreemapPayload<"asset_volume">;
 }
 
-export interface ActivityResponse {
+export interface ActivityResponseMetadata {
   period: Period;
   start: string;
   end: string;
   source: DataSource;
   sourceTimestamp: string;
   isPeriodComplete: boolean;
+}
+
+export interface RawResearchRows {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+}
+
+export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
+  kpis: ActivityKpis;
+  treemaps: ActivityTreemaps;
+  metricProvenance: ActivityMetricProvenance;
+}
+
+export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
+  rows: RawResearchRows;
+}
+
+/** Internal cached dataset from which the two public response surfaces derive. */
+export interface ActivityDataset
+  extends ActivityResponseMetadata,
+    RawResearchRows {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
   metricProvenance: ActivityMetricProvenance;
