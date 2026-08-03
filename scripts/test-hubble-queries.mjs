@@ -1,6 +1,20 @@
 #!/usr/bin/env node
 
+import pkg from "@next/env";
 import { BigQuery } from "@google-cloud/bigquery";
+
+const { loadEnvConfig } = pkg;
+loadEnvConfig(process.cwd());
+
+const keyBase64 = process.env.GCP_SERVICE_ACCOUNT_KEY;
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+if (!keyBase64 && !credPath) {
+  console.error(
+    "No GCP credentials found. Set GOOGLE_APPLICATION_CREDENTIALS or GCP_SERVICE_ACCOUNT_KEY in .env.local; see .env.example for setup.",
+  );
+  process.exit(1);
+}
 
 const TOP_ACCOUNTS_PER_TYPE = 70;
 const TOP_CONTRACT_LIMIT = 200;
@@ -100,9 +114,20 @@ const end = new Date().toISOString();
 const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const baseParams = { start, end };
 
-const client = new BigQuery({
-  projectId: process.env.GCP_PROJECT_ID ?? "stellar-501912",
-});
+let client;
+if (keyBase64) {
+  const credentials = JSON.parse(
+    Buffer.from(keyBase64, "base64").toString("utf-8"),
+  );
+  client = new BigQuery({
+    projectId: credentials.project_id,
+    credentials,
+  });
+} else {
+  client = new BigQuery({
+    projectId: process.env.GCP_PROJECT_ID ?? "stellar-501912",
+  });
+}
 
 const queries = [
   { name: "categoryQuery", sql: categoryQuery, params: baseParams },
