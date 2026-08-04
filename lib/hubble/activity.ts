@@ -25,7 +25,8 @@ import {
   resolveEntityLabels,
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
-import type { ActivityResponse, Period } from "@/lib/types";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
+import type { ActivityDataset, Period } from "@/lib/types";
 
 async function runQuery<T>(
   query: string,
@@ -102,7 +103,7 @@ async function fetchLatestDataTimestamp(): Promise<string | null> {
   return String(rows[0].latest_timestamp);
 }
 
-export async function getActivityData(period: Period): Promise<ActivityResponse> {
+export async function getActivityData(period: Period): Promise<ActivityDataset> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
@@ -110,9 +111,9 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v10:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v12:${period}:${range.start.toISOString()}`;
 
-  const cached = getCached<ActivityResponse>(cacheKey);
+  const cached = getCached<ActivityDataset>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -129,7 +130,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
   const now = new Date();
   const isPeriodComplete = range.end.getTime() <= now.getTime();
 
-  const response: ActivityResponse = {
+  const response: ActivityDataset = {
     period,
     start,
     end,
@@ -143,6 +144,7 @@ export async function getActivityData(period: Period): Promise<ActivityResponse>
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis,
     treemaps,
+    metricProvenance: buildActivityMetricProvenance(),
   };
 
   setCache(cacheKey, response);
