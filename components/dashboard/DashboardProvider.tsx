@@ -1,16 +1,24 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
-import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
+import type {
+  ActivityVisualizationResponse,
+  ApiErrorResponse,
+  DashboardMetricId,
+  Period,
+  SelectedNode,
+} from "@/lib/types";
 
 interface DashboardContextValue {
   period: Period;
   setPeriod: (period: Period) => void;
   treemapView: TreemapViewId;
   setTreemapView: (view: TreemapViewId) => void;
-  data?: ActivityResponse;
+  metric: DashboardMetricId;
+  setMetric: (metric: DashboardMetricId) => void;
+  data?: ActivityVisualizationResponse;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -20,52 +28,37 @@ interface DashboardContextValue {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
-async function fetchActivity(period: Period, mockState?: string | null): Promise<ActivityResponse> {
-  const url = mockState
-    ? `/api/activity?period=${period}&mockState=${mockState}`
-    : `/api/activity?period=${period}`;
-  const response = await fetch(url);
+async function fetchActivity(
+  period: Period,
+): Promise<ActivityVisualizationResponse> {
+  const response = await fetch(`/api/v1/activity?period=${period}`);
   if (!response.ok) {
-    const body = (await response.json()) as { error?: string };
-    throw new Error(body.error ?? "Failed to load activity data");
+    const body = (await response.json()) as ApiErrorResponse;
+    throw new Error(body.message ?? "Failed to load activity data");
   }
-  return response.json() as Promise<ActivityResponse>;
+  return response.json() as Promise<ActivityVisualizationResponse>;
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriodState] = useState<Period>("1d");
-  const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
+  const [period, setPeriod] = useState<Period>("1d");
+  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
+  const [metric, setMetric] = useState<DashboardMetricId>("ops");
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
-  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-  const mockState = searchParams?.get("mockState");
-
-  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(() => {
-    if (mockState === "selected") {
-      return {
-        name: "Soroswap Router",
-        value: 3200,
-        share: 27.12,
-        meta: {
-          type: "contract",
-          id: "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2",
-          category: "soroban",
-          protocol: "Soroswap",
-          opCount: 3200,
-        },
-      };
-    }
-    return null;
-  });
-
-  const setPeriod = (p: Period) => {
-    setPeriodState(p);
+  const handleSetPeriod = useCallback((newPeriod: Period) => {
     setSelectedNode(null);
-  };
+    setPeriod(newPeriod);
+  }, []);
 
-  const setTreemapView = (v: TreemapViewId) => {
-    setTreemapViewState(v);
+  const handleSetTreemapView = useCallback((newView: TreemapViewId) => {
     setSelectedNode(null);
-  };
+    setTreemapView(newView);
+  }, []);
+
+  const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
+    setSelectedNode(null);
+    setMetric(newMetric);
+  }, []);
 
   const query = useQuery({
     queryKey: ["activity", period, mockState],
@@ -79,9 +72,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       period,
-      setPeriod,
+      setPeriod: handleSetPeriod,
       treemapView,
-      setTreemapView,
+      setTreemapView: handleSetTreemapView,
+      metric,
+      setMetric: handleSetMetric,
       data: query.data,
       isLoading,
       isError: mockState !== "loading" && query.isError,
@@ -91,7 +86,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       period,
+      handleSetPeriod,
       treemapView,
+      handleSetTreemapView,
+      metric,
+      handleSetMetric,
       query.data,
       isLoading,
       mockState,

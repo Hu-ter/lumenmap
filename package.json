@@ -12,6 +12,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
+    "protect:main": "node scripts/configure-main-protection.mjs",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:visual": "npx tsx scripts/test-visual-regression.mjs",
     "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
@@ -25,10 +28,11 @@
     "d3-hierarchy": "^3.1.2",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.23.0",
-    "next": "16.2.10",
+    "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -45,6 +49,8 @@
     "pngjs": "^7.0.0",
     "puppeteer-core": "^24.43.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.5",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
