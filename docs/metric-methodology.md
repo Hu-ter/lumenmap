@@ -49,6 +49,8 @@ explorer statistic.
 
 ### Operations
 
+**Methodology ID:** `operations` · **Version:** `1.0.0`
+
 | Property | Canonical definition |
 | --- | --- |
 | **Unit** | One Stellar operation record. |
@@ -60,6 +62,8 @@ explorer statistic.
 | **Limitations** | This is not a transaction count: one transaction can contain multiple operations. Category mapping is a presentation grouping and can change only with a methodology version change. Subject to the common partial-period, freshness, cache, and inclusive-boundary limitations. |
 
 ### Transactions
+
+**Methodology ID:** `transactions` · **Version:** `1.0.0`
 
 | Property | Canonical definition |
 | --- | --- |
@@ -76,6 +80,8 @@ particular, summing operation-type counts must never be labelled “transactions
 
 ### Payment volume
 
+**Methodology ID:** `payment-volume` · **Version:** `1.0.0`
+
 | Property | Canonical definition |
 | --- | --- |
 | **Unit** | Amount in the payment asset's native units, reported separately for each asset identity. |
@@ -87,6 +93,8 @@ particular, summing operation-type counts must never be labelled “transactions
 | **Limitations** | **Not currently returned by the dashboard or API.** Asset units have different meanings and decimals; displaying “total volume” across XLM, issued assets, or other assets is prohibited unless a separately documented versioned normalization specifies the price source, quote currency, timestamp, missing-price policy, and aggregation. Hubble freshness and partial-period limits apply. |
 
 ### Total value locked (TVL)
+
+**Methodology ID:** `total-value-locked` · **Version:** `1.0.0`
 
 | Property | Canonical definition |
 | --- | --- |

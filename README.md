@@ -177,8 +177,9 @@ Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contribut
 
 ### `GET /api/v1/activity`
 
-Versioned activity and treemap data. This is the stable public contract. New
-metrics and schema additions within v1 will be additive only.
+Compact visualization-ready activity data used by the dashboard. This response
+contains KPI cards, treemap drill-down/detail data, freshness, and metric
+provenance without duplicating entities as raw research rows.
 
 | Param | Values | Default |
 | --- | --- | --- |
@@ -201,22 +202,161 @@ metrics and schema additions within v1 will be additive only.
     "activeContracts": 89
   },
   "treemaps": {
-    "events": { "name": "Network Activity", "children": [] },
-    "actors": { "name": "Accounts & Contracts", "children": [] },
-    "xlm_events": { "name": "Network Activity", "children": [] },
-    "xlm_actors": { "name": "Accounts & Contracts", "children": [] }
+    "events": {
+      "name": "Network Activity",
+      "children": [],
+      "metric": "operation_count",
+      "unit": { "kind": "count", "subject": "operation" }
+    },
+    "actors": {
+      "name": "Accounts & Contracts",
+      "children": [],
+      "metric": "operation_count",
+      "unit": { "kind": "count", "subject": "operation" }
+    },
+    "xlm_events": {
+      "name": "Network Activity",
+      "children": [],
+      "metric": "asset_volume",
+      "unit": {
+        "kind": "asset",
+        "asset": { "type": "native", "code": "XLM" }
+      }
+    },
+    "xlm_actors": {
+      "name": "Accounts & Contracts",
+      "children": [],
+      "metric": "asset_volume",
+      "unit": {
+        "kind": "asset",
+        "asset": { "type": "native", "code": "XLM" }
+      }
+    }
   },
-  "categories": [],
-  "contracts": [],
-  "accounts": [],
-  "sorobanFunctions": [],
-  "sorobanFunctionContracts": []
+  "metricProvenance": {
+    "operation_count": {
+      "metric": "operation_count",
+      "methodology": {
+        "id": "operations",
+        "version": "1.0.0",
+        "href": "docs/metric-methodology.md#operations"
+      },
+      "source": {
+        "provider": "hubble",
+        "dataset": "crypto-stellar.crypto_stellar_dbt",
+        "tables": [
+          "enriched_history_operations",
+          "enriched_history_operations_soroban",
+          "hourly_soroban_fee_agg_contract"
+        ]
+      },
+      "aggregation": {
+        "kind": "count",
+        "function": "COUNT(*)",
+        "granularity": "selected_period",
+        "dimensions": ["type_string"]
+      },
+      "coverage": {
+        "network": "stellar_mainnet",
+        "constraints": [
+          {
+            "kind": "partial_period",
+            "completenessField": "isPeriodComplete"
+          },
+          {
+            "kind": "top_n",
+            "appliesTo": "account_children",
+            "limit": 70,
+            "partitionBy": "type_string"
+          }
+        ]
+      }
+    },
+    "asset_volume": {
+      "metric": "asset_volume",
+      "methodology": {
+        "id": "payment-volume",
+        "version": "1.0.0",
+        "href": "docs/metric-methodology.md#payment-volume"
+      },
+      "source": {
+        "provider": "hubble",
+        "dataset": "crypto-stellar.crypto_stellar_dbt",
+        "tables": ["enriched_history_operations"]
+      },
+      "aggregation": {
+        "kind": "sum",
+        "field": "amount",
+        "granularity": "selected_period",
+        "dimensions": ["type_string", "asset_identity"]
+      },
+      "coverage": {
+        "network": "stellar_mainnet",
+        "constraints": [
+          {
+            "kind": "filter",
+            "field": "asset_type",
+            "operator": "equals",
+            "value": "native"
+          }
+        ]
+      }
+    }
+  }
 }
 ```
 
+Each treemap is self-describing. Count metrics use numeric node values, while
+asset-denominated metrics use decimal strings so their values cannot be treated
+as counts through the public TypeScript contract.
+
+| Metric identifier | Unit | Node value | Availability |
+| --- | --- | --- | --- |
+| `operation_count` | Operation count | `number` | Implemented |
+| `transaction_count` | Transaction count | `number` | Contract only |
+| `asset_volume` | Explicit native or issued asset | decimal `string` | XLM implemented |
+| `tvl` | Explicit valuation asset | decimal `string` | Contract only |
+
+Use a treemap's `metric` as the key into `metricProvenance`. Coverage
+constraints are discriminated by `kind`; the serialized response can represent
+inclusive time bounds, partial periods, source lag, filters, and top-N limits
+without requiring consumers to parse prose. The example abbreviates repeated
+coverage constraints; the response includes every applicable constraint.
+
 Responses are cached for 15 minutes (`Cache-Control: public, max-age=900, s-maxage=900`).
 
-#### Error responses
+### `GET /api/v1/activity/raw`
+
+Explicit raw-research surface for consumers that need the rows used to build
+the compact visualization response. It accepts the same `period` parameter and
+returns freshness metadata plus the five raw collections under `rows`:
+
+```json
+{
+  "period": "1d",
+  "start": "2026-07-29T00:00:00.000Z",
+  "end": "2026-07-29T23:59:59.999Z",
+  "source": "hubble",
+  "sourceTimestamp": "2026-07-29T22:45:00.000Z",
+  "isPeriodComplete": false,
+  "rows": {
+    "categories": [],
+    "contracts": [],
+    "accounts": [],
+    "sorobanFunctions": [],
+    "sorobanFunctionContracts": []
+  }
+}
+```
+
+This endpoint intentionally omits `kpis`, `treemaps`, and `metricProvenance`.
+Use `/api/v1/activity` for dashboard and visualization consumers so entity data
+is not transferred twice.
+
+### Shared error responses
+
+Both versioned activity surfaces use the same validation and safe provider
+error contract.
 
 | Status | Body | Condition |
 | --- | --- | --- |
