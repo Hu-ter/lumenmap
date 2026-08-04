@@ -8,6 +8,7 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 interface D3TreemapProps {
   root: TreemapNode;
@@ -47,6 +48,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const announcementTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { metric } = useDashboard();
 
   const announce = useCallback((message: string) => {
     if (announcementTimeoutRef.current) {
@@ -164,9 +166,10 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
         },
       });
 
+      const unitLabel = metric === "xlm_volume" ? "XLM" : "operations";
       const childCount = original.children?.length ?? original.meta?.childCount ?? 0;
       const childrenText = childCount > 0 ? `${childCount} children available` : "no children";
-      const selectionText = `Selected ${data.name}. Level ${path.length + 1}. Value: ${formatNumber(value)} operations (${formatPercent(share)} share of level). Available children: ${childrenText}.`;
+      const selectionText = `Selected ${data.name}. Level ${path.length + 1}. Value: ${formatNumber(value)} ${unitLabel} (${formatPercent(share)} share of level). Available children: ${childrenText}.`;
 
       if (original.children && original.children.length > 0) {
         const newPath = [root, ...path, original];
@@ -177,7 +180,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
         announce(selectionText);
       }
     },
-    [levelTotal, onSelect, tileLookup, path, root, announce],
+    [levelTotal, onSelect, tileLookup, path, root, announce, metric],
   );
 
   const navigateTo = useCallback(
@@ -197,8 +200,9 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       const childCount = targetNode.children?.length ?? targetNode.meta?.childCount ?? 0;
       const pathString = newPath.map((n) => n.name).join(" > ");
       const childrenText = childCount > 0 ? `${childCount} children available` : "no children";
+      const unitLabel = metric === "xlm_volume" ? "XLM" : "operations";
 
-      const announcementText = `Navigated to ${targetNode.name} via breadcrumbs. Level ${level}. Value: ${formatNumber(value)} operations. Current path: ${pathString}. Available children: ${childrenText}.`;
+      const announcementText = `Navigated to ${targetNode.name} via breadcrumbs. Level ${level}. Value: ${formatNumber(value)} ${unitLabel}. Current path: ${pathString}. Available children: ${childrenText}.`;
       announce(announcementText);
 
       if (index < 0) {
@@ -207,7 +211,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       }
       setPath((current) => current.slice(0, index + 1));
     },
-    [root, path, announce],
+    [root, path, announce, metric],
   );
 
   const breadcrumbs = [root, ...path];
@@ -324,7 +328,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)}
+                    {formatNumber(value)} {metric === "xlm_volume" ? "XLM" : ""}
                   </text>
                   <text
                     x={10}
@@ -339,8 +343,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               ) : null}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`}
               </title>
             </g>
           );
