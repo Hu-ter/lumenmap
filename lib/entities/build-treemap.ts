@@ -7,14 +7,17 @@ import { getDisplayName, lookupEntity } from "@/lib/entities/registry";
 import type {
   AccountRow,
   ActivityKpis,
+  ActivityTreemaps,
   CategoryRow,
   ContractRow,
   EntityInfo,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
   TreemapNode,
-  MetricId,
 } from "@/lib/types";
+import { OPERATION_COUNT_UNIT, XLM_ASSET_UNIT } from "@/lib/types";
+
+type BuildMetricId = "ops" | "xlm_volume";
 
 interface BuildTreemapInput {
   categories: CategoryRow[];
@@ -38,7 +41,7 @@ function getGroupForType(type: string): string {
   return TYPE_TO_GROUP[type] ?? "other";
 }
 
-function getGroupTotals(categories: CategoryRow[], metric: MetricId): Map<string, number> {
+function getGroupTotals(categories: CategoryRow[], metric: BuildMetricId): Map<string, number> {
   const totals = new Map<string, number>();
 
   for (const row of categories) {
@@ -53,7 +56,7 @@ function getGroupTotals(categories: CategoryRow[], metric: MetricId): Map<string
 function buildContractLeaves(
   contracts: ContractRow[],
   labels?: BuildTreemapInput["labels"],
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   if (metric === "xlm_volume") return []; // No XLM volume for contracts
 
@@ -110,7 +113,7 @@ function buildAccountLeaves(
   accounts: AccountRow[],
   group: string,
   labels?: BuildTreemapInput["labels"],
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   const filtered = accounts.filter(
     (row) => getGroupForType(row.type_string) === group,
@@ -140,7 +143,7 @@ function buildAccountLeavesForEventType(
   eventType: string,
   group: string,
   labels?: BuildTreemapInput["labels"],
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   const rows = accounts
     .filter((row) => row.type_string === eventType)
@@ -162,7 +165,7 @@ function buildContractLeavesForFunction(
   rows: SorobanFunctionContractRow[],
   functionName: string,
   labels?: BuildTreemapInput["labels"],
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   if (metric === "xlm_volume") return []; // Soroban doesn't have XLM volume mapped here
 
@@ -178,7 +181,7 @@ function buildContractLeavesForFunction(
   );
 }
 
-function buildSorobanFunctionLeaves(input: BuildTreemapInput, metric: MetricId = "ops"): TreemapNode[] {
+function buildSorobanFunctionLeaves(input: BuildTreemapInput, metric: BuildMetricId = "ops"): TreemapNode[] {
   if (metric === "xlm_volume") return []; // No XLM volume for Soroban functions here
 
   const color = CATEGORY_COLORS.soroban;
@@ -212,7 +215,7 @@ function buildSorobanFunctionLeaves(input: BuildTreemapInput, metric: MetricId =
 function buildTypeLeaves(
   input: BuildTreemapInput,
   group: string,
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   if (group === "soroban") {
     return buildSorobanFunctionLeaves(input, metric);
@@ -257,7 +260,7 @@ function buildTypeLeaves(
 function buildCategoryGroupChildren(
   group: string,
   input: BuildTreemapInput,
-  metric: MetricId = "ops",
+  metric: BuildMetricId = "ops",
 ): TreemapNode[] {
   if (group === "soroban") {
     return buildContractLeaves(input.contracts, input.labels, metric);
@@ -280,8 +283,8 @@ function buildCategoryGroupChildren(
 
 function buildGroupedTreemap(
   input: BuildTreemapInput,
-  metric: MetricId,
-  getCategoryChildren: (group: string, metric: MetricId) => TreemapNode[],
+  metric: BuildMetricId,
+  getCategoryChildren: (group: string, metric: BuildMetricId) => TreemapNode[],
 ): TreemapNode {
   const groupTotals = getGroupTotals(input.categories, metric);
   const totalOps = categoriesTotal(input.categories, metric);
@@ -324,22 +327,58 @@ function buildGroupedTreemap(
   };
 }
 
-export function buildEventTypeTreemap(input: BuildTreemapInput, metric: MetricId = "ops"): TreemapNode {
+export function buildEventTypeTreemap(input: BuildTreemapInput, metric: BuildMetricId = "ops"): TreemapNode {
   return buildGroupedTreemap(input, metric, (group, m) => buildTypeLeaves(input, group, m));
 }
 
-export function buildActorTreemap(input: BuildTreemapInput, metric: MetricId = "ops"): TreemapNode {
+export function buildActorTreemap(input: BuildTreemapInput, metric: BuildMetricId = "ops"): TreemapNode {
   return buildGroupedTreemap(input, metric, (group, m) =>
     buildCategoryGroupChildren(group, input, m),
   );
 }
 
-export function buildAllTreemaps(input: BuildTreemapInput) {
+function serializeAssetValues(node: TreemapNode): TreemapNode<string> {
+  const { value, children, ...rest } = node;
   return {
-    events: buildEventTypeTreemap(input, "ops"),
-    actors: buildActorTreemap(input, "ops"),
-    xlm_events: buildEventTypeTreemap(input, "xlm_volume"),
-    xlm_actors: buildActorTreemap(input, "xlm_volume"),
+    ...rest,
+    ...(value !== undefined ? { value: String(value) } : {}),
+    ...(children
+      ? { children: children.map(serializeAssetValues) }
+      : {}),
+  };
+}
+
+export function buildAllTreemaps(input: BuildTreemapInput): ActivityTreemaps {
+  const eventOperations = buildEventTypeTreemap(input, "ops");
+  const actorOperations = buildActorTreemap(input, "ops");
+  const eventXlmVolume = serializeAssetValues(
+    buildEventTypeTreemap(input, "xlm_volume"),
+  );
+  const actorXlmVolume = serializeAssetValues(
+    buildActorTreemap(input, "xlm_volume"),
+  );
+
+  return {
+    events: {
+      ...eventOperations,
+      metric: "operation_count",
+      unit: OPERATION_COUNT_UNIT,
+    },
+    actors: {
+      ...actorOperations,
+      metric: "operation_count",
+      unit: OPERATION_COUNT_UNIT,
+    },
+    xlm_events: {
+      ...eventXlmVolume,
+      metric: "asset_volume",
+      unit: XLM_ASSET_UNIT,
+    },
+    xlm_actors: {
+      ...actorXlmVolume,
+      metric: "asset_volume",
+      unit: XLM_ASSET_UNIT,
+    },
   };
 }
 
@@ -361,16 +400,28 @@ export function buildKpis(
   )[0];
 
   return {
-    totalOps,
-    sorobanShare: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
+    totalOps: {
+      kind: "operations",
+      unit: "ops",
+      value: totalOps,
+    },
+    sorobanShare: {
+      kind: "share",
+      unit: "percent",
+      value: totalOps > 0 ? (sorobanOps / totalOps) * 100 : 0,
+    },
     topCategory: topCategoryEntry
       ? (GROUP_LABELS[topCategoryEntry[0]] ?? topCategoryEntry[0])
       : "N/A",
-    activeContracts: contracts.length,
+    activeContracts: {
+      kind: "entity_count",
+      unit: "count",
+      value: contracts.length,
+    },
   };
 }
 
-function categoriesTotal(categories: CategoryRow[], metric: MetricId): number {
+function categoriesTotal(categories: CategoryRow[], metric: BuildMetricId): number {
   return categories.reduce((sum, row) => {
     const value = metric === "xlm_volume" ? (row.xlm_volume ?? 0) : row.op_count;
     return sum + value;
