@@ -17,7 +17,11 @@ function DataSourceNotice() {
   const { data, isLoading } = useDashboard();
 
   if (isLoading) {
-    return <Skeleton className="h-4 w-64 max-w-full" />;
+    return (
+      <div className="flex flex-col gap-1" aria-busy="true">
+        <Skeleton className="h-4 w-64 max-w-full" />
+      </div>
+    );
   }
 
   if (!data) {

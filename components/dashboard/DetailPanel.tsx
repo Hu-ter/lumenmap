@@ -9,26 +9,25 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data, isLoading } = useDashboard();
+  const { selectedNode, setSelectedNode, data, metric, isLoading } =
+    useDashboard();
 
   if (isLoading) {
     return (
-      <Card className="h-full">
+      <Card className="h-full" aria-busy="true">
         <CardHeader>
-          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-5 w-20" />
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
           </div>
         </CardContent>
       </Card>
     );
   }
-
-  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
-
 
   if (!selectedNode) {
     return (
