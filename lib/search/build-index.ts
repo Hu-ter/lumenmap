@@ -293,8 +293,8 @@ function indexCategory(
 }
 
 function walkTreemap(
-  node: TreemapNode,
-  visit: (node: TreemapNode) => void,
+  node: TreemapNode<number | string>,
+  visit: (node: TreemapNode<number | string>) => void,
 ): void {
   visit(node);
   for (const child of node.children ?? []) {
@@ -307,7 +307,11 @@ function collectLabelsFromActivity(
 ): Record<string, EntityInfo> {
   const labels: Record<string, EntityInfo> = {};
 
-  const consider = (id: string | undefined, name: string, meta?: TreemapNode["meta"]) => {
+  const consider = (
+    id: string | undefined,
+    name: string,
+    meta?: TreemapNode<number | string>["meta"],
+  ) => {
     if (!id) {
       return;
     }
@@ -319,7 +323,9 @@ function collectLabelsFromActivity(
       labels[id] = {
         name,
         category: meta?.category ?? (id.startsWith("C") ? "defi" : "account"),
-        protocol: meta?.protocol ?? (id.startsWith("C") ? "Unknown Contracts" : "Unknown Accounts"),
+        protocol:
+          meta?.protocol ??
+          (id.startsWith("C") ? "Unknown Contracts" : "Unknown Accounts"),
       };
     }
   };
@@ -342,7 +348,7 @@ export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
   const map = new Map<string, MutableEntry>();
   const labels = collectLabelsFromActivity(data);
 
-  for (const row of data.accounts) {
+  for (const row of data.accounts ?? []) {
     indexAccountOrContract(
       map,
       row.account_id,
@@ -357,7 +363,7 @@ export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
     }
   }
 
-  for (const row of data.contracts) {
+  for (const row of data.contracts ?? []) {
     indexAccountOrContract(
       map,
       row.contract_id,
@@ -372,7 +378,7 @@ export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
     }
   }
 
-  for (const row of data.sorobanFunctionContracts) {
+  for (const row of data.sorobanFunctionContracts ?? []) {
     indexAccountOrContract(
       map,
       row.contract_id,
@@ -389,7 +395,7 @@ export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
 
   // Categories from KPI groupings.
   const categoryTotals = new Map<string, number>();
-  for (const row of data.categories) {
+  for (const row of data.categories ?? []) {
     // type_string is an op type; group label comes from treemap category nodes.
     categoryTotals.set(
       row.type_string,
@@ -409,22 +415,30 @@ export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
           map,
           meta.category,
           GROUP_LABELS[meta.category] ?? node.name,
-          meta.opCount ?? node.value ?? 0,
+          Number(meta.opCount ?? node.value ?? 0),
         );
       }
 
-      if ((meta.type === "account" || meta.type === "contract") && (meta.id || node.id)) {
+      if (
+        (meta.type === "account" || meta.type === "contract") &&
+        (meta.id || node.id)
+      ) {
         const id = meta.id ?? node.id ?? "";
         indexAccountOrContract(
           map,
           id,
           meta.type,
-          meta.opCount ?? node.value ?? 0,
+          Number(meta.opCount ?? node.value ?? 0),
           labels,
           meta.category,
         );
         if (meta.protocol) {
-          indexProtocol(map, meta.protocol, meta.opCount ?? node.value ?? 0, id);
+          indexProtocol(
+            map,
+            meta.protocol,
+            Number(meta.opCount ?? node.value ?? 0),
+            id,
+          );
         }
         // Prefer treemap-provided labels over truncated fallbacks.
         if (node.name && !node.name.includes("...")) {

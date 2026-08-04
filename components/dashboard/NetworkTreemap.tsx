@@ -8,9 +8,7 @@ import { TreemapViewSelector } from "@/components/dashboard/TreemapViewSelector"
 import { TreemapMetricSelector } from "@/components/dashboard/TreemapMetricSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { findTreemapPath } from "@/lib/search";
-
 import type { TreemapNode } from "@/lib/types";
 
 const CATEGORY_LEGEND = [
@@ -22,6 +20,14 @@ const CATEGORY_LEGEND = [
   { key: "other", label: "Other" },
 ];
 
+function toChartNode(node: TreemapNode<number | string>): TreemapNode {
+  const { value, children, ...rest } = node;
+  return {
+    ...rest,
+    ...(value !== undefined ? { value: Number(value) } : {}),
+    ...(children ? { children: children.map(toChartNode) } : {}),
+  };
+}
 
 function resolveFocusNavigation(
   root: TreemapNode,
@@ -51,16 +57,6 @@ function resolveFocusNavigation(
   return {
     initialPath: parentPath,
     highlightKey,
-
-function toChartNode(node: TreemapNode<number | string>): TreemapNode {
-  const { value, children, ...rest } = node;
-  return {
-    ...rest,
-    ...(value !== undefined ? { value: Number(value) } : {}),
-    ...(children
-      ? { children: children.map(toChartNode) }
-      : {}),
-
   };
 }
 
@@ -77,14 +73,23 @@ export function NetworkTreemap() {
     focusRequest,
   } = useDashboard();
 
-  const activeTreemap = data?.treemaps[treemapView];
+  const activePayload = metric === "xlm_volume"
+    ? data?.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
+    : data?.treemaps[treemapView];
+  const activeTreemap = activePayload ? toChartNode(activePayload) : undefined;
 
   const focusNavigation = useMemo(() => {
     if (!activeTreemap || !focusRequest) {
-      return { initialPath: [] as TreemapNode[], highlightKey: null as string | null };
+      return {
+        initialPath: [] as TreemapNode[],
+        highlightKey: null as string | null,
+      };
     }
     if (focusRequest.treemapView !== treemapView) {
-      return { initialPath: [] as TreemapNode[], highlightKey: null as string | null };
+      return {
+        initialPath: [] as TreemapNode[],
+        highlightKey: null as string | null,
+      };
     }
     return resolveFocusNavigation(activeTreemap, focusRequest);
   }, [activeTreemap, focusRequest, treemapView]);
@@ -117,22 +122,12 @@ export function NetworkTreemap() {
     );
   }
 
-
-
   const treemapKey = [
     period,
     treemapView,
+    metric,
     focusRequest?.key ?? "none",
   ].join(":");
-
-  const activeTreemap = metric === "xlm_volume"
-
-  const activePayload = metric === "xlm_volume"
-
-    ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
-    : data.treemaps[treemapView];
-  const activeTreemap = toChartNode(activePayload);
-
 
   return (
     <Card>
@@ -162,28 +157,20 @@ export function NetworkTreemap() {
         </div>
       </CardHeader>
       <CardContent>
-
         <div className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3">
-          <D3Treemap
-            key={treemapKey}
-            root={activeTreemap}
-            onSelect={setSelectedNode}
-            initialPath={focusNavigation.initialPath}
-            highlightKey={focusNavigation.highlightKey}
-          />
-
-        <div
-          key={`${period}-${treemapView}-${metric}`}
-          className="h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3"
-        >
           {activeTreemap.children && activeTreemap.children.length > 0 ? (
-            <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
+            <D3Treemap
+              key={treemapKey}
+              root={activeTreemap}
+              onSelect={setSelectedNode}
+              initialPath={focusNavigation.initialPath}
+              highlightKey={focusNavigation.highlightKey}
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-zinc-500">
               No data for this metric and view combination.
             </div>
           )}
-
         </div>
       </CardContent>
     </Card>

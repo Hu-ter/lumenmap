@@ -287,6 +287,28 @@ export interface ActivityDataset
   metricProvenance: ActivityMetricProvenance;
 }
 
+export interface ActivityResponse
+  extends Omit<
+    ActivityDataset,
+    | "sourceTimestamp"
+    | "isPeriodComplete"
+    | "metricProvenance"
+    | "categories"
+    | "contracts"
+    | "accounts"
+    | "sorobanFunctions"
+    | "sorobanFunctionContracts"
+  > {
+  sourceTimestamp?: string;
+  isPeriodComplete?: boolean;
+  metricProvenance?: ActivityMetricProvenance;
+  categories?: CategoryRow[];
+  contracts?: ContractRow[];
+  accounts?: AccountRow[];
+  sorobanFunctions?: SorobanFunctionRow[];
+  sorobanFunctionContracts?: SorobanFunctionContractRow[];
+}
+
 export interface ApiErrorResponse {
   code: string;
   message: string;

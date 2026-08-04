@@ -1,11 +1,16 @@
 import type { TreemapNode } from "@/lib/types";
 import type { SearchResult } from "@/lib/search/types";
 
-function nodeIdentity(node: TreemapNode): string | undefined {
+function nodeIdentity<TValue extends number | string>(
+  node: TreemapNode<TValue>,
+): string | undefined {
   return node.meta?.id ?? node.id;
 }
 
-function matchesResult(node: TreemapNode, result: SearchResult): boolean {
+function matchesResult<TValue extends number | string>(
+  node: TreemapNode<TValue>,
+  result: SearchResult,
+): boolean {
   const nodeId = nodeIdentity(node);
 
   if (result.type === "category") {
@@ -49,13 +54,14 @@ function matchesResult(node: TreemapNode, result: SearchResult): boolean {
  * search result. Returns the full path including root, or null when the
  * entity is not present in the loaded treemap.
  */
-export function findTreemapPath(
-  root: TreemapNode,
+export function findTreemapPath<TValue extends number | string = number>(
+  root: TreemapNode<TValue>,
   result: SearchResult,
-): TreemapNode[] | null {
-  const stack: { node: TreemapNode; path: TreemapNode[] }[] = [
-    { node: root, path: [root] },
-  ];
+): TreemapNode<TValue>[] | null {
+  const stack: {
+    node: TreemapNode<TValue>;
+    path: TreemapNode<TValue>[];
+  }[] = [{ node: root, path: [root] }];
 
   while (stack.length > 0) {
     const current = stack.pop();

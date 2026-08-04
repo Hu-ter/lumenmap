@@ -11,4 +11,6 @@ declare module "lucide-react" {
   export const ExternalLink: FC<SVGProps<SVGSVGElement>>;
   export const Copy: FC<SVGProps<SVGSVGElement>>;
   export const Wallet: FC<SVGProps<SVGSVGElement>>;
+  export const Search: FC<SVGProps<SVGSVGElement>>;
+  export const Loader2: FC<SVGProps<SVGSVGElement>>;
 }

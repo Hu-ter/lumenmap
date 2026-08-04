@@ -78,40 +78,36 @@ export function createSearchFixtures(): ActivityResponse {
     {
       account_id: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
       type_string: "payment",
-      op_count: 2200,
+      op_count: 4200,
     },
     {
       account_id: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
       type_string: "payment",
-      op_count: 400,
+      op_count: 1100,
     },
     {
       account_id: "GA5XIGA5C7QTPTWXQHY6MCJRMTRZDOSHR6EFIBNDQTCQHG262N4GGKTM",
       type_string: "payment",
-      op_count: 1800,
-    },
-    {
-      account_id: "GA5XIGA5C7QTPTWXQHY6MCJRMTRZDOSHR6EFIBNDQTCQHG262N4GGKTM",
-      type_string: "manage_sell_offer",
-      op_count: 300,
-    },
-    {
-      account_id: "GUNKNOWNACCOUNT111111111111111111111111111111111111111",
-      type_string: "change_trust",
-      op_count: 50,
+      op_count: 3800,
     },
   ];
 
   const sorobanFunctions = [
-    { function_name: "swap", op_count: 4000 },
-    { function_name: "deposit", op_count: 2000 },
+    {
+      function_name: "swap",
+      op_count: 6500,
+    },
+    {
+      function_name: "deposit",
+      op_count: 1500,
+    },
   ];
 
   const sorobanFunctionContracts = [
     {
       function_name: "swap",
       contract_id: "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2",
-      op_count: 2500,
+      op_count: 3200,
     },
     {
       function_name: "swap",
@@ -150,10 +146,22 @@ export function createSearchFixtures(): ActivityResponse {
     sorobanFunctions,
     sorobanFunctionContracts,
     kpis: {
-      totalOps: 15500,
-      sorobanShare: 51.6,
+      totalOps: {
+        kind: "operations",
+        unit: "ops",
+        value: 15500,
+      },
+      sorobanShare: {
+        kind: "share",
+        unit: "percent",
+        value: 51.6,
+      },
       topCategory: "Soroban Contracts",
-      activeContracts: contracts.length,
+      activeContracts: {
+        kind: "entity_count",
+        unit: "count",
+        value: contracts.length,
+      },
     },
     treemaps,
   };

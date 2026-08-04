@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-
 import {
   createContext,
   useCallback,
@@ -11,18 +10,14 @@ import {
 } from "react";
 import type { TreemapViewId } from "@/lib/constants";
 import { findTreemapPath, type SearchResult } from "@/lib/search";
-import type { ActivityResponse, Period, SelectedNode } from "@/lib/types";
-
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { TreemapViewId } from "@/lib/constants";
 import type {
   ActivityVisualizationResponse,
   ApiErrorResponse,
   DashboardMetricId,
   Period,
   SelectedNode,
+  TreemapNode,
 } from "@/lib/types";
-
 
 interface DashboardContextValue {
   period: Period;
@@ -71,24 +66,27 @@ function searchResultToSelectedNode(result: SearchResult): SelectedNode {
 }
 
 function selectedNodeFromSearch(
-  data: ActivityResponse | undefined,
+  data: ActivityVisualizationResponse | undefined,
   result: SearchResult,
 ): SelectedNode {
-  const root = data?.treemaps[result.treemapView];
+  const root = data?.treemaps[result.treemapView] as
+    | TreemapNode<number | string>
+    | undefined;
   if (root) {
     const path = findTreemapPath(root, result);
     if (path && path.length > 0) {
       const matched = path[path.length - 1];
-      const value = matched.value ?? matched.meta?.opCount ?? result.opCount ?? 0;
+      const value =
+        matched.value ?? matched.meta?.opCount ?? result.opCount ?? 0;
       return {
         name: matched.name,
-        value,
+        value: Number(value),
         share: matched.meta?.share ?? 0,
         meta: {
           ...matched.meta,
           type: matched.meta?.type ?? result.nodeType,
           id: matched.meta?.id ?? matched.id ?? result.id ?? result.issuer,
-          opCount: value,
+          opCount: Number(value),
           childCount: matched.children?.length ?? matched.meta?.childCount,
           protocol: matched.meta?.protocol ?? result.protocol,
           category: matched.meta?.category ?? result.category,
@@ -100,60 +98,35 @@ function selectedNodeFromSearch(
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-
   const [period, setPeriodState] = useState<Period>("1d");
   const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
-
-  const [period, setPeriod] = useState<Period>("1d");
-  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-
-  const [metric, setMetric] = useState<MetricId>("ops");
-
-
-  const [metric, setMetric] = useState<DashboardMetricId>("ops");
-
+  const [metric, setMetricState] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
-
   const [focusRequest, setFocusRequest] = useState<SearchResult | null>(null);
-
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
     setSelectedNode(null);
-    setPeriod(newPeriod);
+    setFocusRequest(null);
+    setPeriodState(newPeriod);
   }, []);
 
   const handleSetTreemapView = useCallback((newView: TreemapViewId) => {
     setSelectedNode(null);
-    setTreemapView(newView);
+    setFocusRequest(null);
+    setTreemapViewState(newView);
   }, []);
-
-
-  const handleSetMetric = useCallback((newMetric: MetricId) => {
 
   const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
-
     setSelectedNode(null);
-    setMetric(newMetric);
+    setFocusRequest(null);
+    setMetricState(newMetric);
   }, []);
-
 
   const query = useQuery({
     queryKey: ["activity", period],
     queryFn: () => fetchActivity(period),
     staleTime: 60_000,
   });
-
-  const setPeriod = useCallback((next: Period) => {
-    setPeriodState(next);
-    setSelectedNode(null);
-    setFocusRequest(null);
-  }, []);
-
-  const setTreemapView = useCallback((view: TreemapViewId) => {
-    setTreemapViewState(view);
-    setSelectedNode(null);
-    setFocusRequest(null);
-  }, []);
 
   const selectSearchResult = useCallback(
     (result: SearchResult) => {
@@ -183,18 +156,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       period,
-
-      setPeriod,
-      treemapView,
-      setTreemapView,
-
       handleSetPeriod,
       treemapView,
       handleSetTreemapView,
-
       metric,
       handleSetMetric,
-
       query.data,
       query.isLoading,
       query.isError,
@@ -206,7 +172,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>
+    <DashboardContext.Provider value={value}>
+      {children}
+    </DashboardContext.Provider>
   );
 }
 
