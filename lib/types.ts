@@ -199,13 +199,13 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
-export interface AssetIdentity {
+export interface UsdcAssetIdentity {
   code: string;
   issuer: string;
 }
 
 export interface UsdcPaymentVolumeAssetRow {
-  asset: AssetIdentity;
+  asset: UsdcAssetIdentity;
   amount: number;
 }
 
