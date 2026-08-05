@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { TreemapViewId } from "@/lib/constants";
 import type {
-  ActivityResponse,
+  ActivityVisualizationResponse,
   ApiErrorResponse,
-  MetricId,
+  DashboardMetricId,
   Period,
   SelectedNode,
 } from "@/lib/types";
@@ -16,9 +16,9 @@ interface DashboardContextValue {
   setPeriod: (period: Period) => void;
   treemapView: TreemapViewId;
   setTreemapView: (view: TreemapViewId) => void;
-  metric: MetricId;
-  setMetric: (metric: MetricId) => void;
-  data?: ActivityResponse;
+  metric: DashboardMetricId;
+  setMetric: (metric: DashboardMetricId) => void;
+  data?: ActivityVisualizationResponse;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -28,19 +28,21 @@ interface DashboardContextValue {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
-async function fetchActivity(period: Period): Promise<ActivityResponse> {
-  const response = await fetch(`/api/activity?period=${period}`);
+async function fetchActivity(
+  period: Period,
+): Promise<ActivityVisualizationResponse> {
+  const response = await fetch(`/api/v1/activity?period=${period}`);
   if (!response.ok) {
     const body = (await response.json()) as ApiErrorResponse;
     throw new Error(body.message ?? "Failed to load activity data");
   }
-  return response.json() as Promise<ActivityResponse>;
+  return response.json() as Promise<ActivityVisualizationResponse>;
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriod] = useState<Period>("1d");
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-  const [metric, setMetric] = useState<MetricId>("ops");
+  const [metric, setMetric] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
@@ -53,7 +55,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setTreemapView(newView);
   }, []);
 
-  const handleSetMetric = useCallback((newMetric: MetricId) => {
+  const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
     setSelectedNode(null);
     setMetric(newMetric);
   }, []);
