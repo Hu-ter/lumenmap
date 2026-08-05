@@ -26,6 +26,9 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Build app
+        run: npm run build
+
       - name: Run e2e suite (headless, deterministic fixture data)
         run: npm run test:e2e
         env:
