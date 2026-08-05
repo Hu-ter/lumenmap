@@ -1,7 +1,8 @@
 import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
 import { getFixtureRawActivity } from "@/lib/fixtures/raw-data";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
 import { resolvePeriod } from "@/lib/periods";
-import type { ActivityResponse, Period } from "@/lib/types";
+import type { ActivityDataset, Period } from "@/lib/types";
 
 /**
  * Builds a complete dashboard payload from the deterministic fixture rows.
@@ -12,7 +13,7 @@ import type { ActivityResponse, Period } from "@/lib/types";
  * Playwright e2e suite). Requires no GCP credentials and performs no
  * network calls: labels resolve from the local entity registry only.
  */
-export function getFixtureActivityData(period: Period): ActivityResponse {
+export function getFixtureActivityData(period: Period): ActivityDataset {
   const raw = getFixtureRawActivity(period);
   const range = resolvePeriod(period);
 
@@ -21,6 +22,8 @@ export function getFixtureActivityData(period: Period): ActivityResponse {
     start: range.start.toISOString(),
     end: range.end.toISOString(),
     source: "fixture",
+    sourceTimestamp: range.end.toISOString(),
+    isPeriodComplete: true,
     categories: raw.categories,
     contracts: raw.contracts,
     accounts: raw.accounts,
@@ -28,5 +31,6 @@ export function getFixtureActivityData(period: Period): ActivityResponse {
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis: buildKpis(raw.categories, raw.contracts),
     treemaps: buildAllTreemaps(raw),
+    metricProvenance: buildActivityMetricProvenance(),
   };
 }

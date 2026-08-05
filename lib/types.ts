@@ -299,3 +299,5 @@ export interface SelectedNode {
   share: number;
   meta?: TreemapNodeMeta;
 }
+
+export type { ActivityResponse } from "@/lib/schemas/activity-response";

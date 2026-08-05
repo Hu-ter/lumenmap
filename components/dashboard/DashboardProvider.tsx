@@ -1,15 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-
-import { createContext, useContext, useMemo, useState } from "react";
-
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-
 import type { TreemapViewId } from "@/lib/constants";
 import type {
-  ActivityVisualizationResponse,
-  ApiErrorResponse,
+  ActivityResponse,
   DashboardMetricId,
   Period,
   SelectedNode,
@@ -22,7 +17,7 @@ interface DashboardContextValue {
   setTreemapView: (view: TreemapViewId) => void;
   metric: DashboardMetricId;
   setMetric: (metric: DashboardMetricId) => void;
-  data?: ActivityVisualizationResponse;
+  data?: ActivityResponse;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
@@ -32,15 +27,13 @@ interface DashboardContextValue {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
-async function fetchActivity(
-  period: Period,
-): Promise<ActivityVisualizationResponse> {
-  const response = await fetch(`/api/v1/activity?period=${period}`);
+async function fetchActivity(period: Period): Promise<ActivityResponse> {
+  const response = await fetch(`/api/activity?period=${period}`);
   if (!response.ok) {
-    const body = (await response.json()) as ApiErrorResponse;
-    throw new Error(body.message ?? "Failed to load activity data");
+    const body = (await response.json()) as { error?: string };
+    throw new Error(body.error ?? "Failed to load activity data");
   }
-  return response.json() as Promise<ActivityVisualizationResponse>;
+  return response.json() as Promise<ActivityResponse>;
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -49,10 +42,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [metric, setMetric] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
-
-  // Reset the selection whenever the metric (period) or hierarchy view
+  // Reset the selection whenever the metric, period, or hierarchy view
   // changes, using the compare-during-render pattern instead of an effect.
-  const journeyKey = `${period}-${treemapView}`;
+  const journeyKey = `${period}-${treemapView}-${metric}`;
   const [prevJourneyKey, setPrevJourneyKey] = useState(journeyKey);
   if (prevJourneyKey !== journeyKey) {
     setPrevJourneyKey(journeyKey);
@@ -69,15 +61,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setTreemapView(newView);
   }, []);
 
-
-  const handleSetMetric = useCallback((newMetric: MetricId) => {
-
   const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
-
     setSelectedNode(null);
     setMetric(newMetric);
   }, []);
-
 
   const query = useQuery({
     queryKey: ["activity", period],

@@ -107,15 +107,10 @@ async function fetchLatestDataTimestamp(): Promise<string | null> {
   return String(rows[0].latest_timestamp);
 }
 
-export async function getActivityData(period: Period): Promise<ActivityResponse> {
-  // Fixture mode returns deterministic local data so the dashboard (and
-  // the Playwright e2e suite) runs without GCP credentials or network.
+export async function getActivityData(period: Period): Promise<ActivityDataset> {
   if (isFixtureMode()) {
     return getFixtureActivityData(period);
   }
-
-
-export async function getActivityData(period: Period): Promise<ActivityDataset> {
 
   if (!hasBigQueryCredentials()) {
     throw new Error(
