@@ -58,6 +58,12 @@ GROUP BY contract_id
 ORDER BY op_count DESC
 LIMIT ${TOP_CONTRACT_LIMIT}`;
 
+const activeContractCountQuery = `
+SELECT DISTINCT contract_id
+FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
+WHERE hour_agg BETWEEN @start AND @end
+  AND contract_id IS NOT NULL AND contract_id != ''`;
+
 const accountQuery = `
 WITH ranked AS (
   SELECT
@@ -153,6 +159,11 @@ const queries = [
   { name: "categoryQuery", sql: categoryQuery, params: baseParams },
   { name: "contractQuery", sql: contractQuery, params: baseParams },
   {
+    name: "activeContractCountQuery",
+    sql: activeContractCountQuery,
+    params: baseParams,
+  },
+  {
     name: "accountQuery",
     sql: accountQuery,
     params: { ...baseParams, types: ACCOUNT_QUERY_TYPES },
@@ -171,16 +182,40 @@ const queries = [
 ];
 
 let failed = false;
+const rowCounts = {};
 
 for (const query of queries) {
   process.stdout.write(`Testing ${query.name}... `);
   try {
     const [rows] = await client.query({ query: query.sql, params: query.params });
+    rowCounts[query.name] = rows.length;
     console.log(`ok (${rows.length} rows)`);
   } catch (error) {
     failed = true;
     console.log("FAILED");
     console.error(error instanceof Error ? error.message : error);
+  }
+}
+
+if (
+  !failed &&
+  rowCounts.activeContractCountQuery !== undefined &&
+  rowCounts.contractQuery !== undefined
+) {
+  process.stdout.write(
+    "Verifying activeContractCountQuery is uncapped relative to contractQuery... ",
+  );
+  if (rowCounts.activeContractCountQuery < rowCounts.contractQuery) {
+    failed = true;
+    console.log("FAILED");
+    console.error(
+      `activeContractCountQuery returned ${rowCounts.activeContractCountQuery} distinct contracts, ` +
+        `fewer than the ${rowCounts.contractQuery}-row capped leaderboard (limit ${TOP_CONTRACT_LIMIT}).`,
+    );
+  } else {
+    console.log(
+      `ok (${rowCounts.activeContractCountQuery} distinct contracts, independent of TOP_CONTRACT_LIMIT=${TOP_CONTRACT_LIMIT})`,
+    );
   }
 }
 

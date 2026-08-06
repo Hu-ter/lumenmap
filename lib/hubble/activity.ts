@@ -3,6 +3,7 @@ import { getCached, setCache } from "@/lib/hubble/cache";
 import {
   accountQuery,
   accountMetadataQuery,
+  activeContractCountQuery,
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
@@ -10,6 +11,7 @@ import {
   latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
+  mapActiveContractCountRow,
   mapActiveSourceAccountsRows,
   mapCategoryRows,
   mapContractRows,
@@ -28,7 +30,7 @@ import {
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
 import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
-import type { ActivityDataset, Period } from "@/lib/types";
+import type { ActiveContractCountRow, ActivityDataset, Period } from "@/lib/types";
 
 async function runQuery<T>(
   query: string,
@@ -94,6 +96,21 @@ async function fetchHomeDomains(ids: string[]) {
   });
 
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
+}
+
+// Uncapped distinct active-contract count for a period. Independent of the
+// capped contract leaderboard (contractQuery/TOP_CONTRACT_LIMIT) used for the
+// existing KPI card and treemaps.
+export async function getActiveContractCount(
+  start: string,
+  end: string,
+): Promise<ActiveContractCountRow> {
+  const rows = await runQuery<Record<string, unknown>>(activeContractCountQuery, {
+    start,
+    end,
+  });
+
+  return mapActiveContractCountRow(rows);
 }
 
 async function fetchLatestDataTimestamp(): Promise<string | null> {

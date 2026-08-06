@@ -8,6 +8,7 @@ import {
 } from "@/lib/constants";
 import type {
   AccountRow,
+  ActiveContractCountRow,
   ActiveSourceAccountsRow,
   CategoryRow,
   ContractRow,
@@ -42,6 +43,20 @@ WHERE hour_agg BETWEEN @start AND @end
 GROUP BY contract_id
 ORDER BY op_count DESC
 LIMIT ${TOP_CONTRACT_LIMIT}
+`;
+
+// Uncapped distinct count of active Soroban contracts for a period. Uses the
+// same active-contract semantics as contractQuery above (same source table
+// and null/empty filtering) but returns every qualifying contract_id rather
+// than the top-N leaderboard, so op-count aggregation and the LIMIT are
+// intentionally omitted.
+export const activeContractCountQuery = `
+SELECT DISTINCT
+  contract_id
+FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
+WHERE hour_agg BETWEEN @start AND @end
+  AND contract_id IS NOT NULL
+  AND contract_id != ''
 `;
 
 export const accountQuery = `
@@ -169,6 +184,25 @@ export function mapContractRows(rows: Record<string, unknown>[]): ContractRow[] 
     contract_id: String(row.contract_id),
     op_count: Number(row.op_count),
   }));
+}
+
+// Defensively dedupes and drops null/empty contract IDs client-side, in
+// addition to the query's own DISTINCT and WHERE filters, so a qualifying
+// contract ID contributes at most once even if upstream ever returns
+// duplicate or malformed rows.
+export function mapActiveContractCountRow(
+  rows: Record<string, unknown>[],
+): ActiveContractCountRow {
+  const ids = new Set<string>();
+
+  for (const row of rows) {
+    const id = row.contract_id;
+    if (typeof id === "string" && id.length > 0) {
+      ids.add(id);
+    }
+  }
+
+  return { active_contract_count: ids.size };
 }
 
 export function mapAccountRows(rows: Record<string, unknown>[]): AccountRow[] {
