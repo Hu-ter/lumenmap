@@ -7,6 +7,17 @@ export const CATEGORY_COLORS: Record<string, string> = {
   other: "#6B7280",
 };
 
+/** Pattern variant used as secondary non-color category cue in the treemap. */
+export const CATEGORY_PATTERNS: Record<string, string> = {
+  soroban: "diagonal",
+  payments: "horizontal",
+  dex: "crosshatch",
+  trustlines: "dots",
+  account: "vertical",
+  other: "none",
+};
+
+
 export const GROUP_LABELS: Record<string, string> = {
   soroban: "Soroban Contracts",
   payments: "Payments",
@@ -45,6 +56,15 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   extend_footprint_ttl: "soroban",
   restore_footprint: "soroban",
 };
+
+export {
+  ACCOUNT_QUERY_TYPES,
+  DESTINATION_QUERY_TYPES,
+  TOP_ACCOUNTS_PER_TYPE,
+  TOP_CONTRACT_LIMIT,
+  TOP_CONTRACTS_PER_FUNCTION,
+  TOP_SOROBAN_FUNCTIONS,
+} from "@/lib/hubble/shared-queries.mjs";
 
 export const TREEMAP_VIEWS = [
   {
