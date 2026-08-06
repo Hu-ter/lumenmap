@@ -200,6 +200,16 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           role="img"
           aria-label="Network activity treemap"
         >
+        <style>{`
+          g[tabindex]:focus-visible { outline: none; }
+          g[tabindex]:focus-visible .focus-ring { display: block; }
+          g[tabindex]:focus-visible .tile-rect {
+            stroke: #0B0E14 !important;
+            stroke-width: 2.5 !important;
+            opacity: 1 !important;
+          }
+          .focus-ring { display: none; }
+        `}</style>
         {leaves.map((node) => {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
@@ -230,6 +240,9 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
             <g
               key={nodeId}
               transform={`translate(${node.x0},${node.y0})`}
+              tabIndex={0}
+              role="button"
+              aria-label={ariaLabel}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => handleNodeClick(node)}
@@ -239,13 +252,23 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                   handleNodeClick(node);
                 }
               }}
-              tabIndex={0}
-              role="button"
-              aria-label={ariaLabel}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
-              className="focus-visible:outline-none focus-visible:[&>rect]:stroke-white focus-visible:[&>rect]:stroke-2"
+              className="focus-visible:outline-none"
             >
               <rect
+                className="focus-ring"
+                x={-2.5}
+                y={-2.5}
+                width={width + 5}
+                height={height + 5}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                rx={8.5}
+                pointerEvents="none"
+              />
+              <rect
+                className="tile-rect"
                 width={width}
                 height={height}
                 fill={color}
