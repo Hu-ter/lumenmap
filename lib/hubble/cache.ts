@@ -1,3 +1,4 @@
+import { metrics } from "@/lib/telemetry/metrics";
 export const DEFAULT_CACHE_TTL_SECONDS = 900;
 export const MIN_CACHE_TTL_SECONDS = 1;
 export const MAX_CACHE_TTL_SECONDS = 86_400;
@@ -24,23 +25,45 @@ export function parseCacheTtl(input?: unknown): number {
   return Math.floor(num);
 }
 
+type Clock = () => number;
+
 const cache = new Map<string, { data: unknown; expires: number }>();
+let now: Clock = () => Date.now();
+
+/** Inject a clock for deterministic cache expiry tests. */
+export function setClock(clock: Clock): void {
+  now = clock;
+}
 
 export function clearCache(): void {
   cache.clear();
 }
 
-export function getCached<T>(key: string): T | null {
+export function getCached<T>(
+  key: string,
+  options?: { endpoint?: "activity"; track?: boolean },
+): T | null {
+  const track = options?.track === true;
+  const endpoint = options?.endpoint ?? "activity";
   const entry = cache.get(key);
   if (!entry) {
+    if (track) {
+      metrics.increment({ endpoint, cache_outcome: "miss" });
+    }
     return null;
   }
 
-  if (Date.now() > entry.expires) {
+  if (now() > entry.expires) {
     cache.delete(key);
+    if (track) {
+      metrics.increment({ endpoint, cache_outcome: "miss" });
+    }
     return null;
   }
 
+  if (track) {
+    metrics.increment({ endpoint, cache_outcome: "hit" });
+  }
   return entry.data as T;
 }
 
@@ -55,7 +78,20 @@ export function setCache(
 
   cache.set(key, {
     data,
-    expires: Date.now() + validTtl * 1000,
+    expires: now() + validTtl * 1000,
   });
+  pruneCache();
 }
 
+/**
+ * Remove expired entries even when their keys are never read again.
+ * Invoked on writes so work stays bounded to request-time paths.
+ */
+export function pruneCache(): void {
+  const currentTime = now();
+  for (const [key, entry] of cache) {
+    if (currentTime > entry.expires) {
+      cache.delete(key);
+    }
+  }
+}

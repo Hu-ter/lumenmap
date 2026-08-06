@@ -14,13 +14,19 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-
     "typecheck": "tsc --noEmit",
     "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
     "protect:main": "node scripts/configure-main-protection.mjs",
-
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
-    "test:hubble": "node scripts/test-hubble-queries.mjs"
+    "test:hubble": "node scripts/test-hubble-queries.mjs",
+    "test:hubble:registry": "node scripts/test-query-registry.mjs",
+    "test:mapper": "node tests/test-destination-mapper.mjs",
+    "test:usdc-volume": "node scripts/test-usdc-volume.mjs",
+    "test:usdc": "npx tsx scripts/test-usdc-metric.mjs",
+    "test:issues": "npx tsx scripts/validate-yaml-templates.mjs",
+    "smoke": "node scripts/smoke-check.mjs",
+    "test:e2e:ui": "playwright test --ui",
+    "test:freshness": "node --test scripts/test-freshness.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
@@ -37,7 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.52",
     "@tailwindcss/postcss": "^4",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^20",

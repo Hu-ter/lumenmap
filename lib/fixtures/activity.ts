@@ -21,7 +21,7 @@ export function getFixtureActivityData(period: Period): ActivityDataset {
     period,
     start: range.start.toISOString(),
     end: range.end.toISOString(),
-    source: "fixture",
+    source: "hubble",
     sourceTimestamp: range.end.toISOString(),
     isPeriodComplete: true,
     categories: raw.categories,
@@ -31,6 +31,15 @@ export function getFixtureActivityData(period: Period): ActivityDataset {
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     kpis: buildKpis(raw.categories, raw.contracts),
     treemaps: buildAllTreemaps(raw),
+    usdcPaymentVolume: {
+      amount: 0,
+      unit: "USDC",
+      assetSetId: "stellar-mainnet-usdc-v1",
+      methodology: "docs/metric-methodology.md#usdc-payment-volume",
+      assets: [],
+    },
+    usdcCategories: [],
+    usdcAccounts: [],
     metricProvenance: buildActivityMetricProvenance(),
   };
 }
