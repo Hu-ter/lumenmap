@@ -1,10 +1,7 @@
-import {
-  endOfDay,
-  endOfMonth,
-  startOfDay,
-  startOfMonth,
-  subDays,
-} from "date-fns";
+// All time intervals use the half-open convention [start, end):
+//   start <= event_time < end
+// This prevents double-counting boundary events across adjacent periods.
+
 import type { Period } from "@/lib/types";
 
 export interface PeriodRange {
@@ -21,36 +18,44 @@ export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "month", label: "This Month" },
 ];
 
+function utcDate(y: number, m: number, d: number): Date {
+  return new Date(Date.UTC(y, m, d));
+}
+
+function addDaysUTC(d: Date, days: number): Date {
+  return utcDate(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + days);
+}
+
 export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
-  const end = endOfDay(now);
+  const base = utcDate(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
   switch (period) {
     case "1d":
       return {
         period,
-        start: startOfDay(now),
-        end,
+        start: base,
+        end: addDaysUTC(base, 1),
         label: "Today",
       };
     case "7d":
       return {
         period,
-        start: startOfDay(subDays(now, 6)),
-        end,
+        start: addDaysUTC(base, -6),
+        end: addDaysUTC(base, 1),
         label: "Last 7 Days",
       };
     case "30d":
       return {
         period,
-        start: startOfDay(subDays(now, 29)),
-        end,
+        start: addDaysUTC(base, -29),
+        end: addDaysUTC(base, 1),
         label: "Last 30 Days",
       };
     case "month":
       return {
         period,
-        start: startOfMonth(now),
-        end: endOfMonth(now),
+        start: utcDate(now.getUTCFullYear(), now.getUTCMonth(), 1),
+        end: utcDate(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
         label: "This Month",
       };
     default:
