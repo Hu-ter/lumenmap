@@ -21,7 +21,7 @@ const CATEGORY_LEGEND = [
 // Shared with the loading skeleton so reserved space matches the rendered
 // chart at every breakpoint.
 const CHART_FRAME_CLASS =
-  "h-[420px] sm:h-[520px] lg:h-[600px] overflow-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3";
+  "h-[420px] sm:h-[520px] lg:h-[600px] overflow-x-auto overflow-y-hidden rounded-xl border border-white/5 bg-black/20 p-2 sm:p-3";
 
 function toChartNode(node: TreemapNode<number | string>): TreemapNode {
   const { value, children, ...rest } = node;

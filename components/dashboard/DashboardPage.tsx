@@ -11,7 +11,7 @@ import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 
 function DashboardContent() {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
