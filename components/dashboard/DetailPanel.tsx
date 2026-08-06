@@ -31,7 +31,9 @@ export function DetailPanel() {
 
   if (!selectedNode) {
     return (
-      <Card className="h-full">
+      /* On mobile the empty state is compact so it doesn't push KPIs far down.
+         On xl screens it stretches to fill the sidebar column (h-full). */
+      <Card className="xl:h-full">
         <CardHeader>
           <CardTitle>Details</CardTitle>
         </CardHeader>
@@ -55,7 +57,7 @@ export function DetailPanel() {
           : "This month";
 
   return (
-    <Card className="h-full">
+    <Card className="xl:h-full">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div className="space-y-2">
           <CardTitle className="text-base text-white">
@@ -65,9 +67,10 @@ export function DetailPanel() {
             <Badge variant="secondary">{selectedNode.meta.category}</Badge>
           ) : null}
         </div>
+        {/* size="icon" gives a 44×44 hit area (h-11 w-11) to meet touch target requirements */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className="shrink-0"
           onClick={() => setSelectedNode(null)}
           aria-label="Close details"

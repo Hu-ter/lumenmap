@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActivityData } from "@/lib/hubble/activity";
+import { hasBigQueryCredentials } from "@/lib/hubble/client";
+import { buildFixtureDataset } from "@/lib/hubble/fixture";
 import { isValidPeriod, PERIOD_OPTIONS } from "@/lib/periods";
 import {
   ActivityResponseValidationError,
@@ -86,6 +88,19 @@ export async function handleActivityRequest(
 
   if (!parsed.ok) {
     return NextResponse.json(parsed.body, { status: parsed.status });
+  }
+
+  // Fixture mode: no credentials configured, return static sample data so the
+  // dashboard is usable without a GCP project.
+  if (fetchActivityData === getActivityData && !hasBigQueryCredentials()) {
+    const data = buildFixtureDataset(parsed.period);
+    const validated = validateActivityResponse({
+      ...toVisualizationResponse(data),
+      fixture: true,
+    });
+    return NextResponse.json(validated, {
+      headers: { "Cache-Control": "public, max-age=900, s-maxage=900" },
+    });
   }
 
   try {

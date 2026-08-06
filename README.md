@@ -465,3 +465,7 @@ To add wallet or dApp labels, edit [`data/entities.json`](data/entities.json) or
 ## License
 
 [MIT](LICENSE)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, fixture mode, and PR expectations.

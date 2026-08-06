@@ -321,6 +321,8 @@ export interface ActivityVisualizationResponse extends ActivityResponseMetadata 
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
   metricProvenance: ActivityMetricProvenance;
+  /** Present and true when the API returned static fixture data (no GCP credentials). */
+  fixture?: boolean;
 }
 
 export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
