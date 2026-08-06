@@ -57,31 +57,14 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   restore_footprint: "soroban",
 };
 
-export const DESTINATION_QUERY_TYPES = [
-  "payment",
-  "path_payment_strict_receive",
-  "path_payment_strict_send",
-  "create_account",
-  "account_merge",
-];
-
-export const ACCOUNT_QUERY_TYPES = [
-  "payment",
-  "path_payment_strict_receive",
-  "path_payment_strict_send",
-  "manage_buy_offer",
-  "manage_sell_offer",
-  "create_passive_sell_offer",
-  "change_trust",
-  "create_account",
-  "liquidity_pool_deposit",
-  "liquidity_pool_withdraw",
-];
-
-export const TOP_ACCOUNTS_PER_TYPE = 70;
-export const TOP_CONTRACT_LIMIT = 200;
-export const TOP_SOROBAN_FUNCTIONS = 100;
-export const TOP_CONTRACTS_PER_FUNCTION = 70;
+export {
+  ACCOUNT_QUERY_TYPES,
+  DESTINATION_QUERY_TYPES,
+  TOP_ACCOUNTS_PER_TYPE,
+  TOP_CONTRACT_LIMIT,
+  TOP_CONTRACTS_PER_FUNCTION,
+  TOP_SOROBAN_FUNCTIONS,
+} from "@/lib/hubble/shared-queries.mjs";
 
 export const TREEMAP_VIEWS = [
   {
