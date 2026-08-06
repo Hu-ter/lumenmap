@@ -7,6 +7,7 @@ import {
 } from "@/lib/constants";
 import type {
   AccountRow,
+  ActiveSourceAccountsRow,
   CategoryRow,
   ContractRow,
   SorobanFunctionContractRow,
@@ -127,6 +128,7 @@ export type RawQueryResults = {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  activeSourceAccounts: ActiveSourceAccountsRow[];
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
@@ -193,5 +195,23 @@ export function mapAccountMetadataRows(
   return rows.map((row) => ({
     account_id: String(row.account_id),
     home_domain: String(row.home_domain),
+  }));
+}
+
+export const activeSourceAccountsQuery = `
+SELECT
+  COUNT(DISTINCT op_source_account) AS active_accounts
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+WHERE closed_at BETWEEN @start AND @end
+  AND op_source_account IS NOT NULL
+  AND op_source_account != ''
+  AND op_source_account NOT LIKE 'M%'
+`;
+
+export function mapActiveSourceAccountsRows(
+  rows: Record<string, unknown>[],
+): ActiveSourceAccountsRow[] {
+  return rows.map((row) => ({
+    active_accounts: Number(row.active_accounts),
   }));
 }

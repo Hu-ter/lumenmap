@@ -6,6 +6,7 @@ import {
 import { getDisplayName, lookupEntity } from "@/lib/entities/registry";
 import type {
   AccountRow,
+  ActiveSourceAccountsRow,
   ActivityKpis,
   ActivityTreemaps,
   CategoryRow,
@@ -390,6 +391,7 @@ export function buildTreemap(input: BuildTreemapInput): TreemapNode {
 export function buildKpis(
   categories: CategoryRow[],
   contracts: ContractRow[],
+  activeSourceAccounts: ActiveSourceAccountsRow[] = [],
 ): ActivityKpis {
   const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
   const groupTotals = getGroupTotals(categories, "ops");

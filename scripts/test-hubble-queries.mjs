@@ -112,6 +112,16 @@ FROM ranked
 WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC`;
 
+const activeSourceAccountsQuery = `
+SELECT
+  COUNT(DISTINCT op_source_account) AS active_accounts
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+WHERE closed_at BETWEEN @start AND @end
+  AND op_source_account IS NOT NULL
+  AND op_source_account != ''
+  AND op_source_account NOT LIKE 'M%'
+`;
+
 const end = new Date().toISOString();
 const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const baseParams = { start, end };
@@ -143,6 +153,11 @@ const queries = [
   {
     name: "sorobanFunctionContractQuery",
     sql: sorobanFunctionContractQuery,
+    params: baseParams,
+  },
+  {
+    name: "activeSourceAccountsQuery",
+    sql: activeSourceAccountsQuery,
     params: baseParams,
   },
 ];
