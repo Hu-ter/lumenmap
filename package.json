@@ -16,7 +16,9 @@
     "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
     "protect:main": "node scripts/configure-main-protection.mjs",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
-    "test:hubble": "node scripts/test-hubble-queries.mjs"
+    "test:hubble": "node scripts/test-hubble-queries.mjs",
+    "test:mapper": "node tests/test-destination-mapper.mjs",
+    "test:usdc-volume": "node scripts/test-usdc-volume.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
@@ -29,7 +31,8 @@
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -43,8 +46,5 @@
     "tsx": "^4.23.5",
     "typescript": "^5",
     "vitest": "^4.1.10"
-  },
-  "engines": {
-    "node": "20.x"
   }
 }
