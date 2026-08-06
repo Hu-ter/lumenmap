@@ -193,6 +193,10 @@ export interface SorobanFunctionRow {
   op_count: number;
 }
 
+export interface ActiveDestinationCountRow {
+  active_destination_count: number;
+}
+
 export interface SorobanFunctionContractRow {
   function_name: string;
   contract_id: string;

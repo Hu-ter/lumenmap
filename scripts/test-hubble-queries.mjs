@@ -20,6 +20,14 @@ const TOP_ACCOUNTS_PER_TYPE = 70;
 const TOP_CONTRACT_LIMIT = 200;
 const TOP_CONTRACTS_PER_FUNCTION = 70;
 const TOP_SOROBAN_FUNCTIONS = 100;
+const DESTINATION_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "create_account",
+  "account_merge",
+];
+
 const ACCOUNT_QUERY_TYPES = [
   "payment",
   "path_payment_strict_receive",
