@@ -8,7 +8,7 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data } = useDashboard();
+  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
 
   if (!selectedNode) {
     return (
@@ -59,7 +59,9 @@ export function DetailPanel() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-            <p className="text-xs text-zinc-500">Operations</p>
+            <p className="text-xs text-zinc-500">
+              {metric === "xlm_volume" ? "XLM volume" : "Activity count"}
+            </p>
             <p className="text-lg font-semibold text-white">
               {formatNumber(selectedNode.value)}
             </p>
@@ -98,6 +100,41 @@ export function DetailPanel() {
             <p className="font-mono text-xs text-zinc-300">
               {selectedNode.meta.eventType}
             </p>
+          </div>
+        ) : null}
+
+        {selectedNode.meta?.coverage ? (
+          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="mb-2 text-xs font-semibold text-zinc-400">
+              Top-N Coverage
+            </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Coverage</span>
+                <span className="text-xs font-medium text-white">
+                  {formatPercent(selectedNode.meta.coverage.coveragePercent)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Named entities</span>
+                <span className="text-xs font-medium text-white">
+                  {selectedNode.meta.coverage.namedEntityCount}{" "}
+                  of {selectedNode.meta.coverage.configuredLimit}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Named ops</span>
+                <span className="text-xs font-medium text-white">
+                  {formatNumber(selectedNode.meta.coverage.namedChildValue)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Total ops</span>
+                <span className="text-xs font-medium text-white">
+                  {formatNumber(selectedNode.meta.coverage.parentValue)}
+                </span>
+              </div>
+            </div>
           </div>
         ) : null}
 
