@@ -1,21 +1,23 @@
-import { describe, expect, it } from "vitest";
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+
 import { TOP_CONTRACT_LIMIT } from "@/lib/constants";
 import { mapActiveContractCountRow } from "./queries";
 
 describe("mapActiveContractCountRow", () => {
-  it("counts each duplicate contract ID once", () => {
+  test("counts each duplicate contract ID once", () => {
     const rows = [
       { contract_id: "CONTRACT_A" },
       { contract_id: "CONTRACT_B" },
       { contract_id: "CONTRACT_A" },
     ];
 
-    expect(mapActiveContractCountRow(rows)).toEqual({
+    assert.deepEqual(mapActiveContractCountRow(rows), {
       active_contract_count: 2,
     });
   });
 
-  it("excludes null, undefined, and empty contract IDs", () => {
+  test("excludes null, undefined, and empty contract IDs", () => {
     const rows = [
       { contract_id: "CONTRACT_A" },
       { contract_id: null },
@@ -24,24 +26,24 @@ describe("mapActiveContractCountRow", () => {
       { contract_id: "CONTRACT_B" },
     ];
 
-    expect(mapActiveContractCountRow(rows)).toEqual({
+    assert.deepEqual(mapActiveContractCountRow(rows), {
       active_contract_count: 2,
     });
   });
 
-  it("returns zero for an empty period", () => {
-    expect(mapActiveContractCountRow([])).toEqual({
+  test("returns zero for an empty period", () => {
+    assert.deepEqual(mapActiveContractCountRow([]), {
       active_contract_count: 0,
     });
   });
 
-  it("can exceed TOP_CONTRACT_LIMIT, unlike the capped leaderboard", () => {
+  test("can exceed TOP_CONTRACT_LIMIT, unlike the capped leaderboard", () => {
     const contractCount = TOP_CONTRACT_LIMIT + 50;
     const rows = Array.from({ length: contractCount }, (_, i) => ({
       contract_id: `CONTRACT_${i}`,
     }));
 
-    expect(mapActiveContractCountRow(rows)).toEqual({
+    assert.deepEqual(mapActiveContractCountRow(rows), {
       active_contract_count: contractCount,
     });
   });
