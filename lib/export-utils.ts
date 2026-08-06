@@ -1,4 +1,4 @@
-import type { ActivityResponse, Period, TreemapNode } from "@/lib/types";
+import type { ActivityVisualizationResponse, Period, TreemapNode } from "@/lib/types";
 import type { TreemapViewId } from "@/lib/constants";
 
 export interface ExportMetadata {
@@ -26,7 +26,7 @@ export function generateSafeFilename(
 }
 
 export function buildExportMetadata(
-  data: ActivityResponse | undefined,
+  data: ActivityVisualizationResponse | undefined,
   period: Period,
   treemapView: TreemapViewId,
   viewLabel: string
@@ -206,51 +206,20 @@ export function flattenTreemapForCsv(node: TreemapNode & { children?: TreemapNod
 }
 
 export function getStructuredRowsForExport(
-  data: ActivityResponse | undefined,
+  data: ActivityVisualizationResponse | undefined,
   treemapView: TreemapViewId
 ): { rows: Record<string, unknown>[]; syntheticIdentifiers: string[] } {
-  if (!data) {
-    return { rows: [], syntheticIdentifiers: ["other"] };
-  }
-
   const syntheticIdentifiers = ["other", "remainder"];
-
-  if (treemapView === "events") {
-    // Use categories + sorobanFunctions as primary structured rows
-    const categoryRows = data.categories.map((r) => ({
-      ...r,
-      source_table: "categories",
-      is_synthetic: r.type_string.toLowerCase().includes("other") ? "yes" : "no",
-    }));
-
-    const functionRows = data.sorobanFunctions.map((r) => ({
-      function_name: r.function_name,
-      op_count: r.op_count,
-      source_table: "sorobanFunctions",
-      is_synthetic: "no",
-    }));
-
-    return {
-      rows: [...categoryRows, ...functionRows],
-      syntheticIdentifiers,
-    };
-  } else {
-    // actors view: contracts + accounts
-    const contractRows = data.contracts.map((r) => ({
-      ...r,
-      source_table: "contracts",
-      is_synthetic: "no",
-    }));
-
-    const accountRows = data.accounts.map((r) => ({
-      ...r,
-      source_table: "accounts",
-      is_synthetic: "no",
-    }));
-
-    return {
-      rows: [...contractRows, ...accountRows],
-      syntheticIdentifiers,
-    };
+  if (!data?.treemaps?.[treemapView]) {
+    return { rows: [], syntheticIdentifiers };
   }
+  const rows = flattenTreemapForCsv(data.treemaps[treemapView]).map((row) => ({
+    ...row,
+    is_synthetic:
+      String(row.name ?? "").toLowerCase().includes("other") ||
+      String(row.path ?? "").toLowerCase().includes("other")
+        ? "yes"
+        : "no",
+  }));
+  return { rows, syntheticIdentifiers };
 }

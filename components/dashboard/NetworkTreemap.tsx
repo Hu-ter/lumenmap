@@ -160,10 +160,12 @@ export function NetworkTreemap() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <CardTitle>Network Treemap</CardTitle>
-          <p className="text-xs text-zinc-500">
-            Switch views to explore operation types or top accounts and
-            contracts. Click legend items to filter categories.
-          </p>
+            <p className="text-xs text-zinc-500">
+              Switch views to explore operation types or top accounts and
+              contracts. Click legend items to filter categories.
+            </p>
+          </div>
+          <ExportControls />
         </div>
         <TreemapViewSelector />
         <TreemapMetricSelector />
