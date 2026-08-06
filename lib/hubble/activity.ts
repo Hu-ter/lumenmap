@@ -1,22 +1,30 @@
-import { getBigQueryClient, hasBigQueryCredentials } from "@/lib/hubble/client";
+import { getBigQueryClient } from "@/lib/hubble/client";
 import { getCached, setCache } from "@/lib/hubble/cache";
 import {
   accountQuery,
   accountMetadataQuery,
+  activeContractCountQuery,
+  activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  getUsdcPaymentVolumeParams,
   latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
+  mapActiveContractCountRow,
+  mapActiveSourceAccountsRows,
   mapCategoryRows,
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapUsdcPaymentVolumeRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  usdcPaymentVolumeQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
+import { hasBigQueryCredentials } from "@/lib/hubble/client";
 import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
 import {
   collectTreemapIds,
@@ -24,9 +32,11 @@ import {
   resolveEntityLabels,
 } from "@/lib/entities/resolve-labels";
 import { resolvePeriod } from "@/lib/periods";
-import type { ActivityResponse, Period } from "@/lib/types";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
+import type { ActiveContractCountRow, ActivityDataset, Period } from "@/lib/types";
 import {
   classifyError,
+  createCorrelationId,
   endTimer,
   logError,
   logInfo,
@@ -72,7 +82,7 @@ async function runQuery<T>(
       correlationId,
       queryName: name,
       durationMs: endTimer(timer),
-      rowCount: rows.length,
+      rowCount: (rows as unknown[]).length,
     });
 
     return rows as T[];
@@ -106,15 +116,47 @@ async function fetchFromHubble(
     accountRows,
     sorobanFunctionRows,
     sorobanFunctionContractRows,
+    activeSourceAccountRows,
+    usdcPaymentVolumeRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
     runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
-    runQuery<Record<string, unknown>>("account", accountQuery, {
-      ...params,
-      types: getAccountQueryTypes(),
-    }, correlationId),
-    runQuery<Record<string, unknown>>("sorobanFunction", sorobanFunctionQuery, params, correlationId),
-    runQuery<Record<string, unknown>>("sorobanFunctionContract", sorobanFunctionContractQuery, params, correlationId),
+    runQuery<Record<string, unknown>>(
+      "account",
+      accountQuery,
+      {
+        ...params,
+        types: getAccountQueryTypes(),
+      },
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "sorobanFunction",
+      sorobanFunctionQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "sorobanFunctionContract",
+      sorobanFunctionContractQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "activeSourceAccounts",
+      activeSourceAccountsQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "usdcPaymentVolume",
+      usdcPaymentVolumeQuery,
+      {
+        ...params,
+        assets: getUsdcPaymentVolumeParams(),
+      },
+      correlationId,
+    ),
   ]);
 
   return {
@@ -125,6 +167,8 @@ async function fetchFromHubble(
     sorobanFunctionContracts: mapSorobanFunctionContractRows(
       sorobanFunctionContractRows,
     ),
+    activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
+    usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
   };
 }
 
@@ -143,10 +187,46 @@ async function fetchHomeDomains(ids: string[], correlationId: string) {
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
 }
 
+// Uncapped distinct active-contract count for a period. Independent of the
+// capped contract leaderboard (contractQuery/TOP_CONTRACT_LIMIT) used for the
+// existing KPI card and treemaps.
+export async function getActiveContractCount(
+  start: string,
+  end: string,
+  correlationId: string = createCorrelationId(),
+): Promise<ActiveContractCountRow> {
+  const rows = await runQuery<Record<string, unknown>>(
+    "activeContractCount",
+    activeContractCountQuery,
+    {
+      start,
+      end,
+    },
+    correlationId,
+  );
+
+  return mapActiveContractCountRow(rows);
+}
+
+async function fetchLatestDataTimestamp(correlationId: string): Promise<string | null> {
+  const rows = await runQuery<Record<string, unknown>>(
+    "latestDataTimestamp",
+    latestDataTimestampQuery,
+    {},
+    correlationId,
+  );
+
+  if (rows.length === 0 || rows[0].latest_timestamp == null) {
+    return null;
+  }
+
+  return String(rows[0].latest_timestamp);
+}
+
 export async function getActivityData(
   period: Period,
-  correlationId: string,
-): Promise<ActivityResponse> {
+  correlationId: string = createCorrelationId(),
+): Promise<ActivityDataset> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
@@ -185,7 +265,13 @@ export async function getActivityData(
   });
 
   const kpiTimer = startTimer();
-  const kpis = buildKpis(raw.categories, raw.contracts);
+  const activeContractCount = await getActiveContractCount(start, end, correlationId);
+  const kpis = buildKpis(
+    raw.categories,
+    raw.contracts,
+    raw.activeSourceAccounts,
+    activeContractCount.active_contract_count,
+  );
   logInfo({
     event: "activity.kpi.build",
     correlationId,
@@ -213,6 +299,10 @@ export async function getActivityData(
     durationMs: endTimer(treemapTimer),
   });
 
+  const sourceTimestamp = await fetchLatestDataTimestamp(correlationId);
+  const now = new Date();
+  const isPeriodComplete = range.end.getTime() <= now.getTime();
+
   const response: ActivityDataset = {
     period,
     start,
@@ -225,6 +315,7 @@ export async function getActivityData(
     accounts: raw.accounts,
     sorobanFunctions: raw.sorobanFunctions,
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
+    usdcPaymentVolume: raw.usdcPaymentVolume,
     kpis,
     treemaps,
     metricProvenance: buildActivityMetricProvenance(),
