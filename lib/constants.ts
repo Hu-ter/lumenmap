@@ -80,3 +80,5 @@ export const TREEMAP_VIEWS = [
 ] as const;
 
 export type TreemapViewId = (typeof TREEMAP_VIEWS)[number]["id"];
+
+export const TOP_PROTOCOLS = 15;
