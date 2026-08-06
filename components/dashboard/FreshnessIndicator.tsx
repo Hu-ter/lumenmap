@@ -1,6 +1,11 @@
 "use client";
 
-import { differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
+import {
+  differenceInDays,
+  differenceInHours,
+  differenceInMinutes,
+  format,
+} from "date-fns";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,25 +20,13 @@ function formatLag(dataThrough: string): string {
   const hours = differenceInHours(now, through);
   if (hours < 24) {
     const remainMins = mins % 60;
-    return remainMins > 0 ? `${hours}h ${remainMins}m behind` : `${hours}h behind`;
+    return remainMins > 0
+      ? `${hours}h ${remainMins}m behind`
+      : `${hours}h behind`;
   }
 
   const days = differenceInDays(now, through);
   return `${days}d behind`;
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function formatUtcTimestamp(iso: string): string {
-  const d = new Date(iso);
-  const yyyy = d.getUTCFullYear();
-  const MM = pad(d.getUTCMonth() + 1);
-  const dd = pad(d.getUTCDate());
-  const HH = pad(d.getUTCHours());
-  const mm = pad(d.getUTCMinutes());
-  return `${yyyy}-${MM}-${dd} ${HH}:${mm} UTC`;
 }
 
 export function FreshnessIndicator() {
@@ -41,13 +34,13 @@ export function FreshnessIndicator() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-3 w-56" />
+      <div className="flex flex-col gap-1" aria-busy="true">
+        <Skeleton className="h-4 w-64 max-w-full" />
       </div>
     );
   }
 
-  if (isError || !data?.freshness) {
+  if (isError || !data) {
     return (
       <p className="text-xs text-zinc-500">
         Data source:{" "}
@@ -58,19 +51,60 @@ export function FreshnessIndicator() {
     );
   }
 
-  const { dataThrough } = data.freshness;
-  const lag = formatLag(dataThrough);
-  const utcDisplay = formatUtcTimestamp(dataThrough);
+  const sourceTime = data.sourceTimestamp
+    ? new Date(data.sourceTimestamp)
+    : null;
+  const periodEnd = new Date(data.end);
+  const isBehind = sourceTime && periodEnd > sourceTime;
+  const lag =
+    sourceTime && !Number.isNaN(sourceTime.getTime())
+      ? formatLag(data.sourceTimestamp)
+      : null;
 
   return (
-    <p
-      className="text-xs text-zinc-500"
-      title={`Data through ${dataThrough} · Refreshed ${data.freshness.lastRefreshed}`}
-    >
-      Data through{" "}
-      <span className="text-zinc-300">{utcDisplay}</span>
-      {" · "}
-      <span className="text-zinc-400">{lag}</span>
-    </p>
+    <div className="flex flex-col gap-1">
+      <p
+        className="text-xs text-zinc-500"
+        title={
+          sourceTime
+            ? `Data through ${data.sourceTimestamp}`
+            : "Data freshness unavailable"
+        }
+      >
+        Data source:{" "}
+        <span className="text-zinc-300">Hubble BigQuery</span>
+        {sourceTime ? (
+          <>
+            {" · Data through "}
+            <span className="text-zinc-300">
+              {format(sourceTime, "yyyy-MM-dd HH:mm")} UTC
+            </span>
+            {lag ? (
+              <>
+                {" · "}
+                <span className="text-zinc-400">{lag}</span>
+              </>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {" · "}
+            <span className="text-amber-500">Data freshness unavailable</span>
+          </>
+        )}
+      </p>
+      {!data.isPeriodComplete && (
+        <p className="text-xs text-amber-400">
+          {data.period === "1d"
+            ? "Today's data is still being indexed and may be incomplete."
+            : "This period is still accumulating data and may be incomplete."}
+        </p>
+      )}
+      {isBehind && (
+        <p className="text-xs text-zinc-400">
+          Latest available data may be delayed relative to the period end
+        </p>
+      )}
+    </div>
   );
 }
