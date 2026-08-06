@@ -1,93 +1,100 @@
 "use client";
 
+import { format } from "date-fns";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   DashboardProvider,
   useDashboard,
 } from "@/components/dashboard/DashboardProvider";
-import { ControlBar } from "@/components/dashboard/ControlBar";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
+import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function DataSourceNotice() {
-  const { data } = useDashboard();
+  const { data, isLoading } = useDashboard();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-1" aria-busy="true">
+        <Skeleton className="h-4 w-64 max-w-full" />
+      </div>
+    );
+  }
 
   if (!data) {
     return null;
   }
 
+  const sourceTime = data.sourceTimestamp
+    ? new Date(data.sourceTimestamp)
+    : null;
+  const periodEnd = new Date(data.end);
+  const isBehind = sourceTime && periodEnd > sourceTime;
+
   return (
-    <p className="text-xs text-zinc-500">
-      Data source:{" "}
-      <span className="text-zinc-300">Hubble BigQuery</span>
-      {" · Hubble updates in intraday batches"}
-    </p>
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-zinc-500">
+        Data source:{" "}
+        <span className="text-zinc-300">Hubble BigQuery</span>
+        {sourceTime
+          ? ` · Latest data: ${format(sourceTime, "MMM d, yyyy HH:mm UTC")}`
+          : ""}
+      </p>
+      {!data.isPeriodComplete && (
+        <p className="text-xs text-amber-400">
+          {data.period === "1d"
+            ? "Today's data is still being indexed and may be incomplete."
+            : "This period is still accumulating data and may be incomplete."}
+        </p>
+      )}
+      {isBehind && (
+        <p className="text-xs text-zinc-400">
+          Latest available data may be delayed relative to the period
+          end
+        </p>
+      )}
+    </div>
   );
 }
 
 function DashboardContent() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      {/* ── 1. Site header (h1) ─────────────────────────────────────────── */}
-      <header>
-        <div className="flex flex-wrap items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="LumenMap"
-            width={44}
-            height={44}
-            className="shrink-0"
-            priority
-          />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              LumenMap
-            </h1>
-            <p className="text-sm text-zinc-400">
-              Stellar network activity across mainnet.
-            </p>
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="LumenMap"
+              width={44}
+              height={44}
+              className="shrink-0"
+              priority
+            />
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                LumenMap
+              </h1>
+              <p className="text-sm text-zinc-400">
+                Stellar network activity across mainnet.
+              </p>
+            </div>
+            <Badge>Mainnet</Badge>
           </div>
-          <Badge>Mainnet</Badge>
-        </div>
-        <div className="mt-3">
           <DataSourceNotice />
         </div>
+        <PeriodSelector />
       </header>
 
-      {/* ── 2. Primary controls (metric view + period) ──────────────────── */}
-      <ControlBar />
+      <KpiCards />
 
-      {/* ── 3. Primary visualization + detail sidebar (desktop) ─────────── */}
-      {/*
-        Layout:
-          • Mobile:  treemap → detail panel → KPI cards (stacked)
-          • Desktop: [treemap  |  detail sidebar]  then KPI cards full-width below
-        The detail panel appears directly below the treemap on mobile so the
-        user can act on a selection without scrolling past KPIs first.
-      */}
-      <section aria-labelledby="treemap-heading">
-        <h2 id="treemap-heading" className="sr-only">
-          Network activity treemap
-        </h2>
-
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Treemap always renders first in DOM order (keyboard / screen reader) */}
-          <NetworkTreemap />
-
-          {/* Detail panel – sidebar on desktop, stacked below treemap on mobile */}
-          <DetailPanel />
-        </div>
-      </section>
-
-      {/* ── 4. Secondary context: KPI summary cards ─────────────────────── */}
-      <section aria-labelledby="kpis-heading">
-        <h2 id="kpis-heading" className="sr-only">
-          Key metrics
-        </h2>
-        <KpiCards />
-      </section>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <NetworkTreemap />
+        <DetailPanel />
+      </div>
     </div>
   );
 }
