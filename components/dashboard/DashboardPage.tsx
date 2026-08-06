@@ -2,28 +2,13 @@
 
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { DashboardProvider, useDashboard } from "@/components/dashboard/DashboardProvider";
+import { DashboardProvider } from "@/components/dashboard/DashboardProvider";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
+import { FreshnessIndicator } from "@/components/dashboard/FreshnessIndicator";
 import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
-
-function DataSourceNotice() {
-  const { data } = useDashboard();
-
-  if (!data) {
-    return null;
-  }
-
-  return (
-    <p className="text-xs text-zinc-500">
-      Data source:{" "}
-      <span className="text-zinc-300">Hubble BigQuery</span>
-      {" · Hubble updates in intraday batches"}
-    </p>
-  );
-}
 
 function DashboardContent() {
   return (
@@ -49,7 +34,7 @@ function DashboardContent() {
             </div>
             <Badge>Mainnet</Badge>
           </div>
-          <DataSourceNotice />
+          <FreshnessIndicator />
         </div>
         <PeriodSelector />
       </header>

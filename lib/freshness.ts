@@ -19,25 +19,22 @@ export const STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000;
 export type FreshnessState = "fresh" | "stale" | "unknown";
 
 /**
- * Classify the freshness of data given its data-through ISO timestamp.
+ * Classify the freshness of data given its upstream data-through ISO timestamp
+ * (`ActivityResponseMetadata.sourceTimestamp`).
  *
- * Uses API metadata (`endIso`) rather than client request time as the
+ * Uses API freshness metadata rather than client request time as the
  * reference for how old the data is. `now` defaults to `new Date()` and
  * can be overridden in tests.
- *
- * @param endIso - ISO 8601 string from `ActivityResponse.end`
- * @param now    - current time reference (defaults to Date.now())
- * @returns FreshnessState
  */
 export function classifyFreshness(
-  endIso: string | undefined,
+  sourceTimestamp: string | undefined,
   now: Date = new Date(),
 ): FreshnessState {
-  if (!endIso) {
+  if (!sourceTimestamp) {
     return "unknown";
   }
 
-  const dataThrough = new Date(endIso).getTime();
+  const dataThrough = new Date(sourceTimestamp).getTime();
 
   if (Number.isNaN(dataThrough)) {
     return "unknown";

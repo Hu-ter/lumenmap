@@ -5,14 +5,15 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { classifyFreshness } from "@/lib/freshness";
 
 /** Format the data-through timestamp for display in the warning banner. */
-function formatDataThrough(endIso: string): string {
+function formatDataThrough(iso: string): string {
   try {
-    return new Date(endIso).toLocaleString(undefined, {
+    return new Date(iso).toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
+      timeZone: "UTC",
     });
   } catch {
-    return endIso;
+    return iso;
   }
 }
 
@@ -21,21 +22,19 @@ function formatDataThrough(endIso: string): string {
  * documented stale threshold (lib/freshness.ts).
  *
  * - fresh   → renders nothing
- * - stale   → amber banner with ⚠ icon, exact data-through time, non-color cue
- * - unknown → grey notice with ? icon
+ * - stale   → amber banner with warning icon, exact data-through time
+ * - unknown → grey notice
  *
- * The warning uses `data.end` from the API response, not the client request
- * time, as the reference for data age.
+ * Uses `data.sourceTimestamp` from the API response as the data-through time.
  */
 export function FreshnessWarning() {
   const { data } = useDashboard();
 
-  // No warning while loading or if there is no data yet.
   if (!data) {
     return null;
   }
 
-  const state = classifyFreshness(data.end);
+  const state = classifyFreshness(data.sourceTimestamp);
 
   if (state === "fresh") {
     return null;
@@ -63,7 +62,6 @@ export function FreshnessWarning() {
     );
   }
 
-  // state === "stale"
   return (
     <div
       role="alert"
@@ -76,11 +74,11 @@ export function FreshnessWarning() {
       />
       <span>
         <strong className="font-medium text-amber-300">
-          ⚠ Data may be stale.
+          Data may be stale.
         </strong>{" "}
         Hubble has not refreshed within the expected window.{" "}
         <span className="whitespace-nowrap font-mono text-xs text-amber-300/80">
-          Data through: {formatDataThrough(data.end)}
+          Data through: {formatDataThrough(data.sourceTimestamp)} UTC
         </span>
       </span>
     </div>

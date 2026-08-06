@@ -16,13 +16,13 @@ import { describe, it } from "node:test";
 const STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 /**
- * @param {string | undefined} endIso
+ * @param {string | undefined} sourceTimestamp
  * @param {Date} [now]
  * @returns {"fresh" | "stale" | "unknown"}
  */
-function classifyFreshness(endIso, now = new Date()) {
-  if (!endIso) return "unknown";
-  const dataThrough = new Date(endIso).getTime();
+function classifyFreshness(sourceTimestamp, now = new Date()) {
+  if (!sourceTimestamp) return "unknown";
+  const dataThrough = new Date(sourceTimestamp).getTime();
   if (Number.isNaN(dataThrough)) return "unknown";
   const lagMs = now.getTime() - dataThrough;
   return lagMs >= STALE_THRESHOLD_MS ? "stale" : "fresh";
@@ -66,15 +66,15 @@ describe("classifyFreshness", () => {
     assert.strictEqual(classifyFreshness(end.toISOString(), now), "fresh");
   });
 
-  it("returns 'unknown' when endIso is undefined", () => {
+  it("returns 'unknown' when sourceTimestamp is undefined", () => {
     assert.strictEqual(classifyFreshness(undefined), "unknown");
   });
 
-  it("returns 'unknown' when endIso is empty string", () => {
+  it("returns 'unknown' when sourceTimestamp is empty string", () => {
     assert.strictEqual(classifyFreshness("", new Date()), "unknown");
   });
 
-  it("returns 'unknown' when endIso is not a valid date string", () => {
+  it("returns 'unknown' when sourceTimestamp is not a valid date string", () => {
     assert.strictEqual(classifyFreshness("not-a-date", new Date()), "unknown");
   });
 
