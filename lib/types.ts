@@ -251,6 +251,19 @@ export interface ActivityKpis {
   };
 }
 
+export interface TreemapCoverage {
+  /** Sum of named children values (excluding synthetic remainder). */
+  namedChildValue: number;
+  /** The parent node's total value. */
+  parentValue: number;
+  /** Coverage percentage: namedChildValue / parentValue (0–100). */
+  coveragePercent: number;
+  /** Number of named child entities (excluding the remainder node). */
+  namedEntityCount: number;
+  /** The configured top-N limit that was applied. */
+  configuredLimit: number;
+}
+
 export interface TreemapNodeMeta {
   type: TreemapNodeType;
   id?: string;
@@ -261,6 +274,8 @@ export interface TreemapNodeMeta {
   xlmVolume?: number;
   childCount?: number;
   eventType?: string;
+  /** Coverage metadata for capped (top-N) treemap parents. */
+  coverage?: TreemapCoverage;
 }
 
 export interface TreemapNode<TValue extends number | string = number> {
