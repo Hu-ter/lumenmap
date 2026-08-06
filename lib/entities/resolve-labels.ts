@@ -177,10 +177,13 @@ export function collectTreemapIds(raw: {
   accounts: { account_id: string }[];
   contracts: { contract_id: string }[];
   sorobanFunctionContracts: { contract_id: string }[];
+  usdcAccounts?: { account_id: string }[];
 }): string[] {
   return [
     ...raw.accounts.map((row) => row.account_id),
     ...raw.contracts.map((row) => row.contract_id),
     ...raw.sorobanFunctionContracts.map((row) => row.contract_id),
+    ...(raw.usdcAccounts?.map((row) => row.account_id) ?? []),
   ];
 }
+

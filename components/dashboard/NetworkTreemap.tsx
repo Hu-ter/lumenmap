@@ -69,7 +69,9 @@ export function NetworkTreemap() {
   const activePayload = data
     ? metric === "xlm_volume"
       ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
-      : data.treemaps[treemapView]
+      : metric === "usdc"
+        ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
+        : data.treemaps[treemapView]
     : null;
   const activeTreemap = activePayload ? toChartNode(activePayload) : null;
 
@@ -181,8 +183,17 @@ export function NetworkTreemap() {
             {activeTreemap.children && activeTreemap.children.length > 0 ? (
               <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
             ) : (
-              <div className="flex h-full items-center justify-center text-sm text-zinc-500">
-                No data for this metric and view combination.
+              <div className="flex h-full flex-col items-center justify-center gap-1 p-6 text-center text-sm text-zinc-500">
+                <p className="font-medium text-zinc-300">
+                  {metric === "usdc"
+                    ? "No USDC payment volume recorded for this period."
+                    : "No data for this metric and view combination."}
+                </p>
+                {metric === "usdc" ? (
+                  <p className="text-xs text-zinc-500">
+                    Try selecting a different time range or metric option.
+                  </p>
+                ) : null}
               </div>
             )}
           </div>

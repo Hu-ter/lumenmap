@@ -47,6 +47,9 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const { metric } = useDashboard();
+  const metricUnit =
+    metric === "xlm_volume" ? "XLM" : metric === "usdc" ? "USDC" : "ops";
+  const metricUnitSuffix = metric === "ops" ? "" : metricUnit;
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -240,8 +243,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           // We also add role, tabIndex, and aria-label so keyboard and assistive
           // technology users can reach and activate them regardless of size.
           const ariaLabel = identity
-            ? `${data.name}, ${identity}, ${formatNumber(value)} ops, ${formatPercent(share)}`
-            : `${data.name}, ${formatNumber(value)} ops, ${formatPercent(share)}`;
+            ? `${data.name}, ${identity}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`
+            : `${data.name}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`;
 
           return (
             <g
@@ -333,7 +336,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)} {metric === "xlm_volume" ? "XLM" : ""}
+                    {formatNumber(value)} {metricUnitSuffix}
                   </text>
                   <text
                     x={10}
@@ -350,8 +353,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                   as a fallback description for tiles that are too small to display text */}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`}
                 {original.meta?.coverage
                   ? `\nCoverage: ${formatPercent(original.meta.coverage.coveragePercent)} (${formatNumber(original.meta.coverage.namedChildValue)} of ${formatNumber(original.meta.coverage.parentValue)}) · ${original.meta.coverage.namedEntityCount} entities · limit ${original.meta.coverage.configuredLimit}`
                   : ""}

@@ -76,6 +76,7 @@ export const treemapNodeMetaSchema = z.object({
   share: finiteNumberSchema.optional(),
   opCount: finiteNumberSchema.optional(),
   xlmVolume: finiteNumberSchema.optional(),
+  usdcVolume: finiteNumberSchema.optional(),
   childCount: finiteNumberSchema.optional(),
   eventType: z.string().optional(),
 });
@@ -261,6 +262,8 @@ export const activityResponseSchema = z.object({
     actors: operationTreemapSchema,
     xlm_events: assetVolumeTreemapSchema,
     xlm_actors: assetVolumeTreemapSchema,
+    usdc_events: assetVolumeTreemapSchema,
+    usdc_actors: assetVolumeTreemapSchema,
   }),
   metricProvenance: activityMetricProvenanceSchema,
   fixture: z.boolean().optional(),

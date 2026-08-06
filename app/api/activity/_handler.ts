@@ -83,6 +83,8 @@ export function toRawResearchResponse(
       sorobanFunctions: data.sorobanFunctions,
       sorobanFunctionContracts: data.sorobanFunctionContracts,
       usdcPaymentVolume: data.usdcPaymentVolume,
+      usdcCategories: data.usdcCategories,
+      usdcAccounts: data.usdcAccounts,
     },
   };
 }

@@ -19,6 +19,7 @@
     "test:hubble": "node scripts/test-hubble-queries.mjs",
     "test:mapper": "node tests/test-destination-mapper.mjs",
     "test:usdc-volume": "node scripts/test-usdc-volume.mjs",
+    "test:usdc": "npx tsx scripts/test-usdc-metric.mjs",
     "test:issues": "npx tsx scripts/validate-yaml-templates.mjs",
     "smoke": "node scripts/smoke-check.mjs",
     "test:e2e": "playwright test",
