@@ -24,7 +24,15 @@ export function parseCacheTtl(input?: unknown): number {
   return Math.floor(num);
 }
 
+type Clock = () => number;
+
 const cache = new Map<string, { data: unknown; expires: number }>();
+let now: Clock = () => Date.now();
+
+/** Inject a clock for deterministic cache expiry tests. */
+export function setClock(clock: Clock): void {
+  now = clock;
+}
 
 export function clearCache(): void {
   cache.clear();
@@ -36,7 +44,7 @@ export function getCached<T>(key: string): T | null {
     return null;
   }
 
-  if (Date.now() > entry.expires) {
+  if (now() > entry.expires) {
     cache.delete(key);
     return null;
   }
@@ -55,7 +63,20 @@ export function setCache(
 
   cache.set(key, {
     data,
-    expires: Date.now() + validTtl * 1000,
+    expires: now() + validTtl * 1000,
   });
+  pruneCache();
 }
 
+/**
+ * Remove expired entries even when their keys are never read again.
+ * Invoked on writes so work stays bounded to request-time paths.
+ */
+export function pruneCache(): void {
+  const currentTime = now();
+  for (const [key, entry] of cache) {
+    if (currentTime > entry.expires) {
+      cache.delete(key);
+    }
+  }
+}
