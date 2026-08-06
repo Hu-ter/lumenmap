@@ -1,11 +1,33 @@
 #!/usr/bin/env node
 
+import pkg from "@next/env";
 import { BigQuery } from "@google-cloud/bigquery";
+
+const { loadEnvConfig } = pkg;
+loadEnvConfig(process.cwd());
+
+const keyBase64 = process.env.GCP_SERVICE_ACCOUNT_KEY;
+const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+if (!keyBase64 && !credPath) {
+  console.error(
+    "No GCP credentials found. Set GOOGLE_APPLICATION_CREDENTIALS or GCP_SERVICE_ACCOUNT_KEY in .env.local; see .env.example for setup.",
+  );
+  process.exit(1);
+}
 
 const TOP_ACCOUNTS_PER_TYPE = 70;
 const TOP_CONTRACT_LIMIT = 200;
 const TOP_CONTRACTS_PER_FUNCTION = 70;
 const TOP_SOROBAN_FUNCTIONS = 100;
+const DESTINATION_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "create_account",
+  "account_merge",
+];
+
 const ACCOUNT_QUERY_TYPES = [
   "payment",
   "path_payment_strict_receive",
@@ -20,7 +42,8 @@ const ACCOUNT_QUERY_TYPES = [
 ];
 
 const categoryQuery = `
-SELECT type_string, COUNT(*) AS op_count
+SELECT type_string, COUNT(*) AS op_count,
+SUM(CASE WHEN asset_type = 'native' THEN CAST(amount AS FLOAT64) ELSE 0 END) AS xlm_volume
 FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
 WHERE closed_at BETWEEN @start AND @end
 GROUP BY type_string
@@ -56,19 +79,26 @@ GROUP BY contract_id
 ORDER BY op_count DESC
 LIMIT ${TOP_CONTRACT_LIMIT}`;
 
+const activeContractCountQuery = `
+SELECT DISTINCT contract_id
+FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
+WHERE hour_agg BETWEEN @start AND @end
+  AND contract_id IS NOT NULL AND contract_id != ''`;
+
 const accountQuery = `
 WITH ranked AS (
   SELECT
     op_source_account AS account_id,
     type_string,
     COUNT(*) AS op_count,
+    SUM(CASE WHEN asset_type = 'native' THEN CAST(amount AS FLOAT64) ELSE 0 END) AS xlm_volume,
     ROW_NUMBER() OVER (PARTITION BY type_string ORDER BY COUNT(*) DESC) AS rank
   FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
   WHERE closed_at BETWEEN @start AND @end
     AND type_string IN UNNEST(@types)
   GROUP BY account_id, type_string
 )
-SELECT account_id, type_string, op_count FROM ranked
+SELECT account_id, type_string, op_count, xlm_volume FROM ranked
 WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
 ORDER BY type_string, op_count DESC`;
 
@@ -117,17 +147,43 @@ FROM ranked
 WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC`;
 
+const activeSourceAccountsQuery = `
+SELECT
+  COUNT(DISTINCT op_source_account) AS active_accounts
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+WHERE closed_at BETWEEN @start AND @end
+  AND op_source_account IS NOT NULL
+  AND op_source_account != ''
+  AND op_source_account NOT LIKE 'M%'
+`;
+
 const end = new Date().toISOString();
 const start = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const baseParams = { start, end };
 
-const client = new BigQuery({
-  projectId: process.env.GCP_PROJECT_ID ?? "stellar-501912",
-});
+let client;
+if (keyBase64) {
+  const credentials = JSON.parse(
+    Buffer.from(keyBase64, "base64").toString("utf-8"),
+  );
+  client = new BigQuery({
+    projectId: credentials.project_id,
+    credentials,
+  });
+} else {
+  client = new BigQuery({
+    projectId: process.env.GCP_PROJECT_ID ?? "stellar-501912",
+  });
+}
 
 const queries = [
   { name: "categoryQuery", sql: categoryQuery, params: baseParams },
   { name: "contractQuery", sql: contractQuery, params: baseParams },
+  {
+    name: "activeContractCountQuery",
+    sql: activeContractCountQuery,
+    params: baseParams,
+  },
   {
     name: "accountQuery",
     sql: accountQuery,
@@ -140,6 +196,11 @@ const queries = [
     params: baseParams,
   },
   {
+    name: "activeSourceAccountsQuery",
+    sql: activeSourceAccountsQuery,
+    params: baseParams,
+  },
+  {
     name: "nativePaymentVolumeQuery",
     sql: nativePaymentVolumeQuery,
     params: baseParams,
@@ -147,16 +208,40 @@ const queries = [
 ];
 
 let failed = false;
+const rowCounts = {};
 
 for (const query of queries) {
   process.stdout.write(`Testing ${query.name}... `);
   try {
     const [rows] = await client.query({ query: query.sql, params: query.params });
+    rowCounts[query.name] = rows.length;
     console.log(`ok (${rows.length} rows)`);
   } catch (error) {
     failed = true;
     console.log("FAILED");
     console.error(error instanceof Error ? error.message : error);
+  }
+}
+
+if (
+  !failed &&
+  rowCounts.activeContractCountQuery !== undefined &&
+  rowCounts.contractQuery !== undefined
+) {
+  process.stdout.write(
+    "Verifying activeContractCountQuery is uncapped relative to contractQuery... ",
+  );
+  if (rowCounts.activeContractCountQuery < rowCounts.contractQuery) {
+    failed = true;
+    console.log("FAILED");
+    console.error(
+      `activeContractCountQuery returned ${rowCounts.activeContractCountQuery} distinct contracts, ` +
+        `fewer than the ${rowCounts.contractQuery}-row capped leaderboard (limit ${TOP_CONTRACT_LIMIT}).`,
+    );
+  } else {
+    console.log(
+      `ok (${rowCounts.activeContractCountQuery} distinct contracts, independent of TOP_CONTRACT_LIMIT=${TOP_CONTRACT_LIMIT})`,
+    );
   }
 }
 
