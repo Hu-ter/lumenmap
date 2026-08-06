@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { metrics } from "@/lib/telemetry/metrics";
 import { getActivityData } from "@/lib/hubble/activity";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
 import { buildFixtureDataset } from "@/lib/hubble/fixture";
@@ -27,6 +28,16 @@ import type {
 export type ActivityFetcher = (period: Period) => Promise<ActivityDataset>;
 
 const SUPPORTED_PERIODS = PERIOD_OPTIONS.map((period) => period.value);
+
+
+function recordActivityResponseSize(
+  period: string,
+  status: "2xx" | "4xx" | "5xx",
+  payload: unknown,
+): void {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload)).length;
+  metrics.record({ endpoint: "activity", period, status }, bytes);
+}
 
 export function parseActivityPeriod(periodParam: string | null):
   | { ok: true; period: Period }
@@ -99,6 +110,11 @@ export async function handleActivityRequest(
   const parsed = parseActivityPeriod(searchParams.get("period"));
 
   if (!parsed.ok) {
+    recordActivityResponseSize(
+      new URL(request.url).searchParams.get("period") ?? "",
+      "4xx",
+      parsed.body,
+    );
     return NextResponse.json(parsed.body, { status: parsed.status });
   }
 
@@ -122,6 +138,7 @@ export async function handleActivityRequest(
       period: parsed.period,
       durationMs: endTimer(timer),
     });
+    recordActivityResponseSize(parsed.period, "2xx", validated);
     return NextResponse.json(validated, {
       headers: { "Cache-Control": "public, max-age=900, s-maxage=900" },
     });
@@ -136,6 +153,7 @@ export async function handleActivityRequest(
       period: parsed.period,
       durationMs: endTimer(timer),
     });
+    recordActivityResponseSize(parsed.period, "2xx", validated);
     return NextResponse.json(validated, {
       headers: { "Cache-Control": "public, max-age=900, s-maxage=900" },
     });
@@ -150,7 +168,11 @@ export async function handleActivityRequest(
         errorClass: "validation",
         errorMessage: error.diagnostic,
       });
-      return NextResponse.json(publicValidationErrorBody(), { status: 500 });
+      {
+        const body = publicValidationErrorBody();
+        recordActivityResponseSize(parsed.period, "5xx", body);
+        return NextResponse.json(body, { status: 500 });
+      }
     }
 
     const message =
