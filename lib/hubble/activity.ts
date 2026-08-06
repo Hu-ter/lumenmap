@@ -265,7 +265,13 @@ export async function getActivityData(
   });
 
   const kpiTimer = startTimer();
-  const kpis = buildKpis(raw.categories, raw.contracts, raw.activeSourceAccounts);
+  const activeContractCount = await getActiveContractCount(start, end, correlationId);
+  const kpis = buildKpis(
+    raw.categories,
+    raw.contracts,
+    raw.activeSourceAccounts,
+    activeContractCount.active_contract_count,
+  );
   logInfo({
     event: "activity.kpi.build",
     correlationId,

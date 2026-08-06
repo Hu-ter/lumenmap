@@ -493,6 +493,7 @@ export function buildKpis(
   categories: CategoryRow[],
   contracts: ContractRow[],
   activeSourceAccounts: ActiveSourceAccountsRow[] = [],
+  totalActiveContracts?: number,
 ): ActivityKpis {
   const totalOps = categories.reduce((sum, row) => sum + row.op_count, 0);
   const groupTotals = getGroupTotals(categories, "ops");
@@ -501,6 +502,12 @@ export function buildKpis(
   const topCategoryEntry = [...groupTotals.entries()].sort(
     (a, b) => b[1] - a[1],
   )[0];
+
+  // Prefer the uncapped distinct active-contract count when provided so the KPI
+  // is not coupled to the capped leaderboard length.
+  void activeSourceAccounts;
+  const activeContractCount =
+    totalActiveContracts !== undefined ? totalActiveContracts : contracts.length;
 
   return {
     totalOps: {
@@ -519,7 +526,7 @@ export function buildKpis(
     activeContracts: {
       kind: "entity_count",
       unit: "count",
-      value: contracts.length,
+      value: activeContractCount,
     },
   };
 }
