@@ -37,8 +37,8 @@ function mockActivityDataset(period: Period): ActivityDataset {
     usdcPaymentVolume: {
       amount: 0,
       unit: "USDC",
-      assetSetId: "stellar-mainnet-circle-usdc-v1",
-      methodology: "canonical-payment-volume-v1",
+      assetSetId: "stellar-mainnet-usdc-v1",
+      methodology: "docs/metric-methodology.md#usdc-payment-volume",
       assets: [],
     },
     kpis: {

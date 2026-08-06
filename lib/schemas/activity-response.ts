@@ -263,6 +263,7 @@ export const activityResponseSchema = z.object({
     xlm_actors: assetVolumeTreemapSchema,
   }),
   metricProvenance: activityMetricProvenanceSchema,
+  fixture: z.boolean().optional(),
 });
 
 export type ActivityResponse = z.infer<typeof activityResponseSchema>;

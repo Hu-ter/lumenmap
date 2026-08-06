@@ -163,6 +163,7 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | `CACHE_TTL_SECONDS` | Cache TTL in seconds. Supported range: 1–86,400. Default: 900 (invalid, negative, zero, or over-limit values fall back to default) |
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
+Deployment & Rollback guide: [Vercel Environment & Rollback Runbook](docs/vercel-runbook.md).
 
 Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contributor needs their own GCP credentials.
 
@@ -381,6 +382,69 @@ identical.
 
 ---
 
+## Log schema
+
+Server-side structured logs are written to stdout as newline-delimited JSON.
+
+### Common fields
+
+All log entries include `timestamp` (ISO 8601), `level` (`info` | `warn` | `error`), `event` (dot-separated name), and `correlationId` (per-request UUID that links all log lines for one HTTP request).
+
+Durations are in milliseconds, measured with `process.hrtime`.
+
+### Events
+
+| Event | Level | When |
+| --- | --- | --- |
+| `activity.request.start` | info | Request received |
+| `activity.request.complete` | info | Response sent successfully |
+| `activity.request.error` | error | Response failed |
+| `activity.cache.hit` | info | In-memory cache returned fresh data |
+| `activity.cache.miss` | info | Cache skipped or expired; fetching from BigQuery |
+| `activity.query.start` | info | BigQuery query started |
+| `activity.query.complete` | info | BigQuery query returned rows |
+| `activity.query.error` | error | BigQuery query failed |
+| `activity.fetch.complete` | info | All parallel BigQuery queries finished |
+| `activity.kpi.build` | info | KPI calculation finished |
+| `activity.label.resolve` | info | Entity label resolution finished |
+| `activity.treemap.build` | info | Treemap hierarchy built |
+
+### Query events
+
+`activity.query.*` events carry `queryName` (`category`, `contract`, `account`, `sorobanFunction`, `sorobanFunctionContract`, `accountMetadata`). Completion events include `rowCount`.
+
+### Error classification
+
+`activity.request.error` and `activity.query.error` events carry an `errorClass` field:
+
+| Class | Meaning |
+| --- | --- |
+| `validation` | Missing or misconfigured credentials, invalid parameters |
+| `timeout` | Query deadline exceeded |
+| `cost_limit` | Query exceeded billing tier or rate limit |
+| `provider` | BigQuery returned a non-actionable error |
+
+### Redaction
+
+The following are **never** written to logs:
+- GCP credentials (`GCP_SERVICE_ACCOUNT_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`)
+- SQL parameter values (date ranges, type lists, account/contract ID lists)
+- Raw account addresses, contract IDs, or entity payloads
+- Request and response bodies
+
+### Example
+
+```
+{"timestamp":"2026-07-29T12:00:00.000Z","level":"info","event":"activity.request.start","correlationId":"a1b2c3d4-...","period":"1d"}
+{"timestamp":"2026-07-29T12:00:00.001Z","level":"info","event":"activity.cache.miss","correlationId":"a1b2c3d4-...","period":"1d"}
+{"timestamp":"2026-07-29T12:00:00.002Z","level":"info","event":"activity.query.start","correlationId":"a1b2c3d4-...","queryName":"category"}
+{"timestamp":"2026-07-29T12:00:01.500Z","level":"info","event":"activity.query.complete","correlationId":"a1b2c3d4-...","queryName":"category","durationMs":1498,"rowCount":12}
+{"timestamp":"2026-07-29T12:00:04.200Z","level":"info","event":"activity.fetch.complete","correlationId":"a1b2c3d4-...","period":"1d","durationMs":4198}
+{"timestamp":"2026-07-29T12:00:04.210Z","level":"info","event":"activity.request.complete","correlationId":"a1b2c3d4-...","period":"1d","durationMs":4209}
+```
+
+---
+
 ## Entity registry
 
 Known wallets and contracts are in [`data/entities.json`](data/entities.json):
@@ -430,6 +494,7 @@ scripts/
 | `npm run lint` | ESLint |
 | `npm test` | Deterministic unit tests (single run, no external credentials) |
 | `npm run test:hubble` | BigQuery query smoke test |
+| `npm run test:issues` | Validate GitHub issue templates |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
 | `npm run typecheck` | TypeScript type-check (uses project tsconfig, no emitted files) |
 
@@ -464,3 +529,7 @@ To add wallet or dApp labels, edit [`data/entities.json`](data/entities.json) or
 ## License
 
 [MIT](LICENSE)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, fixture mode, and PR expectations.
