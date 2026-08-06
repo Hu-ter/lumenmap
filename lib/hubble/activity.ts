@@ -8,6 +8,7 @@ import {
   categoryQuery,
   contractQuery,
   getAccountQueryTypes,
+  getUsdcPaymentVolumeParams,
   latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
@@ -17,8 +18,10 @@ import {
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapUsdcPaymentVolumeRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  usdcPaymentVolumeQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
@@ -62,6 +65,7 @@ async function fetchFromHubble(
     sorobanFunctionRows,
     sorobanFunctionContractRows,
     activeSourceAccountRows,
+    usdcPaymentVolumeRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>(categoryQuery, params),
     runQuery<Record<string, unknown>>(contractQuery, params),
@@ -72,6 +76,10 @@ async function fetchFromHubble(
     runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
     runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
     runQuery<Record<string, unknown>>(activeSourceAccountsQuery, params),
+    runQuery<Record<string, unknown>>(usdcPaymentVolumeQuery, {
+      ...params,
+      assets: getUsdcPaymentVolumeParams(),
+    }),
   ]);
 
   return {
@@ -83,6 +91,7 @@ async function fetchFromHubble(
       sorobanFunctionContractRows,
     ),
     activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
+    usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
   };
 }
 
@@ -164,6 +173,7 @@ export async function getActivityData(period: Period): Promise<ActivityDataset> 
     accounts: raw.accounts,
     sorobanFunctions: raw.sorobanFunctions,
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
+    usdcPaymentVolume: raw.usdcPaymentVolume,
     kpis,
     treemaps,
     metricProvenance: buildActivityMetricProvenance(),

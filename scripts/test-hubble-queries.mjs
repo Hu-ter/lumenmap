@@ -147,6 +147,42 @@ FROM ranked
 WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
 ORDER BY function_name, op_count DESC`;
 
+const usdcPaymentVolumeQuery = `
+WITH supported_assets AS (
+  SELECT code, issuer
+  FROM UNNEST(@assets)
+),
+qualifying_payments AS (
+  SELECT asset_code AS code, asset_issuer AS issuer, CAST(amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'payment'
+    AND asset_code IS NOT NULL AND asset_issuer IS NOT NULL
+
+  UNION ALL
+
+  SELECT asset_code AS code, asset_issuer AS issuer, CAST(amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'path_payment_strict_receive'
+    AND asset_code IS NOT NULL AND asset_issuer IS NOT NULL
+
+  UNION ALL
+
+  SELECT source_asset_code AS code, source_asset_issuer AS issuer, CAST(source_amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'path_payment_strict_send'
+    AND source_asset_code IS NOT NULL AND source_asset_issuer IS NOT NULL
+)
+SELECT supported_assets.code, supported_assets.issuer, COALESCE(SUM(qualifying_payments.amount), 0) AS amount
+FROM supported_assets
+LEFT JOIN qualifying_payments
+  ON qualifying_payments.code = supported_assets.code
+  AND qualifying_payments.issuer = supported_assets.issuer
+GROUP BY supported_assets.code, supported_assets.issuer
+ORDER BY amount DESC`;
+
 const activeSourceAccountsQuery = `
 SELECT
   COUNT(DISTINCT op_source_account) AS active_accounts

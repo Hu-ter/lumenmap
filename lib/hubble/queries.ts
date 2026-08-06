@@ -6,6 +6,7 @@ import {
   TOP_CONTRACTS_PER_FUNCTION,
   TOP_SOROBAN_FUNCTIONS,
 } from "@/lib/constants";
+import { SUPPORTED_USDC_ASSET_SET } from "@/lib/assets/usdc";
 import type {
   AccountRow,
   ActiveContractCountRow,
@@ -15,6 +16,8 @@ import type {
   SorobanFunctionContractRow,
   SorobanFunctionRow,
   NativePaymentVolume,
+  UsdcPaymentVolume,
+  UsdcPaymentVolumeAssetRow,
 } from "@/lib/types";
 
 export interface QueryParams {
@@ -157,6 +160,59 @@ FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
 WHERE closed_at BETWEEN @start AND @end
 `;
 
+
+export const usdcPaymentVolumeQuery = `
+WITH supported_assets AS (
+  SELECT code, issuer
+  FROM UNNEST(@assets)
+),
+qualifying_payments AS (
+  SELECT
+    asset_code AS code,
+    asset_issuer AS issuer,
+    CAST(amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'payment'
+    AND asset_code IS NOT NULL
+    AND asset_issuer IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    asset_code AS code,
+    asset_issuer AS issuer,
+    CAST(amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'path_payment_strict_receive'
+    AND asset_code IS NOT NULL
+    AND asset_issuer IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    source_asset_code AS code,
+    source_asset_issuer AS issuer,
+    CAST(source_amount AS NUMERIC) AS amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string = 'path_payment_strict_send'
+    AND source_asset_code IS NOT NULL
+    AND source_asset_issuer IS NOT NULL
+)
+SELECT
+  supported_assets.code,
+  supported_assets.issuer,
+  COALESCE(SUM(qualifying_payments.amount), 0) AS amount
+FROM supported_assets
+LEFT JOIN qualifying_payments
+  ON qualifying_payments.code = supported_assets.code
+  AND qualifying_payments.issuer = supported_assets.issuer
+GROUP BY supported_assets.code, supported_assets.issuer
+ORDER BY amount DESC
+`;
+
 export const activeDestinationCountQuery = `
 SELECT COUNT(DISTINCT destination_account) AS active_destination_count
 FROM (
@@ -185,6 +241,13 @@ export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
 
+export function getUsdcPaymentVolumeParams(): { code: string; issuer: string }[] {
+  return SUPPORTED_USDC_ASSET_SET.assets.map((asset) => ({
+    code: asset.code,
+    issuer: asset.issuer,
+  }));
+}
+
 export type RawQueryResults = {
   categories: CategoryRow[];
   contracts: ContractRow[];
@@ -192,6 +255,7 @@ export type RawQueryResults = {
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   activeSourceAccounts: ActiveSourceAccountsRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
@@ -254,6 +318,27 @@ export function mapSorobanFunctionContractRows(
     contract_id: String(row.contract_id),
     op_count: Number(row.op_count),
   }));
+}
+
+
+export function mapUsdcPaymentVolumeRows(
+  rows: Record<string, unknown>[],
+): UsdcPaymentVolume {
+  const assets: UsdcPaymentVolumeAssetRow[] = rows.map((row) => ({
+    asset: {
+      code: String(row.code),
+      issuer: String(row.issuer),
+    },
+    amount: Number(row.amount ?? 0),
+  }));
+
+  return {
+    amount: assets.reduce((sum, row) => sum + row.amount, 0),
+    unit: "USDC",
+    assetSetId: SUPPORTED_USDC_ASSET_SET.id,
+    methodology: SUPPORTED_USDC_ASSET_SET.methodology,
+    assets,
+  };
 }
 
 export function mapNativePaymentVolumeRow(

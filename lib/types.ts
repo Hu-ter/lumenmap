@@ -216,6 +216,22 @@ export interface ActiveSourceAccountsRow {
   active_accounts: number;
 }
 
+export interface UsdcPaymentVolumeAssetRow {
+  asset: {
+    code: string;
+    issuer: string;
+  };
+  amount: number;
+}
+
+export interface UsdcPaymentVolume {
+  amount: number;
+  unit: "USDC";
+  assetSetId: string;
+  methodology: string;
+  assets: UsdcPaymentVolumeAssetRow[];
+}
+
 export interface ActivityKpis {
   totalOps: {
     kind: "operations";
@@ -283,6 +299,7 @@ export interface RawResearchRows {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
 }
 
 export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
