@@ -346,6 +346,7 @@ export interface RawResearchRows {
 export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
   /** Present and true when the API returned static fixture data (no GCP credentials). */
   fixture?: boolean;
@@ -356,34 +357,29 @@ export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
 }
 
 /** Internal cached dataset from which the two public response surfaces derive. */
+export interface ProtocolBar {
+  protocol: string;
+  opCount: number;
+  share: number;
+  rank: number;
+  entityCount: number;
+}
+
+export interface ProtocolSummary {
+  bars: ProtocolBar[];
+  totalOps: number;
+  labeledOps: number;
+  coverage: number;
+  unknownCount: number;
+}
+
 export interface ActivityDataset
   extends ActivityResponseMetadata,
     RawResearchRows {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
-}
-
-export interface ActivityResponse
-  extends Omit<
-    ActivityDataset,
-    | "sourceTimestamp"
-    | "isPeriodComplete"
-    | "metricProvenance"
-    | "categories"
-    | "contracts"
-    | "accounts"
-    | "sorobanFunctions"
-    | "sorobanFunctionContracts"
-  > {
-  sourceTimestamp?: string;
-  isPeriodComplete?: boolean;
-  metricProvenance?: ActivityMetricProvenance;
-  categories?: CategoryRow[];
-  contracts?: ContractRow[];
-  accounts?: AccountRow[];
-  sorobanFunctions?: SorobanFunctionRow[];
-  sorobanFunctionContracts?: SorobanFunctionContractRow[];
 }
 
 export interface ApiErrorResponse {
