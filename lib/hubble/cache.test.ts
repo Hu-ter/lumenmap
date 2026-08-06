@@ -5,6 +5,8 @@ import {
   setCache,
   getCached,
   clearCache,
+  setClock,
+  pruneCache,
   DEFAULT_CACHE_TTL_SECONDS,
   MIN_CACHE_TTL_SECONDS,
   MAX_CACHE_TTL_SECONDS,
@@ -104,5 +106,67 @@ describe("in-memory cache behavior", () => {
 
   test("getCached returns null for non-existent keys", () => {
     assert.equal(getCached("nonexistent"), null);
+  });
+});
+
+
+describe("proactive expired-entry pruning", () => {
+  beforeEach(() => {
+    clearCache();
+    setClock(() => Date.now());
+  });
+
+  test("setCache prunes expired entries from previous writes", () => {
+    setClock(() => 0);
+    setCache("a", 1, 10);
+    setCache("b", 2, 100);
+
+    setClock(() => 20_000);
+    setCache("c", 3, 100);
+
+    assert.equal(getCached("a"), null);
+    assert.equal(getCached<number>("b"), 2);
+    assert.equal(getCached<number>("c"), 3);
+  });
+
+  test("pruneCache removes only expired entries", () => {
+    setClock(() => 0);
+    setCache("a", 1, 10);
+    setCache("b", 2, 20);
+    setCache("c", 3, 30);
+
+    setClock(() => 15_000);
+    pruneCache();
+
+    assert.equal(getCached("a"), null);
+    assert.equal(getCached<number>("b"), 2);
+    assert.equal(getCached<number>("c"), 3);
+  });
+
+  test("pruneCache removes nothing when all entries are fresh", () => {
+    setClock(() => 0);
+    setCache("a", 1, 100);
+    setCache("b", 2, 200);
+
+    pruneCache();
+
+    assert.equal(getCached<number>("a"), 1);
+    assert.equal(getCached<number>("b"), 2);
+  });
+
+  test("pruneCache handles an empty cache", () => {
+    assert.doesNotThrow(() => pruneCache());
+  });
+
+  test("unexpired entries survive pruning after controlled clock advance", () => {
+    setClock(() => 0);
+    setCache("fresh", "ok", 60);
+    setCache("stale", "bye", 5);
+
+    setClock(() => 10_000);
+    pruneCache();
+
+    assert.equal(getCached("stale"), null);
+    assert.equal(getCached<string>("fresh"), "ok");
   });
 });
