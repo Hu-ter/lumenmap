@@ -38,14 +38,23 @@ export function KpiCards() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
+        aria-busy="true"
+      >
         {KPI_CONFIG.map((item) => (
           <Card key={item.key}>
-            <CardHeader>
-              <Skeleton className="h-4 w-24" />
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              {/* Titles wrap to two lines in the narrow mobile columns, so the
+                  skeleton reserves the same number of lines per breakpoint. */}
+              <div className="min-w-0 flex-1 space-y-1">
+                <Skeleton className="h-4 w-24 max-w-full" />
+                <Skeleton className="h-4 w-16 max-w-full sm:hidden" />
+              </div>
+              <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-32 max-w-full" />
             </CardContent>
           </Card>
         ))}
@@ -57,7 +66,8 @@ export function KpiCards() {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
       {KPI_CONFIG.map((item) => {
         const Icon = item.icon;
-        const value = data.kpis[item.key];
+        const kpi = data.kpis[item.key];
+        const value = typeof kpi === "string" ? kpi : kpi.value;
 
         return (
           <Card key={item.key}>
