@@ -4,19 +4,31 @@ import {
   queryRegistry,
   categoryQuery,
   contractQuery,
+  activeContractCountQuery,
   accountQuery,
   sorobanFunctionQuery,
   sorobanFunctionContractQuery,
+  nativePaymentVolumeQuery,
+  usdcPaymentVolumeQuery,
+  activeDestinationCountQuery,
+  latestDataTimestampQuery,
   accountMetadataQuery,
+  activeSourceAccountsQuery,
 } from "../lib/hubble/shared-queries.mjs";
 
 const queryMap = {
   categoryQuery,
   contractQuery,
+  activeContractCountQuery,
   accountQuery,
   sorobanFunctionQuery,
   sorobanFunctionContractQuery,
+  nativePaymentVolumeQuery,
+  usdcPaymentVolumeQuery,
+  activeDestinationCountQuery,
+  latestDataTimestampQuery,
   accountMetadataQuery,
+  activeSourceAccountsQuery,
 };
 
 const registeredNames = new Set(queryRegistry.map((e) => e.name));
