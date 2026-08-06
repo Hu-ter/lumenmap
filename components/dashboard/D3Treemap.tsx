@@ -42,7 +42,7 @@ function getNodeValue(node: TreemapNode): number {
 export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 800, height: 480 });
+  const [size, setSize] = useState({ width: 400, height: 400 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const { metric } = useDashboard();
@@ -71,6 +71,12 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       return;
     }
 
+    const { width, height } = element.getBoundingClientRect();
+    setSize({
+      width: Math.floor(width),
+      height: Math.floor(height),
+    });
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) {
@@ -79,8 +85,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
       const { width, height } = entry.contentRect;
       setSize({
-        width: Math.max(Math.floor(width), 320),
-        height: Math.max(Math.floor(height), 280),
+        width: Math.max(Math.floor(width), 200),
+        height: Math.max(Math.floor(height), 200),
       });
     });
 
