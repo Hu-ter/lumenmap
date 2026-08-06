@@ -1,7 +1,8 @@
 import { GROUP_LABELS, type TreemapViewId } from "@/lib/constants";
 import { lookupEntity } from "@/lib/entities/registry";
 import type {
-  ActivityResponse,
+  ActivityVisualizationResponse,
+  ActivityDataset,
   EntityInfo,
   TreemapNode,
 } from "@/lib/types";
@@ -303,7 +304,7 @@ function walkTreemap(
 }
 
 function collectLabelsFromActivity(
-  data: ActivityResponse,
+  data: Pick<ActivityVisualizationResponse, "treemaps">,
 ): Record<string, EntityInfo> {
   const labels: Record<string, EntityInfo> = {};
 
@@ -344,7 +345,19 @@ function collectLabelsFromActivity(
  * Build a search index from currently loaded dashboard activity data.
  * Only entities present in the response are indexed (no global directory crawl).
  */
-export function buildSearchIndex(data: ActivityResponse): SearchIndexEntry[] {
+type SearchableActivity = ActivityVisualizationResponse &
+  Partial<
+    Pick<
+      ActivityDataset,
+      | "accounts"
+      | "contracts"
+      | "categories"
+      | "sorobanFunctions"
+      | "sorobanFunctionContracts"
+    >
+  >;
+
+export function buildSearchIndex(data: SearchableActivity): SearchIndexEntry[] {
   const map = new Map<string, MutableEntry>();
   const labels = collectLabelsFromActivity(data);
 

@@ -2,7 +2,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stellar disabled:pointer-events-none disabled:opacity-50",
+  // touch-manipulation eliminates the 300ms double-tap delay on mobile browsers
+  // so button presses feel immediate on touch screens.
+  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stellar disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -11,8 +13,11 @@ const buttonVariants = cva(
         outline: "border border-white/15 text-zinc-200 hover:bg-white/5",
       },
       size: {
-        default: "h-9 px-4",
-        sm: "h-8 rounded-md px-3 text-xs",
+        // 44px height satisfies the minimum touch-target requirement (WCAG 2.5.5)
+        default: "h-11 px-4",
+        sm: "h-11 rounded-md px-3 text-xs",
+        // Icon-only buttons: 44×44 hit area, no padding gap compression
+        icon: "h-11 w-11 rounded-lg",
       },
     },
     defaultVariants: {

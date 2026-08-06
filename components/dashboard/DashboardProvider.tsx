@@ -29,7 +29,9 @@ interface DashboardContextValue {
   data?: ActivityVisualizationResponse;
   isLoading: boolean;
   isError: boolean;
+  isFetching: boolean;
   error: Error | null;
+  refetch: () => Promise<unknown>;
   selectedNode: SelectedNode | null;
   setSelectedNode: (node: SelectedNode | null) => void;
   /** Active search focus used to open treemap context. */
@@ -148,7 +150,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       data: query.data,
       isLoading: query.isLoading,
       isError: query.isError,
+      isFetching: query.isFetching,
       error: query.error,
+      refetch: query.refetch,
       selectedNode,
       setSelectedNode,
       focusRequest,
@@ -164,7 +168,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       query.data,
       query.isLoading,
       query.isError,
+      query.isFetching,
       query.error,
+      query.refetch,
       selectedNode,
       focusRequest,
       selectSearchResult,
@@ -185,3 +191,4 @@ export function useDashboard() {
   }
   return context;
 }
+

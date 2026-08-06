@@ -1,4 +1,5 @@
-import type { ActivityResponse } from "@/lib/types";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
+import type { ActivityDataset } from "@/lib/types";
 import { buildAllTreemaps } from "@/lib/entities/build-treemap";
 
 /**
@@ -8,7 +9,7 @@ import { buildAllTreemaps } from "@/lib/entities/build-treemap";
  * - accounts, contracts, and protocols
  * - category nodes in both treemap views
  */
-export function createSearchFixtures(): ActivityResponse {
+export function createSearchFixtures(): ActivityDataset {
   const labels = {
     GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN: {
       name: "Circle USDC",
@@ -164,5 +165,17 @@ export function createSearchFixtures(): ActivityResponse {
       },
     },
     treemaps,
+    usdcPaymentVolume: {
+      amount: 0,
+      unit: "USDC",
+      assetSetId: "stellar-mainnet-usdc-v1",
+      methodology: "docs/metric-methodology.md#usdc-payment-volume",
+      assets: [],
+    },
+    usdcCategories: [],
+    usdcAccounts: [],
+    sourceTimestamp: "2026-07-29T23:59:59.999Z",
+    isPeriodComplete: true,
+    metricProvenance: buildActivityMetricProvenance(),
   };
 }
