@@ -29,11 +29,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">
+      <body className="min-h-full bg-canvas text-foreground">
         <AppProviders>
-          <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(123,97,255,0.18),_transparent_35%)]">
-            {children}
-          </main>
+          <main className="min-h-screen">{children}</main>
         </AppProviders>
       </body>
     </html>

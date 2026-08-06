@@ -1,0 +1,45 @@
+name: Feature Request
+description: Propose an enhancement, new feature, or architectural improvement for LumenMap.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please provide clear context and a verifiable outcome to help make this contributor-ready work.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem & Context
+      description: What problem or limitation does this feature solve?
+      placeholder: Describe the problem or use case...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution_scope
+    attributes:
+      label: Proposed Solution & Scope
+      description: Describe the feature you'd like to add, including in-scope and out-of-scope boundaries.
+      placeholder: Details on proposed changes and scope...
+    validations:
+      required: true
+
+  - type: textarea
+    id: verifiable_outcome
+    attributes:
+      label: Verifiable Outcome & Acceptance Criteria
+      description: Define clear, testable acceptance criteria or test cases to verify feature completion.
+      placeholder: List specific acceptance criteria and verification steps...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.
+      placeholder: Describe alternatives considered...
+    validations:
+      required: false
