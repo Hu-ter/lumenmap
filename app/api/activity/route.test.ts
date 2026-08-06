@@ -41,6 +41,8 @@ function mockActivityDataset(period: Period): ActivityDataset {
       methodology: "docs/metric-methodology.md#usdc-payment-volume",
       assets: [],
     },
+    usdcCategories: [],
+    usdcAccounts: [],
     kpis: {
       totalOps: { kind: "operations", unit: "ops", value: 0 },
       sorobanShare: { kind: "share", unit: "percent", value: 0 },
@@ -76,6 +78,32 @@ function mockActivityDataset(period: Period): ActivityDataset {
         unit: {
           kind: "asset",
           asset: { type: "native", code: "XLM" },
+        },
+      },
+      usdc_events: {
+        name: "USDC Events",
+        metric: "asset_volume",
+        value: "0",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
+        },
+      },
+      usdc_actors: {
+        name: "USDC Actors",
+        metric: "asset_volume",
+        value: "0",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
         },
       },
     },

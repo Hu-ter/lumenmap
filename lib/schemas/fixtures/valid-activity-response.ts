@@ -170,6 +170,36 @@ export const validActivityResponseFixture: ActivityResponse = {
         },
       ],
     },
+    usdc_events: {
+      name: "Network USDC Activity",
+      metric: "asset_volume",
+      unit: {
+        kind: "asset",
+        asset: {
+          type: "issued",
+          code: "USDC",
+          issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        },
+      },
+      value: "100.5",
+      meta: { type: "root", usdcVolume: 100.5 },
+      children: [],
+    },
+    usdc_actors: {
+      name: "Network USDC Activity",
+      metric: "asset_volume",
+      unit: {
+        kind: "asset",
+        asset: {
+          type: "issued",
+          code: "USDC",
+          issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        },
+      },
+      value: "100.5",
+      meta: { type: "root", usdcVolume: 100.5 },
+      children: [],
+    },
   },
   metricProvenance: buildActivityMetricProvenance(),
 };

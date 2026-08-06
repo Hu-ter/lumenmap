@@ -70,6 +70,17 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       methodology: "docs/metric-methodology.md#usdc-payment-volume",
       assets: [],
     },
+    usdcCategories: [
+      { type_string: "payment", amount: 100000.5 },
+      { type_string: "path_payment_strict_receive", amount: 25000 },
+    ],
+    usdcAccounts: [
+      {
+        account_id: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        type_string: "payment",
+        amount: 80000,
+      },
+    ],
     kpis: {
       totalOps: { kind: "operations", unit: "ops", value: 860000 },
       sorobanShare: { kind: "share", unit: "percent", value: 51 },
@@ -175,6 +186,32 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
         metric: "asset_volume",
         value: "16500",
         unit: { kind: "asset", asset: { type: "native", code: "XLM" } },
+      },
+      usdc_events: {
+        name: "Network USDC Activity",
+        metric: "asset_volume",
+        value: "125000.5",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
+        },
+      },
+      usdc_actors: {
+        name: "Network USDC Activity",
+        metric: "asset_volume",
+        value: "125000.5",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
+        },
       },
     },
     metricProvenance: buildActivityMetricProvenance(),
