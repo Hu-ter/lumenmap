@@ -10,6 +10,21 @@ import type {
   Period,
   SelectedNode,
 } from "@/lib/types";
+import {
+  getMockEmptyActivity,
+  getMockLoadedActivity,
+} from "@/lib/hubble/fixtures";
+
+type MockState = "loading" | "loaded" | "selected" | "empty" | "error" | null;
+
+function readMockState(): MockState {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get("mockState");
+  if (value === "loading" || value === "loaded" || value === "selected" || value === "empty" || value === "error") {
+    return value;
+  }
+  return null;
+}
 
 interface DashboardContextValue {
   period: Period;
@@ -26,6 +41,7 @@ interface DashboardContextValue {
   refetch: () => Promise<unknown>;
   selectedNode: SelectedNode | null;
   setSelectedNode: (node: SelectedNode | null) => void;
+  mockState: MockState;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -46,6 +62,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
   const [metric, setMetric] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+  const [mockState] = useState<MockState>(() => readMockState());
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
     setSelectedNode(null);
@@ -63,8 +80,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const query = useQuery({
-    queryKey: ["activity", period],
-    queryFn: () => fetchActivity(period),
+    queryKey: ["activity", period, mockState],
+    queryFn: async () => {
+      if (mockState === "error") throw new Error("Mock visual-regression error");
+      if (mockState === "empty") return getMockEmptyActivity(period);
+      if (mockState === "loaded" || mockState === "selected") return getMockLoadedActivity(period);
+      return fetchActivity(period);
+    },
+    enabled: mockState !== "loading",
     staleTime: 60_000,
   });
 
@@ -77,13 +100,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       metric,
       setMetric: handleSetMetric,
       data: query.data,
-      isLoading: query.isLoading,
-      isError: query.isError,
+      isLoading: mockState === "loading" || query.isLoading,
+      isError: mockState !== "loading" && (mockState === "error" || query.isError),
       isFetching: query.isFetching,
       error: query.error,
       refetch: query.refetch,
       selectedNode,
       setSelectedNode,
+      mockState,
     }),
     [
       period,
@@ -99,6 +123,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       query.error,
       query.refetch,
       selectedNode,
+      mockState,
     ],
   );
 
