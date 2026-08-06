@@ -9,8 +9,8 @@ export type MetricId =
   | "asset_volume"
   | "tvl";
 
-/** Internal selector values for the two metrics currently backed by queries. */
-export type DashboardMetricId = "ops" | "xlm_volume";
+/** Internal selector values for the metrics currently backed by queries. */
+export type DashboardMetricId = "ops" | "xlm_volume" | "usdc";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -157,6 +157,27 @@ export const XLM_ASSET_UNIT = {
   asset: { type: "native", code: "XLM" },
 } as const satisfies MetricUnit<"asset_volume">;
 
+/** Display unit for verified Circle USDC payment-volume treemaps. */
+export const USDC_ASSET_UNIT = {
+  kind: "asset",
+  asset: {
+    type: "issued",
+    code: "USDC",
+    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  },
+} as const satisfies MetricUnit<"asset_volume">;
+
+export interface UsdcCategoryRow {
+  type_string: string;
+  amount: number;
+}
+
+export interface UsdcAccountRow {
+  account_id: string;
+  type_string: string;
+  amount: number;
+}
+
 export type TreemapNodeType =
   | "root"
   | "category"
@@ -181,6 +202,10 @@ export interface ContractRow {
   op_count: number;
 }
 
+export interface ActiveContractCountRow {
+  active_contract_count: number;
+}
+
 export interface AccountRow {
   account_id: string;
   type_string: string;
@@ -193,10 +218,39 @@ export interface SorobanFunctionRow {
   op_count: number;
 }
 
+export interface ActiveDestinationCountRow {
+  active_destination_count: number;
+}
+
 export interface SorobanFunctionContractRow {
   function_name: string;
   contract_id: string;
   op_count: number;
+}
+
+export interface NativePaymentVolume {
+  amount: string;
+  unit: "XLM";
+}
+
+export interface ActiveSourceAccountsRow {
+  active_accounts: number;
+}
+
+export interface UsdcPaymentVolumeAssetRow {
+  asset: {
+    code: string;
+    issuer: string;
+  };
+  amount: number;
+}
+
+export interface UsdcPaymentVolume {
+  amount: number;
+  unit: "USDC";
+  assetSetId: string;
+  methodology: string;
+  assets: UsdcPaymentVolumeAssetRow[];
 }
 
 export interface ActivityKpis {
@@ -218,6 +272,19 @@ export interface ActivityKpis {
   };
 }
 
+export interface TreemapCoverage {
+  /** Sum of named children values (excluding synthetic remainder). */
+  namedChildValue: number;
+  /** The parent node's total value. */
+  parentValue: number;
+  /** Coverage percentage: namedChildValue / parentValue (0–100). */
+  coveragePercent: number;
+  /** Number of named child entities (excluding the remainder node). */
+  namedEntityCount: number;
+  /** The configured top-N limit that was applied. */
+  configuredLimit: number;
+}
+
 export interface TreemapNodeMeta {
   type: TreemapNodeType;
   id?: string;
@@ -226,8 +293,11 @@ export interface TreemapNodeMeta {
   share?: number;
   opCount?: number;
   xlmVolume?: number;
+  usdcVolume?: number;
   childCount?: number;
   eventType?: string;
+  /** Coverage metadata for capped (top-N) treemap parents. */
+  coverage?: TreemapCoverage;
 }
 
 export interface TreemapNode<TValue extends number | string = number> {
@@ -249,6 +319,8 @@ export interface ActivityTreemaps {
   actors: TreemapPayload<"operation_count">;
   xlm_events: TreemapPayload<"asset_volume">;
   xlm_actors: TreemapPayload<"asset_volume">;
+  usdc_events: TreemapPayload<"asset_volume">;
+  usdc_actors: TreemapPayload<"asset_volume">;
 }
 
 export interface ActivityResponseMetadata {
@@ -266,12 +338,17 @@ export interface RawResearchRows {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
 }
 
 export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
   metricProvenance: ActivityMetricProvenance;
+  /** Present and true when the API returned static fixture data (no GCP credentials). */
+  fixture?: boolean;
 }
 
 export interface ActivityRawResearchResponse extends ActivityResponseMetadata {

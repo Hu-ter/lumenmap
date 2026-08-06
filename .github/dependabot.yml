@@ -1,0 +1,42 @@
+# Dependabot: automated dependency update PRs for npm and GitHub Actions.
+# PRs target the repository default branch. No auto-merge is configured.
+# Labels must already exist on the repo (currently: enhancement).
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - enhancement
+    groups:
+      npm-production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      npm-development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 3
+    labels:
+      - enhancement
+    groups:
+      github-actions:
+        patterns:
+          - "*"

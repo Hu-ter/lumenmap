@@ -21,7 +21,9 @@ interface DashboardContextValue {
   data?: ActivityVisualizationResponse;
   isLoading: boolean;
   isError: boolean;
+  isFetching: boolean;
   error: Error | null;
+  refetch: () => Promise<unknown>;
   selectedNode: SelectedNode | null;
   setSelectedNode: (node: SelectedNode | null) => void;
 }
@@ -61,13 +63,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const query = useQuery({
-    queryKey: ["activity", period, mockState],
-    queryFn: () => fetchActivity(period, mockState),
-    enabled: mockState !== "loading",
+    queryKey: ["activity", period],
+    queryFn: () => fetchActivity(period),
     staleTime: 60_000,
   });
-
-  const isLoading = mockState === "loading" || query.isLoading;
 
   const value = useMemo(
     () => ({
@@ -78,9 +77,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       metric,
       setMetric: handleSetMetric,
       data: query.data,
-      isLoading,
-      isError: mockState !== "loading" && query.isError,
+      isLoading: query.isLoading,
+      isError: query.isError,
+      isFetching: query.isFetching,
       error: query.error,
+      refetch: query.refetch,
       selectedNode,
       setSelectedNode,
     }),
@@ -92,10 +93,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       metric,
       handleSetMetric,
       query.data,
-      isLoading,
-      mockState,
+      query.isLoading,
       query.isError,
+      query.isFetching,
       query.error,
+      query.refetch,
       selectedNode,
     ],
   );
@@ -112,3 +114,4 @@ export function useDashboard() {
   }
   return context;
 }
+
