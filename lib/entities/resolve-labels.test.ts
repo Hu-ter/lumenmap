@@ -134,9 +134,16 @@ describe("resolveEntityLabels timeouts and concurrency", () => {
     }
     assert.equal(maxInFlight, 2);
 
-    // release all
-    while (gates.length) gates.shift()!();
+    // Release gates as workers enqueue them until settlement.
+    for (let i = 0; i < 200; i++) {
+      while (gates.length) gates.shift()!();
+      const raced = await Promise.race([
+        done.then(() => "done" as const),
+        new Promise<"wait">((r) => setTimeout(() => r("wait"), 5)),
+      ]);
+      if (raced === "done") break;
+    }
     await done;
-    assert.equal(maxInFlight, 2);
+    assert.ok(maxInFlight <= 2);
   });
 });
