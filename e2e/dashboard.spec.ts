@@ -63,7 +63,7 @@ function shareOf(part: number, whole: number): string {
 async function selectPeriod(page: Page, label: string, period: Period) {
   const responsePromise = page.waitForResponse(
     (response) =>
-      response.url().includes(`/api/activity?period=${period}`) &&
+      response.url().includes(`/api/v1/activity?period=${period}`) &&
       response.status() === 200,
   );
   await page.getByRole("button", { name: label }).click();
