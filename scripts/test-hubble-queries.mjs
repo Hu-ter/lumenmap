@@ -49,6 +49,27 @@ WHERE closed_at BETWEEN @start AND @end
 GROUP BY type_string
 ORDER BY op_count DESC`;
 
+const nativePaymentVolumeQuery = `
+SELECT
+  COALESCE(
+    CAST(
+      SUM(
+        CASE
+          WHEN type_string = 'payment' AND asset_type = 'native' THEN
+            IF(amount IS NULL OR amount < 0 OR IS_INF(amount) OR IS_NAN(amount), 0, amount)
+          WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send') AND asset_type = 'native' THEN
+            IF(amount IS NULL OR amount < 0 OR IS_INF(amount) OR IS_NAN(amount), 0, amount)
+          WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send') AND source_asset_type = 'native' THEN
+            IF(source_amount IS NULL OR source_amount < 0 OR IS_INF(source_amount) OR IS_NAN(source_amount), 0, source_amount)
+          ELSE 0
+        END
+      ) AS BIGNUMERIC
+    ),
+    0
+  ) AS volume_xlm
+FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+WHERE closed_at BETWEEN @start AND @end`;
+
 const contractQuery = `
 SELECT contract_id, SUM(txn_count) AS op_count
 FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
@@ -177,6 +198,11 @@ const queries = [
   {
     name: "activeSourceAccountsQuery",
     sql: activeSourceAccountsQuery,
+    params: baseParams,
+  },
+  {
+    name: "nativePaymentVolumeQuery",
+    sql: nativePaymentVolumeQuery,
     params: baseParams,
   },
 ];
