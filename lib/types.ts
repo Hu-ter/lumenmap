@@ -181,6 +181,10 @@ export interface ContractRow {
   op_count: number;
 }
 
+export interface ActiveContractCountRow {
+  active_contract_count: number;
+}
+
 export interface AccountRow {
   account_id: string;
   type_string: string;
@@ -193,10 +197,23 @@ export interface SorobanFunctionRow {
   op_count: number;
 }
 
+export interface ActiveDestinationCountRow {
+  active_destination_count: number;
+}
+
 export interface SorobanFunctionContractRow {
   function_name: string;
   contract_id: string;
   op_count: number;
+}
+
+export interface NativePaymentVolume {
+  amount: string;
+  unit: "XLM";
+}
+
+export interface ActiveSourceAccountsRow {
+  active_accounts: number;
 }
 
 export interface UsdcPaymentVolumeAssetRow {
