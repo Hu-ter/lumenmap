@@ -242,13 +242,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               transform={`translate(${node.x0},${node.y0})`}
               tabIndex={0}
               role="button"
-              aria-label={`${data.name} — ${formatNumber(value)} ops`}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleNodeClick(node);
-                }
-              }}
+              aria-label={ariaLabel}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => handleNodeClick(node)}
@@ -258,11 +252,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                   handleNodeClick(node);
                 }
               }}
-              tabIndex={0}
-              role="button"
-              aria-label={ariaLabel}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
-              className="focus-visible:outline-none focus-visible:[&>rect]:stroke-white focus-visible:[&>rect]:stroke-2"
+              className="focus-visible:outline-none"
             >
               <rect
                 className="focus-ring"
