@@ -163,6 +163,7 @@ Set GCP credentials in `.env.local`, then open [http://localhost:3000](http://lo
 | `CACHE_TTL_SECONDS` | Cache TTL in seconds. Supported range: 1–86,400. Default: 900 (invalid, negative, zero, or over-limit values fall back to default) |
 
 Setup guide: [Hubble BigQuery connection](https://developers.stellar.org/docs/data/analytics/hubble/developer-guide/connecting-to-bigquery).
+Deployment & Rollback guide: [Vercel Environment & Rollback Runbook](docs/vercel-runbook.md).
 
 Do not commit `gcp-sa.json` or `.env.local`. Both are gitignored. Each contributor needs their own GCP credentials.
 
