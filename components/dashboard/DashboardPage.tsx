@@ -8,6 +8,7 @@ import { FreshnessIndicator } from "@/components/dashboard/FreshnessIndicator";
 import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
+import { ProtocolBarChart } from "@/components/dashboard/ProtocolBarChart";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 
@@ -59,6 +60,8 @@ function DashboardContent() {
         <NetworkTreemap />
         <DetailPanel />
       </div>
+
+      <ProtocolBarChart />
     </div>
   );
 }

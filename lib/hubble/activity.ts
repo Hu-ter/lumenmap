@@ -35,7 +35,7 @@ import {
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
-import { buildAllTreemaps, buildKpis } from "@/lib/entities/build-treemap";
+import { buildAllTreemaps, buildKpis, buildProtocolSummary } from "@/lib/entities/build-treemap";
 import {
   collectTreemapIds,
   homeDomainsToEntities,
@@ -359,6 +359,7 @@ export async function getActivityData(
 
     const treemapTimer = startTimer();
     const treemaps = buildAllTreemaps({ ...raw, labels });
+  const protocols = buildProtocolSummary(raw.accounts, raw.contracts, labels);
     logInfo({
       event: "activity.treemap.build",
       correlationId,

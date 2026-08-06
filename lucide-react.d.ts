@@ -5,6 +5,7 @@ declare module "lucide-react" {
   export const ArrowDown: FC<SVGProps<SVGSVGElement>>;
   export const ArrowUp: FC<SVGProps<SVGSVGElement>>;
   export const ArrowUpDown: FC<SVGProps<SVGSVGElement>>;
+  export const BarChart3: FC<SVGProps<SVGSVGElement>>;
   export const Boxes: FC<SVGProps<SVGSVGElement>>;
   export const Check: FC<SVGProps<SVGSVGElement>>;
   export const ChevronRight: FC<SVGProps<SVGSVGElement>>;
