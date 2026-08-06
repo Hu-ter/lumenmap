@@ -2,6 +2,182 @@ export type Period = "1d" | "7d" | "30d" | "month";
 
 export type DataSource = "hubble";
 
+/** Stable identifiers used by the public treemap contract. */
+export type MetricId =
+  | "operation_count"
+  | "transaction_count"
+  | "asset_volume"
+  | "tvl";
+
+/** Internal selector values for the metrics currently backed by queries. */
+export type DashboardMetricId = "ops" | "xlm_volume" | "usdc";
+
+export type CountUnit =
+  | { kind: "count"; subject: "operation" }
+  | { kind: "count"; subject: "transaction" };
+
+export type AssetIdentity =
+  | { type: "native"; code: "XLM" }
+  | { type: "issued"; code: string; issuer: string };
+
+export type AssetUnit = { kind: "asset"; asset: AssetIdentity };
+
+/**
+ * A discriminated metric contract keeps identifiers, serialized values, and
+ * units coupled. Asset amounts are strings so consumers cannot accidentally
+ * treat them as count values.
+ */
+export type MetricContract =
+  | {
+      metric: "operation_count";
+      value: number;
+      unit: { kind: "count"; subject: "operation" };
+    }
+  | {
+      metric: "transaction_count";
+      value: number;
+      unit: { kind: "count"; subject: "transaction" };
+    }
+  | { metric: "asset_volume"; value: string; unit: AssetUnit }
+  | { metric: "tvl"; value: string; unit: AssetUnit };
+
+type MetricVariant<M extends MetricId> = Extract<MetricContract, { metric: M }>;
+
+export type MetricValue<M extends MetricId> = MetricVariant<M>["value"];
+export type MetricUnit<M extends MetricId> = MetricVariant<M>["unit"];
+
+export type MetricMethodology = {
+  operation_count: {
+    id: "operations";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#operations";
+  };
+  transaction_count: {
+    id: "transactions";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#transactions";
+  };
+  asset_volume: {
+    id: "payment-volume";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#payment-volume";
+  };
+  tvl: {
+    id: "total-value-locked";
+    version: "1.0.0";
+    href: "docs/metric-methodology.md#total-value-locked-tvl";
+  };
+};
+
+export type MetricAggregation = {
+  operation_count: {
+    kind: "count";
+    function: "COUNT(*)";
+    granularity: "selected_period";
+    dimensions: ["type_string"];
+  };
+  transaction_count: {
+    kind: "count_distinct";
+    field: "transaction_hash";
+    granularity: "selected_period";
+    dimensions: [];
+  };
+  asset_volume: {
+    kind: "sum";
+    field: "amount";
+    granularity: "selected_period";
+    dimensions: ["type_string", "asset_identity"];
+  };
+  tvl: {
+    kind: "snapshot_sum";
+    granularity: "point_in_time";
+    dimensions: ["protocol", "asset_identity"];
+  };
+};
+
+export type CoverageConstraint =
+  | {
+      kind: "time_bounds";
+      semantics: "inclusive";
+      startField: "start";
+      endField: "end";
+    }
+  | {
+      kind: "partial_period";
+      completenessField: "isPeriodComplete";
+    }
+  | {
+      kind: "source_lag";
+      watermarkField: "sourceTimestamp";
+    }
+  | {
+      kind: "top_n";
+      appliesTo:
+        | "account_children"
+        | "contract_children"
+        | "soroban_function_children"
+        | "contracts_per_function";
+      limit: number;
+      partitionBy?: "type_string" | "function_name";
+    }
+  | {
+      kind: "filter";
+      field: "asset_type";
+      operator: "equals";
+      value: "native";
+    };
+
+export type MetricProvenance<M extends MetricId> = {
+  metric: M;
+  methodology: MetricMethodology[M];
+  source: {
+    provider: "hubble";
+    dataset: "crypto-stellar.crypto_stellar_dbt";
+    tables: string[];
+  };
+  aggregation: MetricAggregation[M];
+  coverage: {
+    network: "stellar_mainnet";
+    constraints: CoverageConstraint[];
+  };
+};
+
+export interface ActivityMetricProvenance {
+  operation_count: MetricProvenance<"operation_count">;
+  asset_volume: MetricProvenance<"asset_volume">;
+}
+
+export const OPERATION_COUNT_UNIT = {
+  kind: "count",
+  subject: "operation",
+} as const satisfies MetricUnit<"operation_count">;
+
+export const XLM_ASSET_UNIT = {
+  kind: "asset",
+  asset: { type: "native", code: "XLM" },
+} as const satisfies MetricUnit<"asset_volume">;
+
+/** Display unit for verified Circle USDC payment-volume treemaps. */
+export const USDC_ASSET_UNIT = {
+  kind: "asset",
+  asset: {
+    type: "issued",
+    code: "USDC",
+    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  },
+} as const satisfies MetricUnit<"asset_volume">;
+
+export interface UsdcCategoryRow {
+  type_string: string;
+  amount: number;
+}
+
+export interface UsdcAccountRow {
+  account_id: string;
+  type_string: string;
+  amount: number;
+}
+
 export type TreemapNodeType =
   | "root"
   | "category"
@@ -18,6 +194,7 @@ export interface EntityInfo {
 export interface CategoryRow {
   type_string: string;
   op_count: number;
+  xlm_volume?: number;
 }
 
 export interface ContractRow {
@@ -25,15 +202,24 @@ export interface ContractRow {
   op_count: number;
 }
 
+export interface ActiveContractCountRow {
+  active_contract_count: number;
+}
+
 export interface AccountRow {
   account_id: string;
   type_string: string;
   op_count: number;
+  xlm_volume?: number;
 }
 
 export interface SorobanFunctionRow {
   function_name: string;
   op_count: number;
+}
+
+export interface ActiveDestinationCountRow {
+  active_destination_count: number;
 }
 
 export interface SorobanFunctionContractRow {
@@ -42,22 +228,61 @@ export interface SorobanFunctionContractRow {
   op_count: number;
 }
 
-export interface UsdcCategoryRow {
-  type_string: string;
+export interface NativePaymentVolume {
+  amount: string;
+  unit: "XLM";
+}
+
+export interface ActiveSourceAccountsRow {
+  active_accounts: number;
+}
+
+export interface UsdcPaymentVolumeAssetRow {
+  asset: {
+    code: string;
+    issuer: string;
+  };
   amount: number;
 }
 
-export interface UsdcAccountRow {
-  account_id: string;
-  type_string: string;
+export interface UsdcPaymentVolume {
   amount: number;
+  unit: "USDC";
+  assetSetId: string;
+  methodology: string;
+  assets: UsdcPaymentVolumeAssetRow[];
 }
 
 export interface ActivityKpis {
-  totalOps: number;
-  sorobanShare: number;
+  totalOps: {
+    kind: "operations";
+    unit: "ops";
+    value: number;
+  };
+  sorobanShare: {
+    kind: "share";
+    unit: "percent";
+    value: number;
+  };
   topCategory: string;
-  activeContracts: number;
+  activeContracts: {
+    kind: "entity_count";
+    unit: "count";
+    value: number;
+  };
+}
+
+export interface TreemapCoverage {
+  /** Sum of named children values (excluding synthetic remainder). */
+  namedChildValue: number;
+  /** The parent node's total value. */
+  parentValue: number;
+  /** Coverage percentage: namedChildValue / parentValue (0–100). */
+  coveragePercent: number;
+  /** Number of named child entities (excluding the remainder node). */
+  namedEntityCount: number;
+  /** The configured top-N limit that was applied. */
+  configuredLimit: number;
 }
 
 export interface TreemapNodeMeta {
@@ -67,47 +292,82 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
-  amount?: number;
-  unit?: string;
+  xlmVolume?: number;
+  usdcVolume?: number;
   childCount?: number;
   eventType?: string;
+  /** Coverage metadata for capped (top-N) treemap parents. */
+  coverage?: TreemapCoverage;
 }
 
-export interface TreemapNode {
+export interface TreemapNode<TValue extends number | string = number> {
   id?: string;
   name: string;
-  value?: number;
+  value?: TValue;
   color?: string;
-  children?: TreemapNode[];
+  children?: TreemapNode<TValue>[];
   meta?: TreemapNodeMeta;
 }
 
-export interface MetricTreemaps {
-  events: TreemapNode;
-  actors: TreemapNode;
-}
+export type TreemapPayload<M extends MetricId> = TreemapNode<MetricValue<M>> & {
+  metric: M;
+  unit: MetricUnit<M>;
+};
 
 export interface ActivityTreemaps {
-  events: TreemapNode;
-  actors: TreemapNode;
-  ops?: MetricTreemaps;
-  usdc?: MetricTreemaps;
+  events: TreemapPayload<"operation_count">;
+  actors: TreemapPayload<"operation_count">;
+  xlm_events: TreemapPayload<"asset_volume">;
+  xlm_actors: TreemapPayload<"asset_volume">;
+  usdc_events: TreemapPayload<"asset_volume">;
+  usdc_actors: TreemapPayload<"asset_volume">;
 }
 
-export interface ActivityResponse {
+export interface ActivityResponseMetadata {
   period: Period;
   start: string;
   end: string;
   source: DataSource;
+  sourceTimestamp: string;
+  isPeriodComplete: boolean;
+}
+
+export interface RawResearchRows {
   categories: CategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
-  usdcCategories?: UsdcCategoryRow[];
-  usdcAccounts?: UsdcAccountRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
+}
+
+export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  metricProvenance: ActivityMetricProvenance;
+  /** Present and true when the API returned static fixture data (no GCP credentials). */
+  fixture?: boolean;
+}
+
+export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
+  rows: RawResearchRows;
+}
+
+/** Internal cached dataset from which the two public response surfaces derive. */
+export interface ActivityDataset
+  extends ActivityResponseMetadata,
+    RawResearchRows {
+  kpis: ActivityKpis;
+  treemaps: ActivityTreemaps;
+  metricProvenance: ActivityMetricProvenance;
+}
+
+export interface ApiErrorResponse {
+  code: string;
+  message: string;
+  supported?: Period[];
 }
 
 export interface SelectedNode {
@@ -116,4 +376,3 @@ export interface SelectedNode {
   share: number;
   meta?: TreemapNodeMeta;
 }
-

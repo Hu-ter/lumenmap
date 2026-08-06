@@ -46,6 +46,14 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   restore_footprint: "soroban",
 };
 
+export const DESTINATION_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "create_account",
+  "account_merge",
+];
+
 export const ACCOUNT_QUERY_TYPES = [
   "payment",
   "path_payment_strict_receive",
@@ -78,26 +86,3 @@ export const TREEMAP_VIEWS = [
 ] as const;
 
 export type TreemapViewId = (typeof TREEMAP_VIEWS)[number]["id"];
-
-export const CANONICAL_USDC_ISSUERS = [
-  "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
-  "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
-];
-
-export const TREEMAP_METRICS = [
-  {
-    id: "ops",
-    label: "Operation Count",
-    unit: "ops",
-    description: "Rank by operation count.",
-  },
-  {
-    id: "usdc",
-    label: "USDC Volume",
-    unit: "USDC",
-    description: "Rank by USDC payment volume from verified issuers.",
-  },
-] as const;
-
-export type TreemapMetricId = (typeof TREEMAP_METRICS)[number]["id"];
-

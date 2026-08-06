@@ -12,9 +12,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/**/*.test.ts app/api/activity/route.test.ts",
+    "protect:main": "node scripts/configure-main-protection.mjs",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs",
-    "test:usdc": "npx tsx scripts/test-usdc-metric.mjs"
+    "test:mapper": "node tests/test-destination-mapper.mjs",
+    "test:usdc-volume": "node scripts/test-usdc-volume.mjs",
+    "test:usdc": "npx tsx scripts/test-usdc-metric.mjs",
+    "test:issues": "npx tsx scripts/validate-yaml-templates.mjs",
+    "smoke": "node scripts/smoke-check.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
@@ -24,10 +31,11 @@
     "d3-hierarchy": "^3.1.2",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.23.0",
-    "next": "16.2.10",
+    "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -36,8 +44,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
+    "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.5",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

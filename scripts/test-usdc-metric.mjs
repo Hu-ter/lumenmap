@@ -2,72 +2,60 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CANONICAL_USDC_ISSUERS } from "../lib/constants.ts";
+import { getSupportedUsdcAssets } from "../lib/assets/usdc.ts";
 import {
   buildAllTreemaps,
   buildUsdcActorTreemap,
   buildUsdcEventTypeTreemap,
 } from "../lib/entities/build-treemap.ts";
 
-test("CANONICAL_USDC_ISSUERS allowlist", () => {
+test("supported USDC asset set allowlist", () => {
+  const issuers = getSupportedUsdcAssets().map((asset) => asset.issuer);
   assert.ok(
-    CANONICAL_USDC_ISSUERS.includes(
-      "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
-    ),
+    issuers.includes("GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"),
     "Mainnet Circle USDC issuer must be in allowlist",
   );
-  assert.ok(
-    CANONICAL_USDC_ISSUERS.includes(
-      "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
-    ),
-    "Testnet Circle USDC issuer must be in allowlist",
-  );
   assert.strictEqual(
-    CANONICAL_USDC_ISSUERS.includes("GFAKEUSDCISSUER1234567890"),
+    issuers.includes("GFAKEUSDCISSUER1234567890"),
     false,
     "Unverified same-code issuers must not be in allowlist",
   );
 });
 
 test("USDC treemap building with verified vs unverified same-code asset fixture", () => {
+  const allowlist = new Set(
+    getSupportedUsdcAssets().map((asset) => `${asset.code}:${asset.issuer}`),
+  );
+
   const mockOperationsFixture = [
     {
       type_string: "payment",
       asset_code: "USDC",
-      asset_issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", // VERIFIED
+      asset_issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
       amount: "1000.50",
       account_id: "GVERIFIED_HOLDER_1",
     },
     {
       type_string: "payment",
       asset_code: "USDC",
-      asset_issuer: "GFAKE_UNVERIFIED_ISSUER_ADDRESS", // UNVERIFIED SAME-CODE ASSET
+      asset_issuer: "GFAKE_UNVERIFIED_ISSUER_ADDRESS",
       amount: "999999.00",
       account_id: "GFAKE_HOLDER_2",
     },
     {
       type_string: "path_payment_strict_receive",
       dest_asset_code: "USDC",
-      dest_asset_issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", // VERIFIED
+      dest_asset_issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
       dest_amount: "500.00",
       account_id: "GVERIFIED_HOLDER_3",
     },
   ];
 
-  // Filter fixture operations strictly using canonical USDC allowlist (mimicking BigQuery query behavior)
   const usdcFilteredOps = mockOperationsFixture.filter((op) => {
-    const isStandardUsdc =
-      op.type_string === "payment" &&
-      op.asset_code === "USDC" &&
-      CANONICAL_USDC_ISSUERS.includes(op.asset_issuer);
-
-    const isPathUsdc =
-      (op.type_string === "path_payment_strict_receive" ||
-        op.type_string === "path_payment_strict_send") &&
-      op.dest_asset_code === "USDC" &&
-      CANONICAL_USDC_ISSUERS.includes(op.dest_asset_issuer);
-
-    return isStandardUsdc || isPathUsdc;
+    if (op.type_string === "payment") {
+      return allowlist.has(`${op.asset_code}:${op.asset_issuer}`);
+    }
+    return allowlist.has(`${op.dest_asset_code}:${op.dest_asset_issuer}`);
   });
 
   assert.strictEqual(
@@ -96,14 +84,24 @@ test("USDC treemap building with verified vs unverified same-code asset fixture"
 
   const input = {
     categories: [
-      { type_string: "payment", op_count: 10 },
-      { type_string: "path_payment_strict_receive", op_count: 5 },
-      { type_string: "invoke_host_function", op_count: 20 },
+      { type_string: "payment", op_count: 10, xlm_volume: 0 },
+      { type_string: "path_payment_strict_receive", op_count: 5, xlm_volume: 0 },
+      { type_string: "invoke_host_function", op_count: 20, xlm_volume: 0 },
     ],
     contracts: [],
     accounts: [
-      { account_id: "GVERIFIED_HOLDER_1", type_string: "payment", op_count: 8 },
-      { account_id: "GFAKE_HOLDER_2", type_string: "payment", op_count: 2 },
+      {
+        account_id: "GVERIFIED_HOLDER_1",
+        type_string: "payment",
+        op_count: 8,
+        xlm_volume: 0,
+      },
+      {
+        account_id: "GFAKE_HOLDER_2",
+        type_string: "payment",
+        op_count: 2,
+        xlm_volume: 0,
+      },
     ],
     sorobanFunctions: [],
     sorobanFunctionContracts: [],
@@ -113,16 +111,13 @@ test("USDC treemap building with verified vs unverified same-code asset fixture"
 
   const treemaps = buildAllTreemaps(input);
 
-  // 1. Verify Count (ops) treemap is unaffected
-  assert.strictEqual(treemaps.ops.events.value, 35);
-  assert.strictEqual(treemaps.ops.events.meta?.unit, "ops");
+  assert.strictEqual(treemaps.events.value, 35);
+  assert.strictEqual(treemaps.events.metric, "operation_count");
 
-  // 2. Verify USDC treemap values and units
-  assert.strictEqual(treemaps.usdc.events.value, 1500.5);
-  assert.strictEqual(treemaps.usdc.events.meta?.unit, "USDC");
+  assert.strictEqual(treemaps.usdc_events.value, "1500.5");
+  assert.strictEqual(treemaps.usdc_events.unit.asset.code, "USDC");
 
-  // 3. Confirm unverified same-code holder GFAKE_HOLDER_2 is NOT in USDC treemap
-  const usdcActorTree = treemaps.usdc.actors;
+  const usdcActorTree = treemaps.usdc_actors;
   const paymentsCategory = usdcActorTree.children?.find(
     (c) => c.meta?.category === "payments",
   );
@@ -142,7 +137,7 @@ test("USDC treemap building with verified vs unverified same-code asset fixture"
 
 test("Empty USDC periods show a clear empty state treemap", () => {
   const emptyInput = {
-    categories: [{ type_string: "payment", op_count: 10 }],
+    categories: [{ type_string: "payment", op_count: 10, xlm_volume: 0 }],
     contracts: [],
     accounts: [],
     sorobanFunctions: [],

@@ -5,14 +5,13 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
-import type { TreemapMetricId } from "@/lib/constants";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 interface D3TreemapProps {
   root: TreemapNode;
-  metric?: TreemapMetricId;
   onSelect: (node: SelectedNode) => void;
 }
 
@@ -37,15 +36,19 @@ function resolveColor(node: TreemapNode): string {
 }
 
 function getNodeValue(node: TreemapNode): number {
-  return node.value ?? node.meta?.amount ?? node.meta?.opCount ?? 0;
+  return node.value ?? node.meta?.opCount ?? 0;
 }
 
-export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
+export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 800, height: 480 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const { metric } = useDashboard();
+  const metricUnit =
+    metric === "xlm_volume" ? "XLM" : metric === "usdc" ? "USDC" : "ops";
+  const metricUnitSuffix = metric === "ops" ? "" : metricUnit;
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -131,7 +134,6 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
       const original = tileLookup.get(data.id ?? data.name) ?? data;
       const value = node.value ?? 0;
       const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
-      const unit = original.meta?.unit ?? (metric === "usdc" ? "USDC" : "ops");
 
       onSelect({
         name: data.name,
@@ -141,9 +143,7 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
           ...original.meta,
           type: original.meta?.type ?? "entity",
           id: original.meta?.id ?? original.id,
-          opCount: unit === "ops" ? value : original.meta?.opCount,
-          amount: unit === "USDC" ? value : original.meta?.amount,
-          unit,
+          opCount: value,
           childCount: original.children?.length ?? original.meta?.childCount,
         },
       });
@@ -152,7 +152,7 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
         setPath((current) => [...current, original]);
       }
     },
-    [levelTotal, metric, onSelect, tileLookup],
+    [levelTotal, onSelect, tileLookup],
   );
 
   const navigateTo = (index: number) => {
@@ -167,21 +167,33 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
 
   return (
     <div ref={containerRef} className="flex h-full min-h-0 w-full flex-col">
-      <div className="mb-3 flex shrink-0 flex-wrap items-center gap-1 text-xs text-zinc-400">
+      {/* Breadcrumb nav — min-h-[44px] ensures the row meets touch target height.
+          Each Button uses size="sm" which is already h-11 (44px). The shrink-0
+          prevents the row from compressing on small containers. */}
+      <nav
+        aria-label="Treemap navigation"
+        className="mb-2 flex min-h-[44px] shrink-0 flex-wrap items-center gap-0.5 text-xs text-zinc-400"
+      >
         {breadcrumbs.map((crumb, index) => (
-          <div key={`${crumb.name}-${index}`} className="flex items-center gap-1">
-            {index > 0 ? <ChevronRight className="h-3 w-3 text-zinc-600" /> : null}
+          <div key={`${crumb.name}-${index}`} className="flex items-center">
+            {index > 0 ? (
+              <ChevronRight
+                className="h-3 w-3 shrink-0 text-zinc-600"
+                aria-hidden="true"
+              />
+            ) : null}
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs text-zinc-300 hover:text-white"
+              className="px-2 text-xs text-zinc-300 hover:text-white"
               onClick={() => navigateTo(index - 1)}
+              aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
             >
               {crumb.name}
             </Button>
           </div>
         ))}
-      </div>
+      </nav>
 
       <div ref={chartRef} className="min-h-0 flex-1">
         <svg
@@ -191,6 +203,16 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
           role="img"
           aria-label="Network activity treemap"
         >
+        <style>{`
+          g[tabindex]:focus-visible { outline: none; }
+          g[tabindex]:focus-visible .focus-ring { display: block; }
+          g[tabindex]:focus-visible .tile-rect {
+            stroke: #0B0E14 !important;
+            stroke-width: 2.5 !important;
+            opacity: 1 !important;
+          }
+          .focus-ring { display: none; }
+        `}</style>
         {leaves.map((node) => {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
@@ -198,7 +220,6 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
           const original = tileLookup.get(data.id ?? data.name) ?? data;
           const value = node.value ?? 0;
           const share = levelTotal > 0 ? (value / levelTotal) * 100 : 0;
-          const unit = original.meta?.unit ?? (metric === "usdc" ? "USDC" : "ops");
           const color = resolveColor(data);
           const nodeId = `${data.id ?? data.name}-${node.x0}-${node.y0}`;
           const isHovered = hoveredId === nodeId;
@@ -210,21 +231,47 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
 
           const canDrill = Boolean(original?.children?.length);
 
-          const formattedValue =
-            unit === "USDC"
-              ? `${formatNumber(value)} USDC`
-              : formatNumber(value);
+          // Tiles smaller than 44px in either dimension cannot be accurately tapped
+          // on touch screens. They still have a <title> for pointer tooltip.
+          // We also add role, tabIndex, and aria-label so keyboard and assistive
+          // technology users can reach and activate them regardless of size.
+          const ariaLabel = identity
+            ? `${data.name}, ${identity}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`
+            : `${data.name}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`;
 
           return (
             <g
               key={nodeId}
               transform={`translate(${node.x0},${node.y0})`}
+              tabIndex={0}
+              role="button"
+              aria-label={ariaLabel}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => handleNodeClick(node)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNodeClick(node);
+                }
+              }}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
+              className="focus-visible:outline-none"
             >
               <rect
+                className="focus-ring"
+                x={-2.5}
+                y={-2.5}
+                width={width + 5}
+                height={height + 5}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                rx={8.5}
+                pointerEvents="none"
+              />
+              <rect
+                className="tile-rect"
                 width={width}
                 height={height}
                 fill={color}
@@ -269,7 +316,7 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formattedValue}
+                    {formatNumber(value)} {metricUnitSuffix}
                   </text>
                   <text
                     x={10}
@@ -282,10 +329,15 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
                   </text>
                 </>
               ) : null}
+              {/* <title> provides tooltip on pointer hover and is read by screen readers
+                  as a fallback description for tiles that are too small to display text */}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${unit} · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ${unit} · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`}
+                {original.meta?.coverage
+                  ? `\nCoverage: ${formatPercent(original.meta.coverage.coveragePercent)} (${formatNumber(original.meta.coverage.namedChildValue)} of ${formatNumber(original.meta.coverage.parentValue)}) · ${original.meta.coverage.namedEntityCount} entities · limit ${original.meta.coverage.configuredLimit}`
+                  : ""}
               </title>
             </g>
           );
@@ -295,4 +347,3 @@ export function D3Treemap({ root, metric = "ops", onSelect }: D3TreemapProps) {
     </div>
   );
 }
-
