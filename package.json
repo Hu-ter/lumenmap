@@ -17,6 +17,10 @@
     "protect:main": "node scripts/configure-main-protection.mjs",
     "sync:directory": "node scripts/sync-stellar-directory.mjs",
     "test:hubble": "node scripts/test-hubble-queries.mjs",
+    "test:mapper": "node tests/test-destination-mapper.mjs",
+    "test:usdc-volume": "node scripts/test-usdc-volume.mjs",
+    "test:issues": "npx tsx scripts/validate-yaml-templates.mjs",
+    "smoke": "node scripts/smoke-check.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
@@ -35,7 +39,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52",
     "@tailwindcss/postcss": "^4",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^20",
@@ -46,6 +49,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.5",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@playwright/test": "^1.52"
   }
 }
