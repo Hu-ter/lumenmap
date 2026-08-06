@@ -4,15 +4,36 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
+  const { selectedNode, setSelectedNode, data, metric, isLoading } =
+    useDashboard();
+
+  if (isLoading) {
+    return (
+      <Card className="h-full" aria-busy="true">
+        <CardHeader>
+          <Skeleton className="h-5 w-20" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!selectedNode) {
     return (
-      <Card className="h-full">
+      /* On mobile the empty state is compact so it doesn't push KPIs far down.
+         On xl screens it stretches to fill the sidebar column (h-full). */
+      <Card className="xl:h-full">
         <CardHeader>
           <CardTitle>Details</CardTitle>
         </CardHeader>
@@ -36,7 +57,7 @@ export function DetailPanel() {
           : "This month";
 
   return (
-    <Card className="h-full">
+    <Card className="xl:h-full">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div className="space-y-2">
           <CardTitle className="text-base text-white">
@@ -46,9 +67,10 @@ export function DetailPanel() {
             <Badge variant="secondary">{selectedNode.meta.category}</Badge>
           ) : null}
         </div>
+        {/* size="icon" gives a 44×44 hit area (h-11 w-11) to meet touch target requirements */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className="shrink-0"
           onClick={() => setSelectedNode(null)}
           aria-label="Close details"
@@ -100,6 +122,41 @@ export function DetailPanel() {
             <p className="font-mono text-xs text-zinc-300">
               {selectedNode.meta.eventType}
             </p>
+          </div>
+        ) : null}
+
+        {selectedNode.meta?.coverage ? (
+          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="mb-2 text-xs font-semibold text-zinc-400">
+              Top-N Coverage
+            </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Coverage</span>
+                <span className="text-xs font-medium text-white">
+                  {formatPercent(selectedNode.meta.coverage.coveragePercent)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Named entities</span>
+                <span className="text-xs font-medium text-white">
+                  {selectedNode.meta.coverage.namedEntityCount}{" "}
+                  of {selectedNode.meta.coverage.configuredLimit}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Named ops</span>
+                <span className="text-xs font-medium text-white">
+                  {formatNumber(selectedNode.meta.coverage.namedChildValue)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-500">Total ops</span>
+                <span className="text-xs font-medium text-white">
+                  {formatNumber(selectedNode.meta.coverage.parentValue)}
+                </span>
+              </div>
+            </div>
           </div>
         ) : null}
 
