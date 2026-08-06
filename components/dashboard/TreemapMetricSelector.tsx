@@ -6,6 +6,13 @@ import { useDashboard } from "@/components/dashboard/DashboardProvider";
 export function TreemapMetricSelector() {
   const { metric, setMetric } = useDashboard();
 
+  const description =
+    metric === "ops"
+      ? "Tile size is proportional to the number of operations."
+      : metric === "xlm_volume"
+        ? "Tile size is proportional to XLM payment volume. Other operation types are hidden."
+        : "Tile size is proportional to verified USDC payment volume. Unsupported same-code assets are excluded.";
+
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
       <div className="flex flex-wrap gap-2">
@@ -23,12 +30,15 @@ export function TreemapMetricSelector() {
         >
           XLM Volume
         </Button>
+        <Button
+          variant={metric === "usdc" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMetric("usdc")}
+        >
+          USDC Volume
+        </Button>
       </div>
-      <p className="text-xs text-zinc-500">
-        {metric === "ops"
-          ? "Tile size is proportional to the number of operations."
-          : "Tile size is proportional to XLM payment volume. Other operation types are hidden."}
-      </p>
+      <p className="text-xs text-zinc-500">{description}</p>
     </div>
   );
 }

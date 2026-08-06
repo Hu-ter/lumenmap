@@ -16,6 +16,8 @@ import type {
   SorobanFunctionContractRow,
   SorobanFunctionRow,
   NativePaymentVolume,
+  UsdcAccountRow,
+  UsdcCategoryRow,
   UsdcPaymentVolume,
   UsdcPaymentVolumeAssetRow,
 } from "@/lib/types";
@@ -241,6 +243,95 @@ export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
 
+
+// Category-level USDC payment volume for treemap tiles (verified asset set only).
+export const usdcCategoryQuery = `
+SELECT
+  type_string,
+  SUM(usdc_amount) AS amount
+FROM (
+  SELECT
+    type_string,
+    CASE
+      WHEN type_string = 'payment'
+        AND asset_code = 'USDC'
+        AND STRUCT(asset_code AS code, asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(amount AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND dest_asset_code = 'USDC'
+        AND STRUCT(dest_asset_code AS code, dest_asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(COALESCE(dest_amount, amount) AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND source_asset_code = 'USDC'
+        AND STRUCT(source_asset_code AS code, source_asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(source_amount AS NUMERIC)
+
+      ELSE 0
+    END AS usdc_amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN ('payment', 'path_payment_strict_receive', 'path_payment_strict_send')
+)
+WHERE usdc_amount > 0
+GROUP BY type_string
+ORDER BY amount DESC
+`;
+
+export const usdcAccountQuery = `
+WITH usdc_ops AS (
+  SELECT
+    op_source_account AS account_id,
+    type_string,
+    CASE
+      WHEN type_string = 'payment'
+        AND asset_code = 'USDC'
+        AND STRUCT(asset_code AS code, asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(amount AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND dest_asset_code = 'USDC'
+        AND STRUCT(dest_asset_code AS code, dest_asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(COALESCE(dest_amount, amount) AS NUMERIC)
+
+      WHEN type_string IN ('path_payment_strict_receive', 'path_payment_strict_send')
+        AND source_asset_code = 'USDC'
+        AND STRUCT(source_asset_code AS code, source_asset_issuer AS issuer) IN UNNEST(@assets)
+      THEN CAST(source_amount AS NUMERIC)
+
+      ELSE 0
+    END AS usdc_amount
+  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
+  WHERE closed_at BETWEEN @start AND @end
+    AND type_string IN ('payment', 'path_payment_strict_receive', 'path_payment_strict_send')
+),
+aggregated AS (
+  SELECT
+    account_id,
+    type_string,
+    SUM(usdc_amount) AS amount
+  FROM usdc_ops
+  WHERE usdc_amount > 0
+  GROUP BY account_id, type_string
+),
+ranked AS (
+  SELECT
+    account_id,
+    type_string,
+    amount,
+    ROW_NUMBER() OVER (
+      PARTITION BY type_string
+      ORDER BY amount DESC
+    ) AS rank
+  FROM aggregated
+)
+SELECT account_id, type_string, amount
+FROM ranked
+WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
+ORDER BY type_string, amount DESC
+`;
+
 export function getUsdcPaymentVolumeParams(): { code: string; issuer: string }[] {
   return SUPPORTED_USDC_ASSET_SET.assets.map((asset) => ({
     code: asset.code,
@@ -256,6 +347,8 @@ export type RawQueryResults = {
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   activeSourceAccounts: ActiveSourceAccountsRow[];
   usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
@@ -339,6 +432,26 @@ export function mapUsdcPaymentVolumeRows(
     methodology: SUPPORTED_USDC_ASSET_SET.methodology,
     assets,
   };
+}
+
+
+export function mapUsdcCategoryRows(
+  rows: Record<string, unknown>[],
+): UsdcCategoryRow[] {
+  return rows.map((row) => ({
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
+}
+
+export function mapUsdcAccountRows(
+  rows: Record<string, unknown>[],
+): UsdcAccountRow[] {
+  return rows.map((row) => ({
+    account_id: String(row.account_id),
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
 }
 
 export function mapNativePaymentVolumeRow(

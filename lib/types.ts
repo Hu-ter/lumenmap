@@ -9,8 +9,8 @@ export type MetricId =
   | "asset_volume"
   | "tvl";
 
-/** Internal selector values for the two metrics currently backed by queries. */
-export type DashboardMetricId = "ops" | "xlm_volume";
+/** Internal selector values for the metrics currently backed by queries. */
+export type DashboardMetricId = "ops" | "xlm_volume" | "usdc";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -157,6 +157,27 @@ export const XLM_ASSET_UNIT = {
   asset: { type: "native", code: "XLM" },
 } as const satisfies MetricUnit<"asset_volume">;
 
+/** Display unit for verified Circle USDC payment-volume treemaps. */
+export const USDC_ASSET_UNIT = {
+  kind: "asset",
+  asset: {
+    type: "issued",
+    code: "USDC",
+    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  },
+} as const satisfies MetricUnit<"asset_volume">;
+
+export interface UsdcCategoryRow {
+  type_string: string;
+  amount: number;
+}
+
+export interface UsdcAccountRow {
+  account_id: string;
+  type_string: string;
+  amount: number;
+}
+
 export type TreemapNodeType =
   | "root"
   | "category"
@@ -272,6 +293,7 @@ export interface TreemapNodeMeta {
   share?: number;
   opCount?: number;
   xlmVolume?: number;
+  usdcVolume?: number;
   childCount?: number;
   eventType?: string;
   /** Coverage metadata for capped (top-N) treemap parents. */
@@ -297,6 +319,8 @@ export interface ActivityTreemaps {
   actors: TreemapPayload<"operation_count">;
   xlm_events: TreemapPayload<"asset_volume">;
   xlm_actors: TreemapPayload<"asset_volume">;
+  usdc_events: TreemapPayload<"asset_volume">;
+  usdc_actors: TreemapPayload<"asset_volume">;
 }
 
 export interface ActivityResponseMetadata {
@@ -315,6 +339,8 @@ export interface RawResearchRows {
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
 }
 
 export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
