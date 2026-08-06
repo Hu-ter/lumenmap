@@ -18,9 +18,13 @@ import {
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapUsdcAccountRows,
+  mapUsdcCategoryRows,
   mapUsdcPaymentVolumeRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  usdcAccountQuery,
+  usdcCategoryQuery,
   usdcPaymentVolumeQuery,
   type RawQueryResults,
 } from "@/lib/hubble/queries";
@@ -118,6 +122,8 @@ async function fetchFromHubble(
     sorobanFunctionContractRows,
     activeSourceAccountRows,
     usdcPaymentVolumeRows,
+    usdcCategoryRows,
+    usdcAccountRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
     runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
@@ -157,6 +163,24 @@ async function fetchFromHubble(
       },
       correlationId,
     ),
+    runQuery<Record<string, unknown>>(
+      "usdcCategory",
+      usdcCategoryQuery,
+      {
+        ...params,
+        assets: getUsdcPaymentVolumeParams(),
+      },
+      correlationId,
+    ).catch(() => [] as Record<string, unknown>[]),
+    runQuery<Record<string, unknown>>(
+      "usdcAccount",
+      usdcAccountQuery,
+      {
+        ...params,
+        assets: getUsdcPaymentVolumeParams(),
+      },
+      correlationId,
+    ).catch(() => [] as Record<string, unknown>[]),
   ]);
 
   return {
@@ -169,6 +193,8 @@ async function fetchFromHubble(
     ),
     activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
     usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
+    usdcCategories: mapUsdcCategoryRows(usdcCategoryRows),
+    usdcAccounts: mapUsdcAccountRows(usdcAccountRows),
   };
 }
 
@@ -316,6 +342,8 @@ export async function getActivityData(
     sorobanFunctions: raw.sorobanFunctions,
     sorobanFunctionContracts: raw.sorobanFunctionContracts,
     usdcPaymentVolume: raw.usdcPaymentVolume,
+    usdcCategories: raw.usdcCategories,
+    usdcAccounts: raw.usdcAccounts,
     kpis,
     treemaps,
     metricProvenance: buildActivityMetricProvenance(),

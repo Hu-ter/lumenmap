@@ -5,6 +5,7 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,10 +43,13 @@ function getNodeValue(node: TreemapNode): number {
 export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 800, height: 480 });
+  const [size, setSize] = useState({ width: 400, height: 400 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const { metric } = useDashboard();
+  const metricUnit =
+    metric === "xlm_volume" ? "XLM" : metric === "usdc" ? "USDC" : "ops";
+  const metricUnitSuffix = metric === "ops" ? "" : metricUnit;
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -68,6 +72,12 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       return;
     }
 
+    const { width, height } = element.getBoundingClientRect();
+    setSize({
+      width: Math.floor(width),
+      height: Math.floor(height),
+    });
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) {
@@ -76,8 +86,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
       const { width, height } = entry.contentRect;
       setSize({
-        width: Math.max(Math.floor(width), 320),
-        height: Math.max(Math.floor(height), 280),
+        width: Math.max(Math.floor(width), 200),
+        height: Math.max(Math.floor(height), 200),
       });
     });
 
@@ -233,8 +243,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           // We also add role, tabIndex, and aria-label so keyboard and assistive
           // technology users can reach and activate them regardless of size.
           const ariaLabel = identity
-            ? `${data.name}, ${identity}, ${formatNumber(value)} ops, ${formatPercent(share)}`
-            : `${data.name}, ${formatNumber(value)} ops, ${formatPercent(share)}`;
+            ? `${data.name}, ${identity}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`
+            : `${data.name}, ${formatNumber(value)} ${metricUnit}, ${formatPercent(share)}`;
 
           return (
             <g
@@ -277,6 +287,19 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                 rx={6}
                 opacity={isHovered ? 1 : 0.92}
               />
+              {(() => {
+                const patternId = getCategoryPatternId(data.meta?.category);
+                return patternId ? (
+                  <rect
+                    width={width}
+                    height={height}
+                    rx={6}
+                    fill={`url(#${patternId})`}
+                    opacity={PATTERN_OPACITY}
+                    pointerEvents="none"
+                  />
+                ) : null;
+              })()}
               {showLabel ? (
                 <text
                   x={10}
@@ -313,7 +336,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)} {metric === "xlm_volume" ? "XLM" : ""}
+                    {formatNumber(value)} {metricUnitSuffix}
                   </text>
                   <text
                     x={10}
@@ -330,8 +353,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                   as a fallback description for tiles that are too small to display text */}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`
-                  : `${data.name}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${metricUnit} · ${formatPercent(share)}`}
                 {original.meta?.coverage
                   ? `\nCoverage: ${formatPercent(original.meta.coverage.coveragePercent)} (${formatNumber(original.meta.coverage.namedChildValue)} of ${formatNumber(original.meta.coverage.parentValue)}) · ${original.meta.coverage.namedEntityCount} entities · limit ${original.meta.coverage.configuredLimit}`
                   : ""}
