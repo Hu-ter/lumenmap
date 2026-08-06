@@ -1,0 +1,17 @@
+{
+  "name": "LumenMap",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Next.js 16 dev server for the LumenMap dashboard on http://localhost:3000. Data endpoints need GCP BigQuery credentials (set the GCP_SERVICE_ACCOUNT_KEY secret); without them the UI renders and the API returns the documented error contract."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
