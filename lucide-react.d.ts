@@ -15,7 +15,6 @@ declare module "lucide-react" {
   export const HelpCircle: FC<SVGProps<SVGSVGElement>>;
   export const RefreshCw: FC<SVGProps<SVGSVGElement>>;
   export const Check: FC<SVGProps<SVGSVGElement>>;
-
   export const Download: FC<SVGProps<SVGSVGElement>>;
   export const ArrowDown: FC<SVGProps<SVGSVGElement>>;
   export const ArrowUp: FC<SVGProps<SVGSVGElement>>;
