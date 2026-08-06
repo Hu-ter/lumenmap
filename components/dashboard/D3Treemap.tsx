@@ -9,6 +9,7 @@ import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treem
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 interface D3TreemapProps {
   root: TreemapNode;
@@ -42,9 +43,10 @@ function getNodeValue(node: TreemapNode): number {
 export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 800, height: 480 });
+  const [size, setSize] = useState({ width: 400, height: 400 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const { metric } = useDashboard();
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -67,6 +69,12 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
       return;
     }
 
+    const { width, height } = element.getBoundingClientRect();
+    setSize({
+      width: Math.floor(width),
+      height: Math.floor(height),
+    });
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) {
@@ -75,8 +83,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
       const { width, height } = entry.contentRect;
       setSize({
-        width: Math.max(Math.floor(width), 320),
-        height: Math.max(Math.floor(height), 280),
+        width: Math.max(Math.floor(width), 200),
+        height: Math.max(Math.floor(height), 200),
       });
     });
 
@@ -163,21 +171,33 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
   return (
     <div ref={containerRef} className="flex h-full min-h-0 w-full flex-col">
-      <div className="mb-3 flex shrink-0 flex-wrap items-center gap-1 text-xs text-zinc-400">
+      {/* Breadcrumb nav — min-h-[44px] ensures the row meets touch target height.
+          Each Button uses size="sm" which is already h-11 (44px). The shrink-0
+          prevents the row from compressing on small containers. */}
+      <nav
+        aria-label="Treemap navigation"
+        className="mb-2 flex min-h-[44px] shrink-0 flex-wrap items-center gap-0.5 text-xs text-zinc-400"
+      >
         {breadcrumbs.map((crumb, index) => (
-          <div key={`${crumb.name}-${index}`} className="flex items-center gap-1">
-            {index > 0 ? <ChevronRight className="h-3 w-3 text-zinc-600" /> : null}
+          <div key={`${crumb.name}-${index}`} className="flex items-center">
+            {index > 0 ? (
+              <ChevronRight
+                className="h-3 w-3 shrink-0 text-zinc-600"
+                aria-hidden="true"
+              />
+            ) : null}
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs text-zinc-300 hover:text-white"
+              className="px-2 text-xs text-zinc-300 hover:text-white"
               onClick={() => navigateTo(index - 1)}
+              aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
             >
               {crumb.name}
             </Button>
           </div>
         ))}
-      </div>
+      </nav>
 
       <div ref={chartRef} className="min-h-0 flex-1">
         <svg
@@ -187,42 +207,16 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           role="img"
           aria-label="Network activity treemap"
         >
-          <defs>
-            {PATTERN_DEFS.map((p) => (
-              <pattern
-                key={p.id}
-                id={p.id}
-                x="0"
-                y="0"
-                width={p.width}
-                height={p.height}
-                patternUnits="userSpaceOnUse"
-                patternTransform={p.patternTransform}
-              >
-                {p.shapes.map((shape, i) =>
-                  shape.type === "circle" ? (
-                    <circle
-                      key={i}
-                      cx={shape.cx}
-                      cy={shape.cy}
-                      r={shape.r}
-                      fill={shape.fill}
-                    />
-                  ) : (
-                    <line
-                      key={i}
-                      x1={shape.x1}
-                      y1={shape.y1}
-                      x2={shape.x2}
-                      y2={shape.y2}
-                      stroke={shape.stroke}
-                      strokeWidth={shape.strokeWidth}
-                    />
-                  )
-                )}
-              </pattern>
-            ))}
-          </defs>
+        <style>{`
+          g[tabindex]:focus-visible { outline: none; }
+          g[tabindex]:focus-visible .focus-ring { display: block; }
+          g[tabindex]:focus-visible .tile-rect {
+            stroke: #0B0E14 !important;
+            stroke-width: 2.5 !important;
+            opacity: 1 !important;
+          }
+          .focus-ring { display: none; }
+        `}</style>
         {leaves.map((node) => {
           const width = node.x1 - node.x0;
           const height = node.y1 - node.y0;
@@ -241,16 +235,47 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
 
           const canDrill = Boolean(original?.children?.length);
 
+          // Tiles smaller than 44px in either dimension cannot be accurately tapped
+          // on touch screens. They still have a <title> for pointer tooltip.
+          // We also add role, tabIndex, and aria-label so keyboard and assistive
+          // technology users can reach and activate them regardless of size.
+          const ariaLabel = identity
+            ? `${data.name}, ${identity}, ${formatNumber(value)} ops, ${formatPercent(share)}`
+            : `${data.name}, ${formatNumber(value)} ops, ${formatPercent(share)}`;
+
           return (
             <g
               key={nodeId}
               transform={`translate(${node.x0},${node.y0})`}
+              tabIndex={0}
+              role="button"
+              aria-label={ariaLabel}
               onMouseEnter={() => setHoveredId(nodeId)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => handleNodeClick(node)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNodeClick(node);
+                }
+              }}
               style={{ cursor: canDrill ? "zoom-in" : "pointer" }}
+              className="focus-visible:outline-none"
             >
               <rect
+                className="focus-ring"
+                x={-2.5}
+                y={-2.5}
+                width={width + 5}
+                height={height + 5}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                rx={8.5}
+                pointerEvents="none"
+              />
+              <rect
+                className="tile-rect"
                 width={width}
                 height={height}
                 fill={color}
@@ -308,7 +333,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {formatNumber(value)}
+                    {formatNumber(value)} {metric === "xlm_volume" ? "XLM" : ""}
                   </text>
                   <text
                     x={10}
@@ -321,10 +346,15 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                   </text>
                 </>
               ) : null}
+              {/* <title> provides tooltip on pointer hover and is read by screen readers
+                  as a fallback description for tiles that are too small to display text */}
               <title>
                 {identity
-                  ? `${data.name}\n${identity}\n${formatNumber(value)} ops · ${formatPercent(share)}${data.meta?.category ? ` · ${data.meta.category}` : ""}`
-                  : `${data.name}\n${formatNumber(value)} ops · ${formatPercent(share)}${data.meta?.category ? ` · ${data.meta.category}` : ""}`}
+                  ? `${data.name}\n${identity}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`
+                  : `${data.name}\n${formatNumber(value)} ${metric === "xlm_volume" ? "XLM" : "ops"} · ${formatPercent(share)}`}
+                {original.meta?.coverage
+                  ? `\nCoverage: ${formatPercent(original.meta.coverage.coveragePercent)} (${formatNumber(original.meta.coverage.namedChildValue)} of ${formatNumber(original.meta.coverage.parentValue)}) · ${original.meta.coverage.namedEntityCount} entities · limit ${original.meta.coverage.configuredLimit}`
+                  : ""}
               </title>
             </g>
           );
