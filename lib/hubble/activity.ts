@@ -34,27 +34,79 @@ import {
 import { resolvePeriod } from "@/lib/periods";
 import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
 import type { ActiveContractCountRow, ActivityDataset, Period } from "@/lib/types";
+import {
+  classifyError,
+  createCorrelationId,
+  endTimer,
+  logError,
+  logInfo,
+  startTimer,
+} from "@/lib/log";
 
 async function runQuery<T>(
+  name: string,
   query: string,
   params: Record<string, unknown>,
+  correlationId: string,
 ): Promise<T[]> {
-  const client = getBigQueryClient();
-  if (!client) {
-    throw new Error("BigQuery client is not configured");
-  }
+  const timer = startTimer();
 
-  const [rows] = await client.query({
-    query,
-    params,
+  logInfo({
+    event: "activity.query.start",
+    correlationId,
+    queryName: name,
   });
 
-  return rows as T[];
+  const client = getBigQueryClient();
+  if (!client) {
+    const errorMsg = "BigQuery client is not configured";
+    logError({
+      event: "activity.query.error",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      errorClass: "validation",
+      errorMessage: errorMsg,
+    });
+    throw new Error(errorMsg);
+  }
+
+  try {
+    const [rows] = await client.query({
+      query,
+      params,
+    });
+
+    logInfo({
+      event: "activity.query.complete",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      rowCount: (rows as unknown[]).length,
+    });
+
+    return rows as T[];
+  } catch (error) {
+    const errorClass = classifyError(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    logError({
+      event: "activity.query.error",
+      correlationId,
+      queryName: name,
+      durationMs: endTimer(timer),
+      errorClass,
+      errorMessage,
+    });
+
+    throw error;
+  }
 }
 
 async function fetchFromHubble(
   start: string,
   end: string,
+  correlationId: string,
 ): Promise<RawQueryResults> {
   const params = { start, end };
 
@@ -67,19 +119,44 @@ async function fetchFromHubble(
     activeSourceAccountRows,
     usdcPaymentVolumeRows,
   ] = await Promise.all([
-    runQuery<Record<string, unknown>>(categoryQuery, params),
-    runQuery<Record<string, unknown>>(contractQuery, params),
-    runQuery<Record<string, unknown>>(accountQuery, {
-      ...params,
-      types: getAccountQueryTypes(),
-    }),
-    runQuery<Record<string, unknown>>(sorobanFunctionQuery, params),
-    runQuery<Record<string, unknown>>(sorobanFunctionContractQuery, params),
-    runQuery<Record<string, unknown>>(activeSourceAccountsQuery, params),
-    runQuery<Record<string, unknown>>(usdcPaymentVolumeQuery, {
-      ...params,
-      assets: getUsdcPaymentVolumeParams(),
-    }),
+    runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
+    runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
+    runQuery<Record<string, unknown>>(
+      "account",
+      accountQuery,
+      {
+        ...params,
+        types: getAccountQueryTypes(),
+      },
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "sorobanFunction",
+      sorobanFunctionQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "sorobanFunctionContract",
+      sorobanFunctionContractQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "activeSourceAccounts",
+      activeSourceAccountsQuery,
+      params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "usdcPaymentVolume",
+      usdcPaymentVolumeQuery,
+      {
+        ...params,
+        assets: getUsdcPaymentVolumeParams(),
+      },
+      correlationId,
+    ),
   ]);
 
   return {
@@ -95,14 +172,17 @@ async function fetchFromHubble(
   };
 }
 
-async function fetchHomeDomains(ids: string[]) {
+async function fetchHomeDomains(ids: string[], correlationId: string) {
   if (ids.length === 0) {
     return {};
   }
 
-  const rows = await runQuery<Record<string, unknown>>(accountMetadataQuery, {
-    ids,
-  });
+  const rows = await runQuery<Record<string, unknown>>(
+    "accountMetadata",
+    accountMetadataQuery,
+    { ids },
+    correlationId,
+  );
 
   return homeDomainsToEntities(mapAccountMetadataRows(rows));
 }
@@ -113,19 +193,28 @@ async function fetchHomeDomains(ids: string[]) {
 export async function getActiveContractCount(
   start: string,
   end: string,
+  correlationId: string = createCorrelationId(),
 ): Promise<ActiveContractCountRow> {
-  const rows = await runQuery<Record<string, unknown>>(activeContractCountQuery, {
-    start,
-    end,
-  });
+  const rows = await runQuery<Record<string, unknown>>(
+    "activeContractCount",
+    activeContractCountQuery,
+    {
+      start,
+      end,
+    },
+    correlationId,
+  );
 
   return mapActiveContractCountRow(rows);
 }
 
-async function fetchLatestDataTimestamp(): Promise<string | null> {
-  const rows = await runQuery<
-    Record<string, unknown>
-  >(latestDataTimestampQuery, {});
+async function fetchLatestDataTimestamp(correlationId: string): Promise<string | null> {
+  const rows = await runQuery<Record<string, unknown>>(
+    "latestDataTimestamp",
+    latestDataTimestampQuery,
+    {},
+    correlationId,
+  );
 
   if (rows.length === 0 || rows[0].latest_timestamp == null) {
     return null;
@@ -134,7 +223,10 @@ async function fetchLatestDataTimestamp(): Promise<string | null> {
   return String(rows[0].latest_timestamp);
 }
 
-export async function getActivityData(period: Period): Promise<ActivityDataset> {
+export async function getActivityData(
+  period: Period,
+  correlationId: string = createCorrelationId(),
+): Promise<ActivityDataset> {
   if (!hasBigQueryCredentials()) {
     throw new Error(
       "BigQuery credentials are required. Set GOOGLE_APPLICATION_CREDENTIALS in .env.local",
@@ -146,18 +238,62 @@ export async function getActivityData(period: Period): Promise<ActivityDataset> 
 
   const cached = getCached<ActivityDataset>(cacheKey);
   if (cached) {
+    logInfo({
+      event: "activity.cache.hit",
+      correlationId,
+      period,
+    });
     return cached;
   }
 
+  logInfo({
+    event: "activity.cache.miss",
+    correlationId,
+    period,
+  });
+
   const start = range.start.toISOString();
   const end = range.end.toISOString();
-  const raw = await fetchFromHubble(start, end);
-  const kpis = buildKpis(raw.categories, raw.contracts, raw.activeSourceAccounts);
-  const labels = await resolveEntityLabels(collectTreemapIds(raw), {
-    fetchHomeDomains,
+
+  const fetchTimer = startTimer();
+  const raw = await fetchFromHubble(start, end, correlationId);
+  logInfo({
+    event: "activity.fetch.complete",
+    correlationId,
+    period,
+    durationMs: endTimer(fetchTimer),
   });
+
+  const kpiTimer = startTimer();
+  const kpis = buildKpis(raw.categories, raw.contracts, raw.activeSourceAccounts);
+  logInfo({
+    event: "activity.kpi.build",
+    correlationId,
+    period,
+    durationMs: endTimer(kpiTimer),
+  });
+
+  const labelTimer = startTimer();
+  const labels = await resolveEntityLabels(collectTreemapIds(raw), {
+    fetchHomeDomains: (ids) => fetchHomeDomains(ids, correlationId),
+  });
+  logInfo({
+    event: "activity.label.resolve",
+    correlationId,
+    period,
+    durationMs: endTimer(labelTimer),
+  });
+
+  const treemapTimer = startTimer();
   const treemaps = buildAllTreemaps({ ...raw, labels });
-  const sourceTimestamp = await fetchLatestDataTimestamp();
+  logInfo({
+    event: "activity.treemap.build",
+    correlationId,
+    period,
+    durationMs: endTimer(treemapTimer),
+  });
+
+  const sourceTimestamp = await fetchLatestDataTimestamp(correlationId);
   const now = new Date();
   const isPeriodComplete = range.end.getTime() <= now.getTime();
 
