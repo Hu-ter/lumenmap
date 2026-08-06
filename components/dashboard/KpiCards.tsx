@@ -4,6 +4,7 @@ import { Activity, Boxes, Layers, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
+import { classifyFreshness } from "@/lib/freshness";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 const KPI_CONFIG = [
@@ -35,6 +36,7 @@ const KPI_CONFIG = [
 
 export function KpiCards() {
   const { data, isLoading } = useDashboard();
+  const freshnessState = classifyFreshness(data?.sourceTimestamp);
 
   if (isLoading || !data) {
     return (
@@ -79,6 +81,11 @@ export function KpiCards() {
               <p className="text-2xl font-semibold text-white">
                 {item.format(value as never)}
               </p>
+              {freshnessState === "stale" ? (
+                <p className="mt-0.5 text-xs font-medium text-amber-400">
+                  (stale)
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         );

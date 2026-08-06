@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { DashboardProvider } from "@/components/dashboard/DashboardProvider";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { FreshnessIndicator } from "@/components/dashboard/FreshnessIndicator";
+import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
@@ -37,6 +38,8 @@ function DashboardContent() {
         </div>
         <PeriodSelector />
       </header>
+
+      <FreshnessWarning />
 
       <KpiCards />
 

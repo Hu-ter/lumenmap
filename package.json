@@ -22,7 +22,8 @@
     "test:issues": "npx tsx scripts/validate-yaml-templates.mjs",
     "smoke": "node scripts/smoke-check.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:freshness": "node --test scripts/test-freshness.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
