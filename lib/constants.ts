@@ -7,6 +7,17 @@ export const CATEGORY_COLORS: Record<string, string> = {
   other: "#6B7280",
 };
 
+/** Pattern variant used as secondary non-color category cue in the treemap. */
+export const CATEGORY_PATTERNS: Record<string, string> = {
+  soroban: "diagonal",
+  payments: "horizontal",
+  dex: "crosshatch",
+  trustlines: "dots",
+  account: "vertical",
+  other: "none",
+};
+
+
 export const GROUP_LABELS: Record<string, string> = {
   soroban: "Soroban Contracts",
   payments: "Payments",
@@ -45,6 +56,14 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   extend_footprint_ttl: "soroban",
   restore_footprint: "soroban",
 };
+
+export const DESTINATION_QUERY_TYPES = [
+  "payment",
+  "path_payment_strict_receive",
+  "path_payment_strict_send",
+  "create_account",
+  "account_merge",
+];
 
 export const ACCOUNT_QUERY_TYPES = [
   "payment",

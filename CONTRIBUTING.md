@@ -159,6 +159,9 @@ scripts/
 | `npm run build` | Production build |
 | `npm run start` | Production server (run `build` first) |
 | `npm run lint` | ESLint — run before every PR |
+| `npm run typecheck` | TypeScript check (`tsc --noEmit`) |
+| `npm test` | Unit/integration tests |
+| `npm run smoke` | Post-deploy smoke check |
 | `npm run test:hubble` | Smoke-tests all BigQuery queries (requires GCP) |
 | `npm run sync:directory` | Pulls entity labels from Stellar Expert |
 
@@ -272,3 +275,7 @@ Valid categories: `defi`, `exchange`, `wallet`, `anchor`, `issuer`, `other`.
 ## Questions
 
 Open an issue or start a discussion on [github.com/lumenmap/lumenmap](https://github.com/lumenmap/lumenmap).
+
+## Code of Conduct
+
+Please read and follow the [Code of Conduct](CODE_OF_CONDUCT.md).

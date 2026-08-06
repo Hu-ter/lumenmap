@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0e14;
+  /* Neutral canvas: page background, deliberately desaturated so dense
+     data and chart surfaces are the visual focus (no decorative glow). */
+  --canvas: #09090b;
+  --background: var(--canvas);
   --foreground: #f4f4f5;
-  --stellar: #7b61ff;
-  --stellar-light: #9b87ff;
+  --stellar: #6f52f0;
+  --stellar-light: #8f78f0;
   --card: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-stellar: var(--stellar);
@@ -30,7 +34,8 @@ body {
 }
 
 body {
-  background: var(--background);
+  overflow-x: hidden;
+  background: var(--canvas);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
