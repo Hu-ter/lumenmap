@@ -4,12 +4,31 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatPercent } from "@/lib/utils";
 import { getMetricContract, formatMetricFull } from "@/lib/metrics";
 
 export function DetailPanel() {
-  const { selectedNode, setSelectedNode, data, metric } = useDashboard();
+  const { selectedNode, setSelectedNode, data, metric, isLoading } =
+    useDashboard();
+
+  if (isLoading) {
+    return (
+      <Card className="h-full" aria-busy="true">
+        <CardHeader>
+          <Skeleton className="h-5 w-20" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!selectedNode) {
     return (

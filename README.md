@@ -430,6 +430,7 @@ scripts/
 | `npm run lint` | ESLint |
 | `npm test` | Deterministic unit tests (single run, no external credentials) |
 | `npm run test:hubble` | BigQuery query smoke test |
+| `npm run test:issues` | Validate GitHub issue templates |
 | `npm run sync:directory` | Sync labels from Stellar Expert |
 | `npm run typecheck` | TypeScript type-check (uses project tsconfig, no emitted files) |
 
