@@ -3,45 +3,46 @@
 import { Activity, Boxes, Layers, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MetricInfo } from "@/components/metrics/MetricInfo";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
+import { classifyFreshness } from "@/lib/freshness";
+import {
+  METRIC_DEFINITIONS,
+  type KpiMetricId,
+} from "@/lib/metrics/definitions";
 import { formatNumber, formatPercent } from "@/lib/utils";
-import { getMetricContract, formatMetricCompact } from "@/lib/metrics";
+
+const KPI_CONFIG = [
+  {
+    key: "totalOps" as const satisfies KpiMetricId,
+    icon: Activity,
+    format: (value: number) => formatNumber(value),
+  },
+  {
+    key: "sorobanShare" as const satisfies KpiMetricId,
+    icon: Zap,
+    format: (value: number) => formatPercent(value),
+  },
+  {
+    key: "topCategory" as const satisfies KpiMetricId,
+    icon: Layers,
+    format: (value: string) => value,
+  },
+  {
+    key: "activeContracts" as const satisfies KpiMetricId,
+    icon: Boxes,
+    format: (value: number) => formatNumber(value),
+  },
+];
 
 export function KpiCards() {
-  const { data, isLoading, metricId } = useDashboard();
-  const activeMetric = getMetricContract(metricId);
-
-  const KPI_CONFIG = [
-    {
-      key: "totalOps",
-      title: `Total ${activeMetric.label}`,
-      icon: Activity,
-      format: (value: number) => formatMetricCompact(value, activeMetric),
-    },
-    {
-      key: "sorobanShare",
-      title: "Soroban Share",
-      icon: Zap,
-      format: (value: number) => formatPercent(value),
-    },
-    {
-      key: "topCategory",
-      title: "Top Category",
-      icon: Layers,
-      format: (value: string) => value,
-    },
-    {
-      key: "activeContracts",
-      title: "Active Contracts",
-      icon: Boxes,
-      format: (value: number) => formatNumber(value),
-    },
-  ] as const;
+  const { data, isLoading } = useDashboard();
+  const freshnessState = classifyFreshness(data?.sourceTimestamp);
 
   if (isLoading || !data) {
     return (
       <div
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
         aria-busy="true"
       >
         {KPI_CONFIG.map((item) => (
@@ -65,22 +66,31 @@ export function KpiCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
       {KPI_CONFIG.map((item) => {
         const Icon = item.icon;
+        const metric = METRIC_DEFINITIONS[item.key];
         const kpi = data.kpis[item.key];
         const value = typeof kpi === "string" ? kpi : kpi.value;
 
         return (
           <Card key={item.key}>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle>{item.title}</CardTitle>
-              <Icon className="h-4 w-4 text-stellar-light" />
+            <CardHeader className="flex-row items-start justify-between space-y-0 gap-2">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <CardTitle>{metric.title}</CardTitle>
+                <MetricInfo metric={metric} />
+              </div>
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-stellar-light" />
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold text-white">
                 {item.format(value as never)}
               </p>
+              {freshnessState === "stale" ? (
+                <p className="mt-0.5 text-xs font-medium text-amber-400">
+                  (stale)
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         );

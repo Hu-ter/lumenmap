@@ -4,10 +4,13 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyableAddress } from "@/components/dashboard/CopyableAddress";
+import { StellarExpertLink } from "@/components/dashboard/StellarExpertLink";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
-import { formatPercent } from "@/lib/utils";
-import { getMetricContract, formatMetricFull } from "@/lib/metrics";
+import { isEligibleAddress } from "@/lib/clipboard";
+import { getMetricUnit } from "@/lib/metrics/units";
+import { formatNumber, formatPercent } from "@/lib/utils";
 
 export function DetailPanel() {
   const { selectedNode, setSelectedNode, data, metric, isLoading } =
@@ -32,7 +35,9 @@ export function DetailPanel() {
 
   if (!selectedNode) {
     return (
-      <Card className="h-full">
+      /* On mobile the empty state is compact so it doesn't push KPIs far down.
+         On xl screens it stretches to fill the sidebar column (h-full). */
+      <Card className="xl:h-full">
         <CardHeader>
           <CardTitle>Details</CardTitle>
         </CardHeader>
@@ -55,8 +60,10 @@ export function DetailPanel() {
           ? "Last 30 days"
           : "This month";
 
+  const address = selectedNode.meta?.id;
+
   return (
-    <Card className="h-full">
+    <Card className="xl:h-full">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div className="space-y-2">
           <CardTitle className="text-base text-white">
@@ -66,9 +73,10 @@ export function DetailPanel() {
             <Badge variant="secondary">{selectedNode.meta.category}</Badge>
           ) : null}
         </div>
+        {/* size="icon" gives a 44×44 hit area (h-11 w-11) to meet touch target requirements */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className="shrink-0"
           onClick={() => setSelectedNode(null)}
           aria-label="Close details"
@@ -80,10 +88,14 @@ export function DetailPanel() {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
             <p className="text-xs text-zinc-500">
-              {metric === "xlm_volume" ? "XLM volume" : "Activity count"}
+              {metric === "xlm_volume"
+                ? "XLM volume"
+                : metric === "usdc"
+                  ? "USDC volume"
+                  : "Activity count"}
             </p>
             <p className="text-lg font-semibold text-white">
-              {formatMetricFull(selectedNode.value, activeMetric)}
+              {formatNumber(selectedNode.value)}
             </p>
           </div>
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
@@ -101,12 +113,21 @@ export function DetailPanel() {
           </div>
         ) : null}
 
-        {selectedNode.meta?.id ? (
+        {address ? (
           <div>
-            <p className="mb-1 text-xs text-zinc-500">Address</p>
-            <p className="break-all font-mono text-xs text-zinc-300">
-              {selectedNode.meta.id}
+            <p className="mb-1 text-xs text-zinc-500">
+              {isEligibleAddress(address, selectedNode.meta?.type)
+                ? "Address"
+                : "ID"}
             </p>
+            <CopyableAddress
+              address={address}
+              type={selectedNode.meta?.type}
+            />
+            <StellarExpertLink
+              address={address}
+              type={selectedNode.meta?.type}
+            />
           </div>
         ) : null}
 
