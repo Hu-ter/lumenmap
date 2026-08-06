@@ -1,0 +1,20 @@
+name: Smoke Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Deployment URL to smoke test'
+        required: true
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run smoke check
+        run: node scripts/smoke-check.mjs "${{ github.event.inputs.url }}"

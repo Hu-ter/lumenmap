@@ -1,122 +1,82 @@
 import {
   ACCOUNT_QUERY_TYPES,
-  TOP_ACCOUNTS_PER_TYPE,
-  TOP_CONTRACT_LIMIT,
-  TOP_CONTRACTS_PER_FUNCTION,
-  TOP_SOROBAN_FUNCTIONS,
-} from "@/lib/constants";
+  DESTINATION_QUERY_TYPES,
+  accountMetadataQuery,
+  accountQuery,
+  activeContractCountQuery,
+  activeDestinationCountQuery,
+  activeSourceAccountsQuery,
+  categoryQuery,
+  contractQuery,
+  latestDataTimestampQuery,
+  nativePaymentVolumeQuery,
+  queryRegistry,
+  sorobanFunctionContractQuery,
+  sorobanFunctionQuery,
+  usdcPaymentVolumeQuery,
+  usdcCategoryQuery,
+  usdcAccountQuery,
+} from "./shared-queries.mjs";
+import { SUPPORTED_USDC_ASSET_SET } from "@/lib/assets/usdc";
 import type {
   AccountRow,
+  ActiveContractCountRow,
+  ActiveSourceAccountsRow,
   CategoryRow,
   ContractRow,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  NativePaymentVolume,
+  UsdcAccountRow,
+  UsdcCategoryRow,
+  UsdcPaymentVolume,
+  UsdcPaymentVolumeAssetRow,
 } from "@/lib/types";
+
+export {
+  ACCOUNT_QUERY_TYPES,
+  DESTINATION_QUERY_TYPES,
+  accountMetadataQuery,
+  accountQuery,
+  activeContractCountQuery,
+  activeDestinationCountQuery,
+  activeSourceAccountsQuery,
+  categoryQuery,
+  contractQuery,
+  latestDataTimestampQuery,
+  nativePaymentVolumeQuery,
+  queryRegistry,
+  sorobanFunctionContractQuery,
+  sorobanFunctionQuery,
+  usdcPaymentVolumeQuery,
+  usdcCategoryQuery,
+  usdcAccountQuery,
+  TOP_ACCOUNTS_PER_TYPE,
+  TOP_CONTRACT_LIMIT,
+  TOP_CONTRACTS_PER_FUNCTION,
+  TOP_SOROBAN_FUNCTIONS,
+} from "./shared-queries.mjs";
 
 export interface QueryParams {
   start: string;
   end: string;
 }
 
-export const categoryQuery = `
-SELECT
-  type_string,
-  COUNT(*) AS op_count
-FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
-WHERE closed_at BETWEEN @start AND @end
-GROUP BY type_string
-ORDER BY op_count DESC
-`;
-
-export const contractQuery = `
-SELECT
-  contract_id,
-  SUM(txn_count) AS op_count
-FROM \`crypto-stellar.crypto_stellar_dbt.hourly_soroban_fee_agg_contract\`
-WHERE hour_agg BETWEEN @start AND @end
-  AND contract_id IS NOT NULL
-  AND contract_id != ''
-GROUP BY contract_id
-ORDER BY op_count DESC
-LIMIT ${TOP_CONTRACT_LIMIT}
-`;
-
-export const accountQuery = `
-WITH ranked AS (
-  SELECT
-    op_source_account AS account_id,
-    type_string,
-    COUNT(*) AS op_count,
-    ROW_NUMBER() OVER (
-      PARTITION BY type_string
-      ORDER BY COUNT(*) DESC
-    ) AS rank
-  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations\`
-  WHERE closed_at BETWEEN @start AND @end
-    AND type_string IN UNNEST(@types)
-  GROUP BY account_id, type_string
-)
-SELECT account_id, type_string, op_count
-FROM ranked
-WHERE rank <= ${TOP_ACCOUNTS_PER_TYPE}
-ORDER BY type_string, op_count DESC
-`;
-
-export const sorobanFunctionQuery = `
-WITH labeled AS (
-  SELECT
-    CASE
-      WHEN soroban_operation_type = 'invoke_contract'
-        AND parameters_decoded[SAFE_OFFSET(1)].type = 'Sym'
-      THEN parameters_decoded[SAFE_OFFSET(1)].value
-      ELSE soroban_operation_type
-    END AS function_name
-  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations_soroban\`
-  WHERE closed_at BETWEEN @start AND @end
-)
-SELECT
-  function_name,
-  COUNT(*) AS op_count
-FROM labeled
-WHERE function_name IS NOT NULL AND function_name != ''
-GROUP BY function_name
-ORDER BY op_count DESC
-LIMIT ${TOP_SOROBAN_FUNCTIONS}
-`;
-
-export const sorobanFunctionContractQuery = `
-WITH aggregated AS (
-  SELECT
-    parameters_decoded[SAFE_OFFSET(1)].value AS function_name,
-    contract_id,
-    COUNT(*) AS op_count
-  FROM \`crypto-stellar.crypto_stellar_dbt.enriched_history_operations_soroban\`
-  WHERE closed_at BETWEEN @start AND @end
-    AND soroban_operation_type = 'invoke_contract'
-    AND parameters_decoded[SAFE_OFFSET(1)].type = 'Sym'
-    AND contract_id IS NOT NULL
-    AND contract_id != ''
-  GROUP BY function_name, contract_id
-),
-ranked AS (
-  SELECT
-    function_name,
-    contract_id,
-    op_count,
-    ROW_NUMBER() OVER (
-      PARTITION BY function_name
-      ORDER BY op_count DESC
-    ) AS rank
-  FROM aggregated
-)
-SELECT function_name, contract_id, op_count
-FROM ranked
-WHERE rank <= ${TOP_CONTRACTS_PER_FUNCTION}
-ORDER BY function_name, op_count DESC
-`;
+export function getDestinationQueryTypes(): string[] {
+  return DESTINATION_QUERY_TYPES;
+}
 
 export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
+}
+
+
+
+export function getUsdcPaymentVolumeParams(): { code: string; issuer: string }[] {
+  return SUPPORTED_USDC_ASSET_SET.assets.map((asset) => ({
+    code: asset.code,
+    issuer: asset.issuer,
+  }));
 }
 
 export type RawQueryResults = {
@@ -125,12 +85,17 @@ export type RawQueryResults = {
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  activeSourceAccounts: ActiveSourceAccountsRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
   return rows.map((row) => ({
     type_string: String(row.type_string),
     op_count: Number(row.op_count),
+    xlm_volume: Number(row.xlm_volume) || 0,
   }));
 }
 
@@ -141,11 +106,31 @@ export function mapContractRows(rows: Record<string, unknown>[]): ContractRow[] 
   }));
 }
 
+// Defensively dedupes and drops null/empty contract IDs client-side, in
+// addition to the query's own DISTINCT and WHERE filters, so a qualifying
+// contract ID contributes at most once even if upstream ever returns
+// duplicate or malformed rows.
+export function mapActiveContractCountRow(
+  rows: Record<string, unknown>[],
+): ActiveContractCountRow {
+  const ids = new Set<string>();
+
+  for (const row of rows) {
+    const id = row.contract_id;
+    if (typeof id === "string" && id.length > 0) {
+      ids.add(id);
+    }
+  }
+
+  return { active_contract_count: ids.size };
+}
+
 export function mapAccountRows(rows: Record<string, unknown>[]): AccountRow[] {
   return rows.map((row) => ({
     account_id: String(row.account_id),
     type_string: String(row.type_string),
     op_count: Number(row.op_count),
+    xlm_volume: Number(row.xlm_volume) || 0,
   }));
 }
 
@@ -168,15 +153,57 @@ export function mapSorobanFunctionContractRows(
   }));
 }
 
-export const accountMetadataQuery = `
-SELECT
-  account_id,
-  home_domain
-FROM \`crypto-stellar.crypto_stellar_dbt.accounts_current\`
-WHERE account_id IN UNNEST(@ids)
-  AND home_domain IS NOT NULL
-  AND home_domain != ''
-`;
+
+export function mapUsdcPaymentVolumeRows(
+  rows: Record<string, unknown>[],
+): UsdcPaymentVolume {
+  const assets: UsdcPaymentVolumeAssetRow[] = rows.map((row) => ({
+    asset: {
+      code: String(row.code),
+      issuer: String(row.issuer),
+    },
+    amount: Number(row.amount ?? 0),
+  }));
+
+  return {
+    amount: assets.reduce((sum, row) => sum + row.amount, 0),
+    unit: "USDC",
+    assetSetId: SUPPORTED_USDC_ASSET_SET.id,
+    methodology: SUPPORTED_USDC_ASSET_SET.methodology,
+    assets,
+  };
+}
+
+
+export function mapUsdcCategoryRows(
+  rows: Record<string, unknown>[],
+): UsdcCategoryRow[] {
+  return rows.map((row) => ({
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
+}
+
+export function mapUsdcAccountRows(
+  rows: Record<string, unknown>[],
+): UsdcAccountRow[] {
+  return rows.map((row) => ({
+    account_id: String(row.account_id),
+    type_string: String(row.type_string),
+    amount: Number(row.amount),
+  }));
+}
+
+export function mapNativePaymentVolumeRow(
+  rows: Record<string, unknown>[],
+): NativePaymentVolume {
+  const first = rows[0];
+  const value = first?.volume_xlm != null ? String(first.volume_xlm) : "0";
+  return {
+    amount: value,
+    unit: "XLM",
+  };
+}
 
 export function mapAccountMetadataRows(
   rows: Record<string, unknown>[],
@@ -184,5 +211,13 @@ export function mapAccountMetadataRows(
   return rows.map((row) => ({
     account_id: String(row.account_id),
     home_domain: String(row.home_domain),
+  }));
+}
+
+export function mapActiveSourceAccountsRows(
+  rows: Record<string, unknown>[],
+): ActiveSourceAccountsRow[] {
+  return rows.map((row) => ({
+    active_accounts: Number(row.active_accounts),
   }));
 }
