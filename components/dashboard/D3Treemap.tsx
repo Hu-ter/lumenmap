@@ -5,6 +5,7 @@ import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import type { HierarchyNode } from "d3-hierarchy";
 import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -286,6 +287,19 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                 rx={6}
                 opacity={isHovered ? 1 : 0.92}
               />
+              {(() => {
+                const patternId = getCategoryPatternId(data.meta?.category);
+                return patternId ? (
+                  <rect
+                    width={width}
+                    height={height}
+                    rx={6}
+                    fill={`url(#${patternId})`}
+                    opacity={PATTERN_OPACITY}
+                    pointerEvents="none"
+                  />
+                ) : null;
+              })()}
               {showLabel ? (
                 <text
                   x={10}
