@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { CATEGORY_COLORS } from "@/lib/constants";
+import { CATEGORY_COLORS, TREEMAP_VIEWS } from "@/lib/constants";
+import { PERIOD_OPTIONS } from "@/lib/periods";
 import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { D3Treemap } from "@/components/dashboard/D3Treemap";
@@ -74,6 +75,21 @@ export function NetworkTreemap() {
         : data.treemaps[treemapView]
     : null;
   const activeTreemap = activePayload ? toChartNode(activePayload) : null;
+  const isEmpty =
+    !!activeTreemap &&
+    (!activeTreemap.children || activeTreemap.children.length === 0);
+  const activeViewLabel =
+    TREEMAP_VIEWS.find((v) => v.id === treemapView)?.label?.toLowerCase() ||
+    "activity";
+  const periodLabel =
+    PERIOD_OPTIONS.find((p) => p.value === period)?.label?.toLowerCase() ||
+    "this period";
+  const metricLabel =
+    metric === "xlm_volume"
+      ? "XLM volume"
+      : metric === "usdc"
+        ? "USDC payment volume"
+        : "operations";
 
   return (
     <Card aria-busy={isLoading || undefined}>
@@ -180,20 +196,19 @@ export function NetworkTreemap() {
           </div>
         ) : (
           <div key={`${period}-${treemapView}-${metric}`} className={CHART_FRAME_CLASS}>
-            {activeTreemap.children && activeTreemap.children.length > 0 ? (
+            {!isEmpty ? (
               <D3Treemap root={activeTreemap} onSelect={setSelectedNode} />
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-1 p-6 text-center text-sm text-zinc-500">
-                <p className="font-medium text-zinc-300">
-                  {metric === "usdc"
-                    ? "No USDC payment volume recorded for this period."
-                    : "No data for this metric and view combination."}
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex h-full flex-col items-center justify-center gap-1 p-6 text-center text-sm text-zinc-500"
+              >
+                <p className="font-medium text-zinc-300">No activity available</p>
+                <p className="text-xs">
+                  There are no {activeViewLabel} with {metricLabel} for{" "}
+                  {periodLabel}. Try another view, metric, or time range.
                 </p>
-                {metric === "usdc" ? (
-                  <p className="text-xs text-zinc-500">
-                    Try selecting a different time range or metric option.
-                  </p>
-                ) : null}
               </div>
             )}
           </div>
