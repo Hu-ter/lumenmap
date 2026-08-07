@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { DashboardProvider, useDashboard } from "@/components/dashboard/DashboardProvider";
+import { CategoryShareChart } from "@/components/dashboard/CategoryShareChart";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { FreshnessIndicator } from "@/components/dashboard/FreshnessIndicator";
 import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
@@ -58,6 +59,8 @@ function DashboardContent() {
       <DashboardSearch />
 
       <KpiCards />
+
+      <CategoryShareChart />
 
       <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${selectedNode ? "xl:grid-cols-[minmax(0,1fr)_320px]" : "xl:grid-cols-1"}`}>
         <NetworkTreemap />
