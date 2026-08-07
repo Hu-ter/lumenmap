@@ -28,7 +28,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:freshness": "node --test scripts/test-freshness.mjs",
     "test:visual": "npx tsx scripts/test-visual-regression.mjs",
-    "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update"
+    "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
+    "test:mappings": "npx tsx scripts/test-category-mappings.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",

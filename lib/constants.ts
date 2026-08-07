@@ -57,6 +57,11 @@ export const TYPE_TO_GROUP: Record<string, string> = {
   restore_footprint: "soroban",
 };
 
+export function getCategoryForOperation(type_string: string): string {
+  return TYPE_TO_GROUP[type_string] ?? "other";
+}
+
+
 export {
   ACCOUNT_QUERY_TYPES,
   DESTINATION_QUERY_TYPES,
