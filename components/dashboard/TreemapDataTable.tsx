@@ -163,7 +163,7 @@ export function TreemapDataTable({
         ({formatExactNumber(levelTotal)} {UNIT_LABEL} total)
       </p>
       <div className="overflow-x-auto rounded-xl border border-white/5 bg-black/20">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
+        <table className="w-full min-w-[36rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-white/10">
               <SortableHeader

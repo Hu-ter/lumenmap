@@ -502,7 +502,7 @@ export function D3Treemap({ root, onSelect, path: pathProp, onPathChange }: D3Tr
 
       {tooltip ? (
         <div
-          className="pointer-events-none fixed z-50 flex max-w-[280px] flex-col gap-1.5 rounded-lg border border-zinc-800 bg-[#0B0E14]/95 p-3 text-sm shadow-xl backdrop-blur-md"
+          className="pointer-events-none fixed z-50 flex max-w-[min(280px,calc(100vw-1.5rem))] flex-col gap-1.5 rounded-lg border border-zinc-800 bg-[#0B0E14]/95 p-3 text-sm shadow-xl backdrop-blur-md"
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           <div className="flex flex-col gap-0.5">

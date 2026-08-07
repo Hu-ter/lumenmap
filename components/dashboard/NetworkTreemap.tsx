@@ -166,15 +166,17 @@ export function NetworkTreemap() {
   return (
     <Card aria-busy={isLoading || undefined}>
       <CardHeader className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>Network Treemap</CardTitle>
             <p className="text-xs text-zinc-500">
               Switch views to explore operation types or top accounts and
               contracts. Click legend items to filter categories.
             </p>
           </div>
-          <ExportControls />
+          <div className="min-w-0 shrink-0">
+            <ExportControls />
+          </div>
         </div>
         <TreemapViewSelector />
         <TreemapMetricSelector />
