@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getNodeValue } from "@/lib/entities/treemap-level";
@@ -59,6 +59,33 @@ function toSelectedNode(node: TreemapNode, share: number): SelectedNode {
   };
 }
 
+function SortableHeader({
+  label,
+  sortByKey,
+  ariaSortValue,
+  onSort,
+  sortIcon,
+}: {
+  label: string;
+  sortByKey: SortKey;
+  ariaSortValue: "ascending" | "descending" | "none";
+  onSort: (key: SortKey) => void;
+  sortIcon: ReactNode;
+}) {
+  return (
+    <th scope="col" aria-sort={ariaSortValue} className="p-0">
+      <button
+        type="button"
+        onClick={() => onSort(sortByKey)}
+        className="flex w-full items-center gap-1 px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-zinc-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-stellar-light"
+      >
+        {label}
+        {sortIcon}
+      </button>
+    </th>
+  );
+}
+
 export function TreemapDataTable({
   levelName,
   nodes,
@@ -89,8 +116,6 @@ export function TreemapDataTable({
       }
 
       if (comparison === 0) {
-        // Deterministic tiebreaker so equal values always land in the
-        // same order regardless of the original array order.
         comparison = a.node.name.localeCompare(b.node.name);
       }
 
@@ -123,21 +148,6 @@ export function TreemapDataTable({
     );
   };
 
-  function SortableHeader({ label, sortByKey }: { label: string; sortByKey: SortKey }) {
-    return (
-      <th scope="col" aria-sort={ariaSort(sortByKey)} className="p-0">
-        <button
-          type="button"
-          onClick={() => handleSort(sortByKey)}
-          className="flex w-full items-center gap-1 px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-zinc-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-stellar-light"
-        >
-          {label}
-          {renderSortIcon(sortByKey)}
-        </button>
-      </th>
-    );
-  }
-
   if (nodes.length === 0) {
     return (
       <div className="rounded-xl border border-white/5 bg-black/20 p-6 text-center text-sm text-zinc-500">
@@ -156,16 +166,40 @@ export function TreemapDataTable({
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-white/10">
-              <SortableHeader label="Name" sortByKey="name" />
-              <SortableHeader label="Type" sortByKey="type" />
-              <SortableHeader label="Value" sortByKey="value" />
+              <SortableHeader
+                label="Name"
+                sortByKey="name"
+                ariaSortValue={ariaSort("name")}
+                onSort={handleSort}
+                sortIcon={renderSortIcon("name")}
+              />
+              <SortableHeader
+                label="Type"
+                sortByKey="type"
+                ariaSortValue={ariaSort("type")}
+                onSort={handleSort}
+                sortIcon={renderSortIcon("type")}
+              />
+              <SortableHeader
+                label="Value"
+                sortByKey="value"
+                ariaSortValue={ariaSort("value")}
+                onSort={handleSort}
+                sortIcon={renderSortIcon("value")}
+              />
               <th
                 scope="col"
                 className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-zinc-400"
               >
                 Unit
               </th>
-              <SortableHeader label="Share" sortByKey="share" />
+              <SortableHeader
+                label="Share"
+                sortByKey="share"
+                ariaSortValue={ariaSort("share")}
+                onSort={handleSort}
+                sortIcon={renderSortIcon("share")}
+              />
               <th
                 scope="col"
                 className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-zinc-400"
