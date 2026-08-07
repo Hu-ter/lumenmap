@@ -73,6 +73,29 @@ export function buildActivityMetricProvenance(): ActivityMetricProvenance {
         ],
       },
     },
+    transaction_count: {
+      metric: "transaction_count",
+      methodology: {
+        id: "transactions",
+        version: "1.0.0",
+        href: "docs/metric-methodology.md#transactions",
+      },
+      source: {
+        provider: "hubble",
+        dataset: "crypto-stellar.crypto_stellar_dbt",
+        tables: ["enriched_history_operations"],
+      },
+      aggregation: {
+        kind: "count_distinct",
+        field: "transaction_hash",
+        granularity: "selected_period",
+        dimensions: [],
+      },
+      coverage: {
+        network: "stellar_mainnet",
+        constraints: [...COMMON_COVERAGE],
+      },
+    },
     asset_volume: {
       metric: "asset_volume",
       methodology: {

@@ -25,6 +25,7 @@ export function getFixtureActivityData(period: Period): ActivityDataset {
     sourceTimestamp: range.end.toISOString(),
     isPeriodComplete: true,
     categories: raw.categories,
+    transactionCategories: raw.transactionCategories,
     contracts: raw.contracts,
     accounts: raw.accounts,
     sorobanFunctions: raw.sorobanFunctions,

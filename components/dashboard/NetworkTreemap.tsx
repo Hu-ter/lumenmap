@@ -125,7 +125,9 @@ export function NetworkTreemap() {
       ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
       : metric === "usdc"
         ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
-        : data.treemaps[treemapView]
+        : metric === "transactions"
+          ? data.treemaps[`txn_${treemapView}` as keyof typeof data.treemaps]
+          : data.treemaps[treemapView]
     : null;
   const activeTreemap = activePayload ? toChartNode(activePayload) : null;
   const isEmpty =
@@ -152,7 +154,9 @@ export function NetworkTreemap() {
       ? "XLM volume"
       : metric === "usdc"
         ? "USDC payment volume"
-        : "operations";
+        : metric === "transactions"
+          ? "transactions"
+          : "operations";
 
   return (
     <Card aria-busy={isLoading || undefined}>

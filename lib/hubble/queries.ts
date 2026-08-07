@@ -13,6 +13,7 @@ import {
   queryRegistry,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  transactionCategoryQuery,
   usdcPaymentVolumeQuery,
   usdcCategoryQuery,
   usdcAccountQuery,
@@ -27,6 +28,7 @@ import type {
   SorobanFunctionContractRow,
   SorobanFunctionRow,
   NativePaymentVolume,
+  TransactionCategoryRow,
   UsdcAccountRow,
   UsdcCategoryRow,
   UsdcPaymentVolume,
@@ -48,6 +50,7 @@ export {
   queryRegistry,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  transactionCategoryQuery,
   usdcPaymentVolumeQuery,
   usdcCategoryQuery,
   usdcAccountQuery,
@@ -81,6 +84,7 @@ export function getUsdcPaymentVolumeParams(): { code: string; issuer: string }[]
 
 export type RawQueryResults = {
   categories: CategoryRow[];
+  transactionCategories: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
@@ -96,6 +100,15 @@ export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] 
     type_string: String(row.type_string),
     op_count: Number(row.op_count),
     xlm_volume: Number(row.xlm_volume) || 0,
+  }));
+}
+
+export function mapTransactionCategoryRows(
+  rows: Record<string, unknown>[],
+): TransactionCategoryRow[] {
+  return rows.map((row) => ({
+    type_string: String(row.type_string),
+    txn_count: Number(row.txn_count),
   }));
 }
 

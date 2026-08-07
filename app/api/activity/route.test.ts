@@ -30,6 +30,7 @@ function mockActivityDataset(period: Period): ActivityDataset {
     sourceTimestamp: "2026-08-03T12:00:00.000Z",
     isPeriodComplete: false,
     categories: [],
+    transactionCategories: [],
     contracts: [],
     accounts: [],
     sorobanFunctions: [],
@@ -61,6 +62,18 @@ function mockActivityDataset(period: Period): ActivityDataset {
         value: 0,
         metric: "operation_count",
         unit: { kind: "count", subject: "operation" },
+      },
+      txn_events: {
+        name: "Transaction Events",
+        value: 0,
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
+      },
+      txn_actors: {
+        name: "Transaction Actors",
+        value: 0,
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
       },
       xlm_events: {
         name: "XLM Events",

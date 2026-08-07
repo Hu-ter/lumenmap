@@ -3,6 +3,7 @@
 import {
   queryRegistry,
   categoryQuery,
+  transactionCategoryQuery,
   contractQuery,
   activeContractCountQuery,
   accountQuery,
@@ -20,6 +21,7 @@ import {
 
 const queryMap = {
   categoryQuery,
+  transactionCategoryQuery,
   contractQuery,
   activeContractCountQuery,
   accountQuery,

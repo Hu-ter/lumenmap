@@ -24,11 +24,13 @@ import {
   mapContractRows,
   mapSorobanFunctionContractRows,
   mapSorobanFunctionRows,
+  mapTransactionCategoryRows,
   mapUsdcAccountRows,
   mapUsdcCategoryRows,
   mapUsdcPaymentVolumeRows,
   sorobanFunctionContractQuery,
   sorobanFunctionQuery,
+  transactionCategoryQuery,
   usdcAccountQuery,
   usdcCategoryQuery,
   usdcPaymentVolumeQuery,
@@ -150,6 +152,7 @@ async function fetchFromHubble(
 
   const [
     categoryRows,
+    transactionCategoryRows,
     contractRows,
     accountRows,
     sorobanFunctionRows,
@@ -160,6 +163,12 @@ async function fetchFromHubble(
     usdcAccountRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
+    runQuery<Record<string, unknown>>(
+      "transactionCategory",
+      transactionCategoryQuery,
+      params,
+      correlationId,
+    ).catch(() => [] as Record<string, unknown>[]),
     runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
     runQuery<Record<string, unknown>>(
       "account",
@@ -219,6 +228,7 @@ async function fetchFromHubble(
 
   return {
     categories: mapCategoryRows(categoryRows),
+    transactionCategories: mapTransactionCategoryRows(transactionCategoryRows),
     contracts: mapContractRows(contractRows),
     accounts: mapAccountRows(accountRows),
     sorobanFunctions: mapSorobanFunctionRows(sorobanFunctionRows),
@@ -294,7 +304,7 @@ export async function getActivityData(
   }
 
   const range = resolvePeriod(period);
-  const cacheKey = `activity:v12:${period}:${range.start.toISOString()}`;
+  const cacheKey = `activity:v13:${period}:${range.start.toISOString()}`;
 
   const cached = getCached<ActivityDataset>(cacheKey, { track: true });
   if (cached) {
@@ -379,6 +389,7 @@ export async function getActivityData(
       sourceTimestamp: sourceTimestamp ?? "",
       isPeriodComplete,
       categories: raw.categories,
+      transactionCategories: raw.transactionCategories,
       contracts: raw.contracts,
       accounts: raw.accounts,
       sorobanFunctions: raw.sorobanFunctions,
