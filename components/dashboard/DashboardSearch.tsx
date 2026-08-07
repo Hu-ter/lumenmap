@@ -1,0 +1,297 @@
+"use client";
+
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Loader2, Search, X } from "lucide-react";
+import { useDashboard } from "@/components/dashboard/DashboardProvider";
+import { Badge } from "@/components/ui/badge";
+import {
+  buildSearchIndex,
+  searchIndex,
+  type SearchResult,
+} from "@/lib/search";
+import { cn, truncateAddress } from "@/lib/utils";
+
+function resultTypeBadge(type: SearchResult["type"]): string {
+  switch (type) {
+    case "account":
+      return "Account";
+    case "contract":
+      return "Contract";
+    case "protocol":
+      return "Protocol";
+    case "asset":
+      return "Asset";
+    case "category":
+      return "Category";
+    default:
+      return type;
+  }
+}
+
+export function DashboardSearch() {
+  const { data, isLoading, selectSearchResult } = useDashboard();
+  const inputId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const index = useMemo(
+    () => (data ? buildSearchIndex(data) : []),
+    [data],
+  );
+
+  const results = useMemo(
+    () => searchIndex(index, query),
+    [index, query],
+  );
+
+  const flatResults = useMemo(
+    () => results.groups.flatMap((group) => group.results),
+    [results],
+  );
+
+  // Derive a clamped active index so query changes never leave a stale cursor.
+  const safeActiveIndex =
+    flatResults.length === 0
+      ? 0
+      : Math.min(activeIndex, flatResults.length - 1);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!containerRef.current) {
+        return;
+      }
+      if (!containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !listRef.current) {
+      return;
+    }
+    const active = listRef.current.querySelector<HTMLElement>(
+      `[data-search-index="${safeActiveIndex}"]`,
+    );
+    active?.scrollIntoView({ block: "nearest" });
+  }, [safeActiveIndex, open, flatResults.length]);
+
+  const showPanel = open && query.trim().length > 0;
+
+  const handleSelect = (result: SearchResult) => {
+    selectSearchResult(result);
+    setQuery("");
+    setOpen(false);
+    setActiveIndex(0);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showPanel) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) => {
+        const base =
+          flatResults.length === 0
+            ? 0
+            : Math.min(current, flatResults.length - 1);
+        return flatResults.length === 0
+          ? 0
+          : Math.min(base + 1, flatResults.length - 1);
+      });
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) => {
+        const base =
+          flatResults.length === 0
+            ? 0
+            : Math.min(current, flatResults.length - 1);
+        return Math.max(base - 1, 0);
+      });
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const target = flatResults[safeActiveIndex];
+      if (target) {
+        handleSelect(target);
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+    }
+  };
+
+  // Precompute flat index offsets per group for stable option ids.
+  const groupOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let running = 0;
+    for (const group of results.groups) {
+      offsets.push(running);
+      running += group.results.length;
+    }
+    return offsets;
+  }, [results.groups]);
+
+  return (
+    <div ref={containerRef} className="relative w-full max-w-xl">
+      <label htmlFor={inputId} className="sr-only">
+        Search loaded accounts, contracts, assets, and protocols
+      </label>
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <input
+          id={inputId}
+          type="search"
+          role="combobox"
+          aria-expanded={showPanel}
+          aria-controls={`${inputId}-listbox`}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            showPanel && flatResults[safeActiveIndex]
+              ? `${inputId}-option-${safeActiveIndex}`
+              : undefined
+          }
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="Search address, contract, asset, or protocol…"
+          value={query}
+          disabled={isLoading && !data}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+            setActiveIndex(0);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "h-10 w-full rounded-lg border border-white/10 bg-black/30 py-2 pl-10 pr-10 text-sm text-zinc-100",
+            "placeholder:text-zinc-500 focus:border-stellar/50 focus:outline-none focus:ring-2 focus:ring-stellar/40",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+          )}
+        />
+        {isLoading && !data ? (
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-zinc-400" />
+        ) : query ? (
+          <button
+            type="button"
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:bg-white/10 hover:text-white"
+            onClick={() => {
+              setQuery("");
+              setOpen(false);
+              setActiveIndex(0);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+
+      {showPanel ? (
+        <div
+          className="absolute z-30 mt-2 max-h-80 w-full overflow-auto rounded-xl border border-white/10 bg-[#12151d] shadow-2xl shadow-black/50"
+          role="listbox"
+          id={`${inputId}-listbox`}
+        >
+          {isLoading && !data ? (
+            <div className="flex items-center gap-2 px-4 py-6 text-sm text-zinc-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading dashboard data…
+            </div>
+          ) : results.total === 0 ? (
+            <div className="px-4 py-6 text-sm text-zinc-400">
+              No matches in loaded data for{" "}
+              <span className="font-medium text-zinc-200">
+                “{results.query}”
+              </span>
+              .
+            </div>
+          ) : (
+            <ul ref={listRef} className="py-2">
+              {results.groups.map((group, groupIndex) => (
+                <li key={group.type} className="list-none">
+                  <div className="sticky top-0 bg-[#12151d]/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 backdrop-blur">
+                    {group.label}
+                  </div>
+                  <ul>
+                    {group.results.map((result, resultIndex) => {
+                      const indexForItem =
+                        (groupOffsets[groupIndex] ?? 0) + resultIndex;
+                      const isActive = indexForItem === safeActiveIndex;
+
+                      return (
+                        <li key={result.key} className="list-none">
+                          <button
+                            type="button"
+                            id={`${inputId}-option-${indexForItem}`}
+                            role="option"
+                            aria-selected={isActive}
+                            data-search-index={indexForItem}
+                            className={cn(
+                              "flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors",
+                              isActive
+                                ? "bg-stellar/20 text-white"
+                                : "text-zinc-200 hover:bg-white/5",
+                            )}
+                            onMouseEnter={() => setActiveIndex(indexForItem)}
+                            onClick={() => handleSelect(result)}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="truncate text-sm font-medium">
+                                  {result.label}
+                                </span>
+                                <Badge variant="secondary" className="shrink-0">
+                                  {resultTypeBadge(result.type)}
+                                </Badge>
+                              </div>
+                              {result.subtitle ? (
+                                <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-500">
+                                  {result.subtitle.length > 72
+                                    ? result.id
+                                      ? `${result.subtitle.split("·")[0] ?? ""}· ${truncateAddress(result.id, 6)}`
+                                      : `${result.subtitle.slice(0, 64)}…`
+                                    : result.subtitle}
+                                </p>
+                              ) : null}
+                              {result.type === "asset" && result.issuer ? (
+                                <p className="mt-0.5 font-mono text-[11px] text-zinc-500">
+                                  Issuer {truncateAddress(result.issuer, 6)}
+                                </p>
+                              ) : null}
+                            </div>
+                            {typeof result.opCount === "number" ? (
+                              <span className="shrink-0 text-xs text-zinc-500">
+                                {result.opCount.toLocaleString("en-US")} ops
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}

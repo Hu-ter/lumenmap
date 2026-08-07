@@ -9,8 +9,8 @@ export type MetricId =
   | "asset_volume"
   | "tvl";
 
-/** Internal selector values for the two metrics currently backed by queries. */
-export type DashboardMetricId = "ops" | "xlm_volume";
+/** Internal selector values for the metrics currently backed by queries. */
+export type DashboardMetricId = "ops" | "xlm_volume" | "usdc" | "transactions";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -144,6 +144,7 @@ export type MetricProvenance<M extends MetricId> = {
 
 export interface ActivityMetricProvenance {
   operation_count: MetricProvenance<"operation_count">;
+  transaction_count: MetricProvenance<"transaction_count">;
   asset_volume: MetricProvenance<"asset_volume">;
 }
 
@@ -152,10 +153,41 @@ export const OPERATION_COUNT_UNIT = {
   subject: "operation",
 } as const satisfies MetricUnit<"operation_count">;
 
+export const TRANSACTION_COUNT_UNIT = {
+  kind: "count",
+  subject: "transaction",
+} as const satisfies MetricUnit<"transaction_count">;
+
 export const XLM_ASSET_UNIT = {
   kind: "asset",
   asset: { type: "native", code: "XLM" },
 } as const satisfies MetricUnit<"asset_volume">;
+
+/** Display unit for verified Circle USDC payment-volume treemaps. */
+export const USDC_ASSET_UNIT = {
+  kind: "asset",
+  asset: {
+    type: "issued",
+    code: "USDC",
+    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+  },
+} as const satisfies MetricUnit<"asset_volume">;
+
+export interface UsdcCategoryRow {
+  type_string: string;
+  amount: number;
+}
+
+export interface TransactionCategoryRow {
+  type_string: string;
+  txn_count: number;
+}
+
+export interface UsdcAccountRow {
+  account_id: string;
+  type_string: string;
+  amount: number;
+}
 
 export type TreemapNodeType =
   | "root"
@@ -216,6 +248,22 @@ export interface ActiveSourceAccountsRow {
   active_accounts: number;
 }
 
+export interface UsdcPaymentVolumeAssetRow {
+  asset: {
+    code: string;
+    issuer: string;
+  };
+  amount: number;
+}
+
+export interface UsdcPaymentVolume {
+  amount: number;
+  unit: "USDC";
+  assetSetId: string;
+  methodology: string;
+  assets: UsdcPaymentVolumeAssetRow[];
+}
+
 export interface ActivityKpis {
   totalOps: {
     kind: "operations";
@@ -235,6 +283,19 @@ export interface ActivityKpis {
   };
 }
 
+export interface TreemapCoverage {
+  /** Sum of named children values (excluding synthetic remainder). */
+  namedChildValue: number;
+  /** The parent node's total value. */
+  parentValue: number;
+  /** Coverage percentage: namedChildValue / parentValue (0–100). */
+  coveragePercent: number;
+  /** Number of named child entities (excluding the remainder node). */
+  namedEntityCount: number;
+  /** The configured top-N limit that was applied. */
+  configuredLimit: number;
+}
+
 export interface TreemapNodeMeta {
   type: TreemapNodeType;
   id?: string;
@@ -242,9 +303,13 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  txnCount?: number;
   xlmVolume?: number;
+  usdcVolume?: number;
   childCount?: number;
   eventType?: string;
+  /** Coverage metadata for capped (top-N) treemap parents. */
+  coverage?: TreemapCoverage;
 }
 
 export interface TreemapNode<TValue extends number | string = number> {
@@ -264,8 +329,12 @@ export type TreemapPayload<M extends MetricId> = TreemapNode<MetricValue<M>> & {
 export interface ActivityTreemaps {
   events: TreemapPayload<"operation_count">;
   actors: TreemapPayload<"operation_count">;
+  txn_events: TreemapPayload<"transaction_count">;
+  txn_actors: TreemapPayload<"transaction_count">;
   xlm_events: TreemapPayload<"asset_volume">;
   xlm_actors: TreemapPayload<"asset_volume">;
+  usdc_events: TreemapPayload<"asset_volume">;
+  usdc_actors: TreemapPayload<"asset_volume">;
 }
 
 export interface ActivityResponseMetadata {
@@ -279,16 +348,23 @@ export interface ActivityResponseMetadata {
 
 export interface RawResearchRows {
   categories: CategoryRow[];
+  transactionCategories: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
+  usdcPaymentVolume: UsdcPaymentVolume;
+  usdcCategories: UsdcCategoryRow[];
+  usdcAccounts: UsdcAccountRow[];
 }
 
 export interface ActivityVisualizationResponse extends ActivityResponseMetadata {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
+  /** Present and true when the API returned static fixture data (no GCP credentials). */
+  fixture?: boolean;
 }
 
 export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
@@ -296,11 +372,28 @@ export interface ActivityRawResearchResponse extends ActivityResponseMetadata {
 }
 
 /** Internal cached dataset from which the two public response surfaces derive. */
+export interface ProtocolBar {
+  protocol: string;
+  opCount: number;
+  share: number;
+  rank: number;
+  entityCount: number;
+}
+
+export interface ProtocolSummary {
+  bars: ProtocolBar[];
+  totalOps: number;
+  labeledOps: number;
+  coverage: number;
+  unknownCount: number;
+}
+
 export interface ActivityDataset
   extends ActivityResponseMetadata,
     RawResearchRows {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
+  protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
 }
 

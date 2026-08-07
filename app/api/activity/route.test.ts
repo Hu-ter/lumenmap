@@ -30,10 +30,20 @@ function mockActivityDataset(period: Period): ActivityDataset {
     sourceTimestamp: "2026-08-03T12:00:00.000Z",
     isPeriodComplete: false,
     categories: [],
+    transactionCategories: [],
     contracts: [],
     accounts: [],
     sorobanFunctions: [],
     sorobanFunctionContracts: [],
+    usdcPaymentVolume: {
+      amount: 0,
+      unit: "USDC",
+      assetSetId: "stellar-mainnet-usdc-v1",
+      methodology: "docs/metric-methodology.md#usdc-payment-volume",
+      assets: [],
+    },
+    usdcCategories: [],
+    usdcAccounts: [],
     kpis: {
       totalOps: { kind: "operations", unit: "ops", value: 0 },
       sorobanShare: { kind: "share", unit: "percent", value: 0 },
@@ -53,6 +63,18 @@ function mockActivityDataset(period: Period): ActivityDataset {
         metric: "operation_count",
         unit: { kind: "count", subject: "operation" },
       },
+      txn_events: {
+        name: "Transaction Events",
+        value: 0,
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
+      },
+      txn_actors: {
+        name: "Transaction Actors",
+        value: 0,
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
+      },
       xlm_events: {
         name: "XLM Events",
         metric: "asset_volume",
@@ -69,6 +91,32 @@ function mockActivityDataset(period: Period): ActivityDataset {
         unit: {
           kind: "asset",
           asset: { type: "native", code: "XLM" },
+        },
+      },
+      usdc_events: {
+        name: "USDC Events",
+        metric: "asset_volume",
+        value: "0",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
+        },
+      },
+      usdc_actors: {
+        name: "USDC Actors",
+        metric: "asset_volume",
+        value: "0",
+        unit: {
+          kind: "asset",
+          asset: {
+            type: "issued",
+            code: "USDC",
+            issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+          },
         },
       },
     },
