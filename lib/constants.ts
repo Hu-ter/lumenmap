@@ -17,7 +17,6 @@ export const CATEGORY_PATTERNS: Record<string, string> = {
   other: "none",
 };
 
-
 export const GROUP_LABELS: Record<string, string> = {
   soroban: "Soroban Contracts",
   payments: "Payments",
