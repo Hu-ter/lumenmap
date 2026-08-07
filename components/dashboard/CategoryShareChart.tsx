@@ -196,7 +196,7 @@ export function CategoryShareChart() {
             partial buckets marked on the axis
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
             variant={mode === "percentage" ? "default" : "outline"}

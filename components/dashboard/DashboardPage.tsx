@@ -18,9 +18,9 @@ function DashboardContent() {
   const { selectedNode } = useDashboard();
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
+    <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col gap-6 overflow-x-hidden px-3 py-6 sm:px-6 lg:px-8">
+      <header className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <Image
               src="/logo.png"
@@ -30,7 +30,7 @@ function DashboardContent() {
               className="shrink-0"
               priority
             />
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 LumenMap
               </h1>
@@ -51,7 +51,9 @@ function DashboardContent() {
               {" · "}definitions on each KPI
             </p>
         </div>
-        <PeriodSelector />
+        <div className="min-w-0 shrink-0">
+          <PeriodSelector />
+        </div>
       </header>
 
       <FreshnessWarning />
@@ -62,10 +64,18 @@ function DashboardContent() {
 
       <CategoryShareChart />
 
-      <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${selectedNode ? "xl:grid-cols-[minmax(0,1fr)_320px]" : "xl:grid-cols-1"}`}>
-        <NetworkTreemap />
+      <div
+        className={`grid min-w-0 grid-cols-1 gap-6 transition-all duration-300 ${
+          selectedNode
+            ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]"
+            : "xl:grid-cols-1"
+        }`}
+      >
+        <div className="min-w-0">
+          <NetworkTreemap />
+        </div>
         {selectedNode && (
-          <div className="scroll-mt-4" id="detail-panel-container">
+          <div className="min-w-0 scroll-mt-4" id="detail-panel-container">
             <DetailPanel />
           </div>
         )}
