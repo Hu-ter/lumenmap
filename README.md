@@ -32,6 +32,7 @@ Single-page dashboard. Data comes from [Hubble](https://developers.stellar.org/d
 - Two views: **Operation Types** and **Accounts & Contracts**
 - Period filters: 1 day, 7 days, 30 days, calendar month
 - KPI cards: total operations, Soroban share, top category, active contracts (top-200 observed contracts)
+- Stacked category-share area chart (absolute and % modes, UTC buckets)
 - Entity labels for known wallets and contracts
 - Detail panel with share, activity count, protocol, and address
 - Responsive dark layout
@@ -377,6 +378,16 @@ identical.
 
 `/api/activity` will be removed in a future release. New consumers should use
 `/api/v1/activity`.
+
+### `GET /api/category-share`
+
+| Param | Values | Default |
+| --- | --- | --- |
+| `period` | `1d`, `7d`, `30d`, `month` | `1d` |
+
+Returns UTC-bucketed category totals for the stacked area chart (`hour` for `1d`, otherwise `day`). Category colors match the treemap. Without GCP credentials the endpoint serves a checked-in fixture marked `source: "fixture"`.
+
+---
 
 ### Planned endpoints
 
