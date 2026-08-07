@@ -308,11 +308,8 @@ export interface TreemapNodeMeta {
   usdcVolume?: number;
   childCount?: number;
   eventType?: string;
-<<<<<<< HEAD
   synthetic?: boolean;
-=======
   nodeId?: string;
->>>>>>> origin/main
   /** Coverage metadata for capped (top-N) treemap parents. */
   coverage?: TreemapCoverage;
 }
