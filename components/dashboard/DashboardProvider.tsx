@@ -115,13 +115,15 @@ function activeTreemapRoot(
 ): TreemapNode | null {
   if (!data) return null;
   const payload =
-    metric === "xlm_volume"
-      ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
-      : metric === "usdc"
-        ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
-        : metric === "transactions"
-          ? data.treemaps[`txn_${treemapView}` as keyof typeof data.treemaps]
-          : data.treemaps[treemapView];
+    metric === "protocol_tvl"
+      ? data.treemaps.protocol_tvl
+      : metric === "xlm_volume"
+        ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
+        : metric === "usdc"
+          ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
+          : metric === "transactions"
+            ? data.treemaps[`txn_${treemapView}` as keyof typeof data.treemaps]
+            : data.treemaps[treemapView];
   return (payload as TreemapNode | undefined) ?? null;
 }
 

@@ -306,6 +306,17 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
           },
         },
       },
+      protocol_tvl: {
+        name: "Protocol TVL",
+        metric: "tvl",
+        value: "740000000",
+        unit: {
+          kind: "asset",
+          asset: { type: "issued", code: "USD", issuer: "adapter" },
+        },
+        meta: { type: "root", tvlUsd: 740000000, childCount: 0 },
+        children: [],
+      },
     },
     metricProvenance: buildActivityMetricProvenance(),
   };

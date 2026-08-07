@@ -119,6 +119,16 @@ function mockActivityDataset(period: Period): ActivityDataset {
           },
         },
       },
+      protocol_tvl: {
+        name: "Protocol TVL",
+        metric: "tvl",
+        value: "0",
+        unit: {
+          kind: "asset",
+          asset: { type: "issued", code: "USD", issuer: "adapter" },
+        },
+        children: [],
+      },
     },
     metricProvenance: buildActivityMetricProvenance(),
   };

@@ -98,10 +98,14 @@ export function DetailPanel() {
                   ? "USDC volume"
                   : metric === "transactions"
                     ? "Transaction count"
-                    : "Activity count"}
+                    : metric === "protocol_tvl"
+                      ? "TVL (USD)"
+                      : "Activity count"}
             </p>
             <p className="text-lg font-semibold text-white">
-              {formatNumber(selectedNode.value)}
+              {metric === "protocol_tvl"
+                ? `$${formatNumber(selectedNode.meta?.tvlUsd ?? selectedNode.value)}`
+                : formatNumber(selectedNode.value)}
             </p>
           </div>
           <div className="rounded-lg border border-white/10 bg-black/20 p-3">
@@ -111,6 +115,20 @@ export function DetailPanel() {
             </p>
           </div>
         </div>
+
+        {selectedNode.meta?.adapterStatusLabel ? (
+          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="mb-1 text-xs text-zinc-500">Adapter status</p>
+            <p className="text-sm text-zinc-200">
+              {selectedNode.meta.adapterStatusLabel}
+            </p>
+            {selectedNode.meta.snapshotTime ? (
+              <p className="mt-1 font-mono text-xs text-zinc-500">
+                Snapshot: {selectedNode.meta.snapshotTime}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {selectedNode.meta?.protocol ? (
           <div>

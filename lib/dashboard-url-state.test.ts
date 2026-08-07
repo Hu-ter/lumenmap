@@ -36,6 +36,7 @@ describe("dashboard URL state", () => {
   it("validates known metrics only", () => {
     assert.equal(isValidMetric("ops"), true);
     assert.equal(isValidMetric("usdc"), true);
+    assert.equal(isValidMetric("protocol_tvl"), true);
     assert.equal(isValidMetric("tvl"), false);
     assert.equal(isValidMetric(null), false);
   });

@@ -36,6 +36,12 @@ const METRIC_UNITS: Record<string, MetricUnitInfo> = {
     unitSuffix: "USDC",
     unitLabel: "USDC",
   },
+  protocol_tvl: {
+    id: "protocol_tvl",
+    label: "Protocol TVL",
+    unitSuffix: "USD",
+    unitLabel: "USD",
+  },
 };
 
 export function getMetricUnit(metric: DashboardMetricId): MetricUnitInfo {

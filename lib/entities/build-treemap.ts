@@ -31,6 +31,8 @@ import {
   USDC_ASSET_UNIT,
   XLM_ASSET_UNIT,
 } from "@/lib/types";
+import { buildProtocolTvlTreemap } from "@/lib/tvl/build-protocol-treemap";
+import { PROTOCOL_TVL_FIXTURE_RESULTS } from "@/lib/tvl/protocol-registry";
 
 type BuildMetricId = "ops" | "xlm_volume";
 
@@ -779,6 +781,7 @@ export function buildAllTreemaps(input: BuildTreemapInput): ActivityTreemaps {
       metric: "asset_volume",
       unit: USDC_ASSET_UNIT,
     },
+    protocol_tvl: buildProtocolTvlTreemap(PROTOCOL_TVL_FIXTURE_RESULTS),
   };
 }
 

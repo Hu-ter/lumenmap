@@ -286,6 +286,17 @@ export const validActivityResponseFixture: ActivityResponse = {
       meta: { type: "root", usdcVolume: 100.5 },
       children: [],
     },
+    protocol_tvl: {
+      name: "Protocol TVL",
+      metric: "tvl",
+      unit: {
+        kind: "asset",
+        asset: { type: "issued", code: "USD", issuer: "adapter" },
+      },
+      value: "100",
+      meta: { type: "root", tvlUsd: 100, childCount: 0 },
+      children: [],
+    },
   },
   metricProvenance: buildActivityMetricProvenance(),
 };

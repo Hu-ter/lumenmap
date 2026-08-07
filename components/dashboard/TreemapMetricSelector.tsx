@@ -18,7 +18,9 @@ export function TreemapMetricSelector() {
         ? "Tile size is proportional to XLM payment volume. Other operation types are hidden."
         : metric === "usdc"
           ? "Tile size is proportional to verified USDC payment volume. Unsupported same-code assets are excluded."
-          : "Tile size is proportional to the number of transactions.";
+          : metric === "protocol_tvl"
+            ? "Tile size is proportional to adapter-backed protocol TVL in USD. Partial and stale adapters stay visible."
+            : "Tile size is proportional to the number of transactions.";
 
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
@@ -57,6 +59,14 @@ export function TreemapMetricSelector() {
           }
         >
           Transaction Count
+        </Button>
+        <Button
+          variant={metric === "protocol_tvl" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMetric("protocol_tvl")}
+          title="Size tiles by adapter-backed protocol TVL in USD"
+        >
+          Protocol TVL
         </Button>
       </div>
       <p className="text-xs text-zinc-500">{description}</p>
