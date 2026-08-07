@@ -80,12 +80,12 @@ export function KpiCards() {
                 <CardTitle>{metric.title}</CardTitle>
                 <MetricInfo metric={metric} />
               </div>
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-stellar-light" />
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-surface-accent" />
             </CardHeader>
             <CardContent>
               <p
                 data-testid={`kpi-value-${item.key}`}
-                className="text-2xl font-semibold text-white"
+                className="text-2xl font-semibold text-text-primary"
               >
                 {item.format(value as never)}
               </p>
