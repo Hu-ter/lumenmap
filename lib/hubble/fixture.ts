@@ -22,6 +22,13 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       { type_string: "path_payment_strict_receive", op_count: 62000, xlm_volume: 15000 },
       { type_string: "change_trust", op_count: 31000, xlm_volume: 0 },
     ],
+    transactionCategories: [
+      { type_string: "payment", txn_count: 120000 },
+      { type_string: "invoke_host_function", txn_count: 85000 },
+      { type_string: "manage_sell_offer", txn_count: 40000 },
+      { type_string: "path_payment_strict_receive", txn_count: 25000 },
+      { type_string: "change_trust", txn_count: 15000 },
+    ],
     contracts: [
       {
         contract_id: "CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2",
@@ -175,7 +182,94 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
           },
         ],
       },
-      xlm_events: {
+      txn_events: {
+      name: "Network Activity",
+      metric: "transaction_count",
+      unit: { kind: "count", subject: "transaction" },
+      value: 285000,
+      meta: { type: "root", txnCount: 285000 },
+      children: [
+        {
+          name: "Payments",
+          value: 120000,
+          meta: {
+            type: "category",
+            category: "payments",
+            txnCount: 120000,
+            share: 42.1,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "payment",
+              value: 120000,
+              meta: {
+                type: "entity",
+                category: "payments",
+                txnCount: 120000,
+                eventType: "payment",
+              },
+            },
+          ],
+        },
+        {
+          name: "Soroban Contracts",
+          value: 85000,
+          meta: {
+            type: "category",
+            category: "soroban",
+            txnCount: 85000,
+            share: 29.8,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "invoke host function",
+              value: 85000,
+              meta: {
+                type: "entity",
+                category: "soroban",
+                txnCount: 85000,
+                eventType: "invoke_host_function",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    txn_actors: {
+      name: "Network Activity",
+      metric: "transaction_count",
+      unit: { kind: "count", subject: "transaction" },
+      value: 285000,
+      meta: { type: "root", txnCount: 285000 },
+      children: [
+        {
+          name: "Payments",
+          value: 120000,
+          meta: {
+            type: "category",
+            category: "payments",
+            txnCount: 120000,
+            share: 42.1,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "payment",
+              value: 120000,
+              meta: {
+                type: "entity",
+                category: "payments",
+                txnCount: 120000,
+                eventType: "payment",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    xlm_events: {
         name: "XLM Events",
         metric: "asset_volume",
         value: "133000",

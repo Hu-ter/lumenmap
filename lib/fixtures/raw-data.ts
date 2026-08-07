@@ -5,6 +5,7 @@ import type {
   Period,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  TransactionCategoryRow,
 } from "../types";
 
 /**
@@ -17,6 +18,7 @@ import type {
 
 export interface FixtureRawActivity {
   categories: CategoryRow[];
+  transactionCategories: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
@@ -70,6 +72,20 @@ const BASE_CATEGORIES: CategoryRow[] = [
   { type_string: "set_options", op_count: 7_500 },
   { type_string: "manage_data", op_count: 4_500 },
   { type_string: "inflation", op_count: 1_500 },
+];
+
+/** Distinct transactions by operation type for a single day (scaled per period). */
+const BASE_TRANSACTION_CATEGORIES: TransactionCategoryRow[] = [
+  { type_string: "payment", txn_count: 190_000 },
+  { type_string: "invoke_host_function", txn_count: 95_000 },
+  { type_string: "manage_sell_offer", txn_count: 38_000 },
+  { type_string: "manage_buy_offer", txn_count: 29_000 },
+  { type_string: "change_trust", txn_count: 12_000 },
+  { type_string: "extend_footprint_ttl", txn_count: 9_500 },
+  { type_string: "path_payment_strict_receive", txn_count: 8_200 },
+  { type_string: "create_account", txn_count: 4_100 },
+  { type_string: "set_options", txn_count: 3_400 },
+  { type_string: "restore_footprint", txn_count: 2_200 },
 ];
 
 /** Top contracts for a single day (scaled per period). */
@@ -165,6 +181,13 @@ function scaleRows<T extends { op_count: number }>(
   return rows.map((row) => ({ ...row, op_count: row.op_count * multiplier }));
 }
 
+function scaleTxnRows(
+  rows: TransactionCategoryRow[],
+  multiplier: number,
+): TransactionCategoryRow[] {
+  return rows.map((row) => ({ ...row, txn_count: row.txn_count * multiplier }));
+}
+
 /**
  * Returns the deterministic raw activity rows for a period.
  * Every period gets a distinct, stable total so tests can assert that
@@ -175,6 +198,7 @@ export function getFixtureRawActivity(period: Period): FixtureRawActivity {
 
   return {
     categories: scaleRows(BASE_CATEGORIES, multiplier),
+    transactionCategories: scaleTxnRows(BASE_TRANSACTION_CATEGORIES, multiplier),
     contracts: scaleRows(BASE_CONTRACTS, multiplier),
     accounts: scaleRows(BASE_ACCOUNTS, multiplier),
     sorobanFunctions: scaleRows(BASE_SOROBAN_FUNCTIONS, multiplier),

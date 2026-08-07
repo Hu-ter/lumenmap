@@ -144,6 +144,7 @@ export type MetricProvenance<M extends MetricId> = {
 
 export interface ActivityMetricProvenance {
   operation_count: MetricProvenance<"operation_count">;
+  transaction_count: MetricProvenance<"transaction_count">;
   asset_volume: MetricProvenance<"asset_volume">;
 }
 
@@ -302,6 +303,7 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  txnCount?: number;
   xlmVolume?: number;
   usdcVolume?: number;
   childCount?: number;
@@ -346,6 +348,7 @@ export interface ActivityResponseMetadata {
 
 export interface RawResearchRows {
   categories: CategoryRow[];
+  transactionCategories: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];

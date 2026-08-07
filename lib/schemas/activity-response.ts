@@ -75,6 +75,7 @@ export const treemapNodeMetaSchema = z.object({
   protocol: z.string().optional(),
   share: finiteNumberSchema.optional(),
   opCount: finiteNumberSchema.optional(),
+  txnCount: finiteNumberSchema.optional(),
   xlmVolume: finiteNumberSchema.optional(),
   usdcVolume: finiteNumberSchema.optional(),
   childCount: finiteNumberSchema.optional(),
@@ -150,6 +151,16 @@ export const operationTreemapSchema = z.intersection(
     metric: z.literal("operation_count"),
     unit: countUnitSchema.refine((unit) => unit.subject === "operation", {
       message: 'Operation treemap must use count unit subject "operation"',
+    }),
+  }),
+);
+
+export const transactionTreemapSchema = z.intersection(
+  countTreemapNodeSchema,
+  z.object({
+    metric: z.literal("transaction_count"),
+    unit: countUnitSchema.refine((unit) => unit.subject === "transaction", {
+      message: 'Transaction treemap must use count unit subject "transaction"',
     }),
   }),
 );
@@ -244,8 +255,27 @@ const assetVolumeMetricProvenanceSchema = z.object({
   }),
 });
 
+const transactionCountMetricProvenanceSchema = z.object({
+  metric: z.literal("transaction_count"),
+  methodology: methodologySchema.extend({
+    id: z.literal("transactions"),
+  }),
+  source: sourceDetailsSchema,
+  aggregation: z.object({
+    kind: z.literal("count_distinct"),
+    field: z.literal("transaction_hash"),
+    granularity: z.literal("selected_period"),
+    dimensions: z.array(z.string()),
+  }),
+  coverage: z.object({
+    network: z.literal("stellar_mainnet"),
+    constraints: z.array(coverageConstraintSchema).min(1),
+  }),
+});
+
 export const activityMetricProvenanceSchema = z.object({
   operation_count: operationMetricProvenanceSchema,
+  transaction_count: transactionCountMetricProvenanceSchema,
   asset_volume: assetVolumeMetricProvenanceSchema,
 });
 
@@ -260,6 +290,8 @@ export const activityResponseSchema = z.object({
   treemaps: z.object({
     events: operationTreemapSchema,
     actors: operationTreemapSchema,
+    txn_events: transactionTreemapSchema,
+    txn_actors: transactionTreemapSchema,
     xlm_events: assetVolumeTreemapSchema,
     xlm_actors: assetVolumeTreemapSchema,
     usdc_events: assetVolumeTreemapSchema,

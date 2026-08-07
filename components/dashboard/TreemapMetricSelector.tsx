@@ -4,14 +4,21 @@ import { Button } from "@/components/ui/button";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
 export function TreemapMetricSelector() {
-  const { metric, setMetric } = useDashboard();
+  const { metric, setMetric, data } = useDashboard();
+
+  const transactionsAvailable =
+    !!data &&
+    !!data.treemaps.txn_events &&
+    (data.treemaps.txn_events.children?.length ?? 0) > 0;
 
   const description =
     metric === "ops"
       ? "Tile size is proportional to the number of operations."
       : metric === "xlm_volume"
         ? "Tile size is proportional to XLM payment volume. Other operation types are hidden."
-        : "Tile size is proportional to verified USDC payment volume. Unsupported same-code assets are excluded.";
+        : metric === "usdc"
+          ? "Tile size is proportional to verified USDC payment volume. Unsupported same-code assets are excluded."
+          : "Tile size is proportional to the number of transactions.";
 
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
@@ -36,6 +43,20 @@ export function TreemapMetricSelector() {
           onClick={() => setMetric("usdc")}
         >
           USDC Volume
+        </Button>
+        <Button
+          variant={metric === "transactions" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMetric("transactions")}
+          disabled={!transactionsAvailable}
+          aria-disabled={!transactionsAvailable}
+          title={
+            transactionsAvailable
+              ? "Size tiles by transaction count"
+              : "No transaction data available for this period"
+          }
+        >
+          Transaction Count
         </Button>
       </div>
       <p className="text-xs text-zinc-500">{description}</p>
