@@ -1,0 +1,25 @@
+{
+  "description": "Fixture rows for stacked category-share chart verification (UTC buckets).",
+  "now": "2026-07-28T15:30:00.000Z",
+  "period": "1d",
+  "start": "2026-07-28T00:00:00.000Z",
+  "end": "2026-07-28T23:59:59.999Z",
+  "rows": [
+    { "bucket_start": "2026-07-28T00:00:00.000Z", "type_string": "payment", "op_count": 100 },
+    { "bucket_start": "2026-07-28T00:00:00.000Z", "type_string": "invoke_host_function", "op_count": 200 },
+    { "bucket_start": "2026-07-28T01:00:00.000Z", "type_string": "manage_sell_offer", "op_count": 50 },
+    { "bucket_start": "2026-07-28T01:00:00.000Z", "type_string": "change_trust", "op_count": 25 },
+    { "bucket_start": "2026-07-28T02:00:00.000Z", "type_string": "payment", "op_count": 80 },
+    { "bucket_start": "2026-07-28T02:00:00.000Z", "type_string": "weird_custom_op", "op_count": 20 },
+    { "bucket_start": "2026-07-28T04:00:00.000Z", "type_string": "set_options", "op_count": 40 },
+    { "bucket_start": "2026-07-28T04:00:00.000Z", "type_string": "invoke_host_function", "op_count": 160 },
+    { "bucket_start": "2026-07-28T05:00:00.000Z", "type_string": "payment", "op_count": 10 },
+    { "bucket_start": "2026-07-28T05:00:00.000Z", "type_string": "path_payment_strict_send", "op_count": 15 },
+    { "bucket_start": "2026-07-28T08:00:00.000Z", "type_string": "liquidity_pool_deposit", "op_count": 30 },
+    { "bucket_start": "2026-07-28T12:00:00.000Z", "type_string": "invoke_host_function", "op_count": 300 },
+    { "bucket_start": "2026-07-28T12:00:00.000Z", "type_string": "payment", "op_count": 50 },
+    { "bucket_start": "2026-07-28T14:00:00.000Z", "type_string": "inflation", "op_count": 5 },
+    { "bucket_start": "2026-07-28T15:00:00.000Z", "type_string": "invoke_host_function", "op_count": 90 },
+    { "bucket_start": "2026-07-28T15:00:00.000Z", "type_string": "payment", "op_count": 60 }
+  ]
+}
