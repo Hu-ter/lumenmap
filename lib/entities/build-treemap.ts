@@ -21,6 +21,8 @@ import type {
   TreemapNode,
   UsdcAccountRow,
   UsdcCategoryRow,
+  ProtocolBar,
+  ProtocolSummary,
 } from "@/lib/types";
 import {
   OPERATION_COUNT_UNIT,
@@ -746,3 +748,66 @@ function categoriesTotal(categories: CategoryRow[], metric: BuildMetricId): numb
     return sum + value;
   }, 0);
 }
+
+const UNKNOWN_PROTOCOL = "unknown";
+
+export function buildProtocolSummary(
+  accounts: AccountRow[],
+  contracts: ContractRow[],
+  labels?: Record<string, EntityInfo>,
+): ProtocolSummary {
+  const protoOps = new Map<string, number>();
+  const protoEntities = new Map<string, Set<string>>();
+
+  const allAccounts = accounts.map((r) => ({
+    id: r.account_id,
+    opCount: r.op_count,
+  }));
+  const allContracts = contracts.map((r) => ({
+    id: r.contract_id,
+    opCount: r.op_count,
+  }));
+
+  for (const entry of [...allAccounts, ...allContracts]) {
+    const entity = lookupEntity(entry.id, labels);
+    const protocol = entity?.protocol?.trim() || UNKNOWN_PROTOCOL;
+
+    protoOps.set(protocol, (protoOps.get(protocol) ?? 0) + entry.opCount);
+
+    if (!protoEntities.has(protocol)) {
+      protoEntities.set(protocol, new Set());
+    }
+    protoEntities.get(protocol)!.add(entry.id);
+  }
+
+  const totalOps =
+    [...protoOps.values()].reduce((sum, v) => sum + v, 0);
+  const unknownOps = protoOps.get(UNKNOWN_PROTOCOL) ?? 0;
+  const labeledOps = totalOps - unknownOps;
+  const coverage = totalOps > 0 ? (labeledOps / totalOps) * 100 : 0;
+
+  const sorted = [...protoOps.entries()]
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => {
+      const diff = b[1] - a[1];
+      if (diff !== 0) return diff;
+      return a[0].localeCompare(b[0]);
+    });
+
+  const bars: ProtocolBar[] = sorted.map(([protocol, opCount], i) => ({
+    protocol,
+    opCount,
+    share: totalOps > 0 ? (opCount / totalOps) * 100 : 0,
+    rank: i + 1,
+    entityCount: protoEntities.get(protocol)?.size ?? 0,
+  }));
+
+  return {
+    bars,
+    totalOps,
+    labeledOps,
+    coverage,
+    unknownCount: protoEntities.get(UNKNOWN_PROTOCOL)?.size ?? 0,
+  };
+}
+

@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
+import { getMetricUnit } from "@/lib/metrics/units";
 import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
@@ -68,9 +69,9 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
     };
   }, []);
   const { metric } = useDashboard();
-  const metricUnit =
-    metric === "xlm_volume" ? "XLM" : metric === "usdc" ? "USDC" : "ops";
-  const metricUnitSuffix = metric === "ops" ? "" : metricUnit;
+  const metricUnitInfo = getMetricUnit(metric);
+  const metricUnit = metricUnitInfo.unitLabel;
+  const metricUnitSuffix = metricUnitInfo.unitSuffix;
 
   const currentNode = path.length > 0 ? path[path.length - 1] : root;
   const levelTotal = useMemo(() => {
@@ -248,6 +249,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
             <Button
               variant="ghost"
               size="sm"
+              data-testid="treemap-breadcrumb"
               className="px-2 text-xs text-zinc-300 hover:text-white"
               onClick={() => navigateTo(index - 1)}
               aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
@@ -306,6 +308,8 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           return (
             <g
               key={nodeId}
+              data-testid="treemap-tile"
+              data-node-name={data.name}
               transform={`translate(${node.x0},${node.y0})`}
               tabIndex={0}
               role="button"
