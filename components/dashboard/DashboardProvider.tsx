@@ -5,10 +5,17 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { TreemapViewId } from "@/lib/constants";
+import {
+  parseDashboardUrlSearch,
+  resolveDrillPath,
+  writeDashboardUrlSearch,
+} from "@/lib/dashboard-url-state";
 import { findTreemapPath, type SearchResult } from "@/lib/search";
 import type {
   ActivityVisualizationResponse,
@@ -101,6 +108,23 @@ function selectedNodeFromSearch(
   return searchResultToSelectedNode(result);
 }
 
+function activeTreemapRoot(
+  data: ActivityVisualizationResponse | undefined,
+  treemapView: TreemapViewId,
+  metric: DashboardMetricId,
+): TreemapNode | null {
+  if (!data) return null;
+  const payload =
+    metric === "xlm_volume"
+      ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
+      : metric === "usdc"
+        ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
+        : metric === "transactions"
+          ? data.treemaps[`txn_${treemapView}` as keyof typeof data.treemaps]
+          : data.treemaps[treemapView];
+  return (payload as TreemapNode | undefined) ?? null;
+}
+
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [period, setPeriodState] = useState<Period>("1d");
   const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
@@ -108,11 +132,26 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [activeLevelPath, setActiveLevelPath] = useState<TreemapNode[]>([]);
   const [focusRequest, setFocusRequest] = useState<SearchResult | null>(null);
+  const pendingPathSegments = useRef<string[] | null>(null);
+  const [urlReady, setUrlReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const parsed = parseDashboardUrlSearch(window.location.search);
+    if (parsed.period) setPeriodState(parsed.period);
+    if (parsed.metric) setMetricState(parsed.metric);
+    if (parsed.view) setTreemapViewState(parsed.view);
+    if (parsed.pathSegments && parsed.pathSegments.length > 0) {
+      pendingPathSegments.current = parsed.pathSegments;
+    }
+    setUrlReady(true);
+  }, []);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
     setSelectedNode(null);
     setActiveLevelPath([]);
     setFocusRequest(null);
+    pendingPathSegments.current = null;
     setPeriodState(newPeriod);
   }, []);
 
@@ -120,6 +159,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setSelectedNode(null);
     setActiveLevelPath([]);
     setFocusRequest(null);
+    pendingPathSegments.current = null;
     setTreemapViewState(newView);
   }, []);
 
@@ -127,6 +167,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setSelectedNode(null);
     setActiveLevelPath([]);
     setFocusRequest(null);
+    pendingPathSegments.current = null;
     setMetricState(newMetric);
   }, []);
 
@@ -135,6 +176,34 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     queryFn: () => fetchActivity(period),
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    const segments = pendingPathSegments.current;
+    if (!segments || segments.length === 0 || !query.data) return;
+    const root = activeTreemapRoot(query.data, treemapView, metric);
+    if (!root) return;
+    const resolved = resolveDrillPath(root, segments);
+    pendingPathSegments.current = null;
+    setActiveLevelPath(resolved);
+  }, [query.data, treemapView, metric]);
+
+  useEffect(() => {
+    if (!urlReady || typeof window === "undefined") return;
+    const next = writeDashboardUrlSearch({
+      period,
+      metric,
+      view: treemapView,
+      path: activeLevelPath,
+      currentSearch: window.location.search,
+    });
+    if (next !== window.location.search) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${next}`,
+      );
+    }
+  }, [urlReady, period, metric, treemapView, activeLevelPath]);
 
   const selectSearchResult = useCallback(
     (result: SearchResult) => {
@@ -200,4 +269,3 @@ export function useDashboard() {
   }
   return context;
 }
-
