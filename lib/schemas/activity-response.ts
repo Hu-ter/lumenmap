@@ -66,6 +66,7 @@ export const treemapNodeTypeSchema = z.enum([
   "entity",
   "contract",
   "account",
+  "protocol",
 ]);
 
 export const treemapNodeMetaSchema = z.object({
@@ -78,6 +79,10 @@ export const treemapNodeMetaSchema = z.object({
   txnCount: finiteNumberSchema.optional(),
   xlmVolume: finiteNumberSchema.optional(),
   usdcVolume: finiteNumberSchema.optional(),
+  tvlUsd: finiteNumberSchema.optional(),
+  snapshotTime: z.string().optional(),
+  adapterStatus: z.string().optional(),
+  adapterStatusLabel: z.string().optional(),
   childCount: finiteNumberSchema.optional(),
   eventType: z.string().optional(),
 });
@@ -169,6 +174,14 @@ export const assetVolumeTreemapSchema = z.intersection(
   assetTreemapNodeSchema,
   z.object({
     metric: z.literal("asset_volume"),
+    unit: assetUnitSchema,
+  }),
+);
+
+export const tvlTreemapSchema = z.intersection(
+  assetTreemapNodeSchema,
+  z.object({
+    metric: z.literal("tvl"),
     unit: assetUnitSchema,
   }),
 );
@@ -330,6 +343,7 @@ export const activityResponseSchema = z.object({
     xlm_actors: assetVolumeTreemapSchema,
     usdc_events: assetVolumeTreemapSchema,
     usdc_actors: assetVolumeTreemapSchema,
+    protocol_tvl: tvlTreemapSchema,
   }),
   metricProvenance: activityMetricProvenanceSchema,
   protocols: protocolSummarySchema.optional(),

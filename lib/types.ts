@@ -10,7 +10,12 @@ export type MetricId =
   | "tvl";
 
 /** Internal selector values for the metrics currently backed by queries. */
-export type DashboardMetricId = "ops" | "xlm_volume" | "usdc" | "transactions";
+export type DashboardMetricId =
+  | "ops"
+  | "xlm_volume"
+  | "usdc"
+  | "transactions"
+  | "protocol_tvl";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -194,7 +199,8 @@ export type TreemapNodeType =
   | "category"
   | "entity"
   | "contract"
-  | "account";
+  | "account"
+  | "protocol";
 
 export interface EntityInfo {
   name: string;
@@ -306,6 +312,10 @@ export interface TreemapNodeMeta {
   txnCount?: number;
   xlmVolume?: number;
   usdcVolume?: number;
+  tvlUsd?: number;
+  snapshotTime?: string;
+  adapterStatus?: string;
+  adapterStatusLabel?: string;
   childCount?: number;
   eventType?: string;
   synthetic?: boolean;
@@ -361,6 +371,7 @@ export interface ActivityTreemaps {
   xlm_actors: TreemapPayload<"asset_volume">;
   usdc_events: TreemapPayload<"asset_volume">;
   usdc_actors: TreemapPayload<"asset_volume">;
+  protocol_tvl: TreemapPayload<"tvl">;
 }
 
 export interface ActivityResponseMetadata {

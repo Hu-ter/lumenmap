@@ -126,7 +126,9 @@ export function NetworkTreemap() {
   };
 
   const activePayload = data
-    ? metric === "xlm_volume"
+    ? metric === "protocol_tvl"
+      ? data.treemaps.protocol_tvl
+      : metric === "xlm_volume"
       ? data.treemaps[`xlm_${treemapView}` as keyof typeof data.treemaps]
       : metric === "usdc"
         ? data.treemaps[`usdc_${treemapView}` as keyof typeof data.treemaps]
@@ -140,8 +142,9 @@ export function NetworkTreemap() {
     (!activeTreemap.children || activeTreemap.children.length === 0);
   const filteredTreemap = useMemo(() => {
     if (!activeTreemap) return null;
+    if (metric === "protocol_tvl") return activeTreemap;
     return filterTreemapByCategories(activeTreemap, excludedCategories);
-  }, [activeTreemap, excludedCategories]);
+  }, [activeTreemap, excludedCategories, metric]);
 
   const filterAnnouncement =
     excludedCategories.size === 0
@@ -161,7 +164,9 @@ export function NetworkTreemap() {
         ? "USDC payment volume"
         : metric === "transactions"
           ? "transactions"
-          : "operations";
+          : metric === "protocol_tvl"
+            ? "protocol TVL"
+            : "operations";
 
   return (
     <Card aria-busy={isLoading || undefined}>
@@ -180,6 +185,7 @@ export function NetworkTreemap() {
         </div>
         <TreemapViewSelector />
         <TreemapMetricSelector />
+        {metric !== "protocol_tvl" ? (
         <div className="flex flex-wrap gap-2">
           {/* Inject pattern defs so legend swatches can reference them */}
           <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>
@@ -260,6 +266,11 @@ export function NetworkTreemap() {
             </Button>
           ) : null}
         </div>
+        ) : (
+          <p className="text-xs text-zinc-500">
+            Tile colors encode adapter status: complete, partial, or stale.
+          </p>
+        )}
         <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
           {filterAnnouncement}
         </div>

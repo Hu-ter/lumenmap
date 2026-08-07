@@ -56,6 +56,12 @@ vi.mock("@/components/dashboard/DashboardProvider", () => ({
           unit: "USDC",
           children: [],
         },
+        protocol_tvl: {
+          name: "Protocol TVL",
+          metric: "tvl",
+          unit: "USD",
+          children: [],
+        },
       },
       kpis: {
         totalOps: { kind: "operations", unit: "ops", value: 123 },
