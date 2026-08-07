@@ -29,7 +29,8 @@
     "test:freshness": "node --test scripts/test-freshness.mjs",
     "test:visual": "npx tsx scripts/test-visual-regression.mjs",
     "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
-    "test:mappings": "npx tsx scripts/test-category-mappings.mjs"
+    "test:mappings": "npx tsx scripts/test-category-mappings.mjs",
+    "test:coverage": "node scripts/test-coverage-calculation.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
