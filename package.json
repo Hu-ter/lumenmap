@@ -30,6 +30,7 @@
     "test:visual": "npx tsx scripts/test-visual-regression.mjs",
     "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
     "test:mappings": "npx tsx scripts/test-category-mappings.mjs",
+    "test:coverage": "node scripts/test-coverage-calculation.mjs",
     "test:unit": "vitest run",
     "test:fixtures": "npx tsx scripts/verify-fixture-mode.ts"
   },
