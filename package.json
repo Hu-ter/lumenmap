@@ -29,7 +29,8 @@
     "test:freshness": "node --test scripts/test-freshness.mjs",
     "test:visual": "npx tsx scripts/test-visual-regression.mjs",
     "test:visual:update": "npx tsx scripts/test-visual-regression.mjs --update",
-    "test:mappings": "npx tsx scripts/test-category-mappings.mjs"
+    "test:mappings": "npx tsx scripts/test-category-mappings.mjs",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
@@ -48,12 +49,14 @@
   "devDependencies": {
     "@playwright/test": "^1.52",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
     "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "jsdom": "^22.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.5",
     "typescript": "^5",
