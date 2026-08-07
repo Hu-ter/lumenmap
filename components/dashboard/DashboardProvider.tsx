@@ -1,30 +1,23 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import type { TreemapViewId } from "@/lib/constants";
+import { findTreemapPath, type SearchResult } from "@/lib/search";
 import type {
   ActivityVisualizationResponse,
   ApiErrorResponse,
   DashboardMetricId,
   Period,
   SelectedNode,
+  TreemapNode,
 } from "@/lib/types";
-import {
-  getMockEmptyActivity,
-  getMockLoadedActivity,
-} from "@/lib/hubble/fixtures";
-
-type MockState = "loading" | "loaded" | "selected" | "empty" | "error" | null;
-
-function readMockState(): MockState {
-  if (typeof window === "undefined") return null;
-  const value = new URLSearchParams(window.location.search).get("mockState");
-  if (value === "loading" || value === "loaded" || value === "selected" || value === "empty" || value === "error") {
-    return value;
-  }
-  return null;
-}
 
 interface DashboardContextValue {
   period: Period;
@@ -41,7 +34,9 @@ interface DashboardContextValue {
   refetch: () => Promise<unknown>;
   selectedNode: SelectedNode | null;
   setSelectedNode: (node: SelectedNode | null) => void;
-  mockState: MockState;
+  /** Active search focus used to open treemap context. */
+  focusRequest: SearchResult | null;
+  selectSearchResult: (result: SearchResult) => void;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -57,39 +52,92 @@ async function fetchActivity(
   return response.json() as Promise<ActivityVisualizationResponse>;
 }
 
+function searchResultToSelectedNode(result: SearchResult): SelectedNode {
+  return {
+    name: result.label,
+    value: result.opCount ?? 0,
+    share: 0,
+    meta: {
+      type: result.nodeType,
+      id: result.id ?? result.issuer,
+      category: result.category,
+      protocol: result.protocol,
+      opCount: result.opCount,
+    },
+  };
+}
+
+function selectedNodeFromSearch(
+  data: ActivityVisualizationResponse | undefined,
+  result: SearchResult,
+): SelectedNode {
+  const root = data?.treemaps[result.treemapView] as
+    | TreemapNode<number | string>
+    | undefined;
+  if (root) {
+    const path = findTreemapPath(root, result);
+    if (path && path.length > 0) {
+      const matched = path[path.length - 1];
+      const value =
+        matched.value ?? matched.meta?.opCount ?? result.opCount ?? 0;
+      return {
+        name: matched.name,
+        value: Number(value),
+        share: matched.meta?.share ?? 0,
+        meta: {
+          ...matched.meta,
+          type: matched.meta?.type ?? result.nodeType,
+          id: matched.meta?.id ?? matched.id ?? result.id ?? result.issuer,
+          opCount: Number(value),
+          childCount: matched.children?.length ?? matched.meta?.childCount,
+          protocol: matched.meta?.protocol ?? result.protocol,
+          category: matched.meta?.category ?? result.category,
+        },
+      };
+    }
+  }
+  return searchResultToSelectedNode(result);
+}
+
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [period, setPeriod] = useState<Period>("1d");
-  const [treemapView, setTreemapView] = useState<TreemapViewId>("events");
-  const [metric, setMetric] = useState<DashboardMetricId>("ops");
+  const [period, setPeriodState] = useState<Period>("1d");
+  const [treemapView, setTreemapViewState] = useState<TreemapViewId>("events");
+  const [metric, setMetricState] = useState<DashboardMetricId>("ops");
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
-  const [mockState] = useState<MockState>(() => readMockState());
+  const [focusRequest, setFocusRequest] = useState<SearchResult | null>(null);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
     setSelectedNode(null);
-    setPeriod(newPeriod);
+    setFocusRequest(null);
+    setPeriodState(newPeriod);
   }, []);
 
   const handleSetTreemapView = useCallback((newView: TreemapViewId) => {
     setSelectedNode(null);
-    setTreemapView(newView);
+    setFocusRequest(null);
+    setTreemapViewState(newView);
   }, []);
 
   const handleSetMetric = useCallback((newMetric: DashboardMetricId) => {
     setSelectedNode(null);
-    setMetric(newMetric);
+    setFocusRequest(null);
+    setMetricState(newMetric);
   }, []);
 
   const query = useQuery({
-    queryKey: ["activity", period, mockState],
-    queryFn: async () => {
-      if (mockState === "error") throw new Error("Mock visual-regression error");
-      if (mockState === "empty") return getMockEmptyActivity(period);
-      if (mockState === "loaded" || mockState === "selected") return getMockLoadedActivity(period);
-      return fetchActivity(period);
-    },
-    enabled: mockState !== "loading",
+    queryKey: ["activity", period],
+    queryFn: () => fetchActivity(period),
     staleTime: 60_000,
   });
+
+  const selectSearchResult = useCallback(
+    (result: SearchResult) => {
+      setTreemapViewState(result.treemapView);
+      setFocusRequest(result);
+      setSelectedNode(selectedNodeFromSearch(query.data, result));
+    },
+    [query.data],
+  );
 
   const value = useMemo(
     () => ({
@@ -100,14 +148,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       metric,
       setMetric: handleSetMetric,
       data: query.data,
-      isLoading: mockState === "loading" || query.isLoading,
-      isError: mockState !== "loading" && (mockState === "error" || query.isError),
+      isLoading: query.isLoading,
+      isError: query.isError,
       isFetching: query.isFetching,
       error: query.error,
       refetch: query.refetch,
       selectedNode,
       setSelectedNode,
-      mockState,
+      focusRequest,
+      selectSearchResult,
     }),
     [
       period,
@@ -123,12 +172,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       query.error,
       query.refetch,
       selectedNode,
-      mockState,
+      focusRequest,
+      selectSearchResult,
     ],
   );
 
   return (
-    <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>
+    <DashboardContext.Provider value={value}>
+      {children}
+    </DashboardContext.Provider>
   );
 }
 
