@@ -8,7 +8,12 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import { PATTERN_DEFS, PATTERN_OPACITY, getCategoryPatternId } from "@/lib/treemap-patterns";
 import type { SelectedNode, TreemapNode } from "@/lib/types";
 import { getMetricUnit } from "@/lib/metrics/units";
-import { formatNumber, formatPercent, truncateAddress } from "@/lib/utils";
+import {
+  formatNumber,
+  formatPercent,
+  truncateAddress,
+  useReducedMotion,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 
@@ -47,6 +52,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const [size, setSize] = useState({ width: 400, height: 400 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion();
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const announcementTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -348,7 +354,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
                 stroke={isHovered || isFocused ? "#ffffff" : "#0B0E14"}
                 strokeWidth={isHovered || isFocused ? 2 : 1.5}
                 rx={6}
-                opacity={isHovered || isFocused ? 1 : 0.92}
+                opacity={reducedMotion ? 1 : isHovered || isFocused ? 1 : 0.92}
               />
               {(() => {
                 const patternId = getCategoryPatternId(data.meta?.category);

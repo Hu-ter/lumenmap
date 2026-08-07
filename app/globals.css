@@ -1,3 +1,11 @@
+/*
+  Motion design system
+  ====================
+  - Use `motion-reduce:animate-none` / `motion-safe:animate-*` for loading pulses.
+  - Use `motion-reduce:transition-none` on `transition-*` utilities.
+  - For SVG/programmatic animation, use `useReducedMotion()` from `@/lib/utils`.
+  - Focus/selection/hover highlights stay instant when motion is reduced.
+*/
 @import "tailwindcss";
 
 :root {
