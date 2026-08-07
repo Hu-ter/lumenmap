@@ -146,6 +146,7 @@ export function createSearchFixtures(): ActivityDataset {
     accounts,
     sorobanFunctions,
     sorobanFunctionContracts,
+    transactionCategories: [],
     kpis: {
       totalOps: {
         kind: "operations",
