@@ -105,12 +105,98 @@ export const validActivityResponseFixture: ActivityResponse = {
         },
       ],
     },
+    txn_events: {
+      name: "Network Activity",
+      metric: "transaction_count",
+      unit: { kind: "count", subject: "transaction" },
+      value: 80,
+      meta: { type: "root", txnCount: 80 },
+      children: [
+        {
+          name: "Payments",
+          value: 50,
+          meta: {
+            type: "category",
+            category: "payments",
+            txnCount: 50,
+            share: 62.5,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "payment",
+              value: 50,
+              meta: {
+                type: "entity",
+                category: "payments",
+                txnCount: 50,
+                eventType: "payment",
+              },
+            },
+          ],
+        },
+        {
+          name: "Soroban Contracts",
+          value: 30,
+          meta: {
+            type: "category",
+            category: "soroban",
+            txnCount: 30,
+            share: 37.5,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "invoke host function",
+              value: 30,
+              meta: {
+                type: "entity",
+                category: "soroban",
+                txnCount: 30,
+                eventType: "invoke_host_function",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    txn_actors: {
+      name: "Network Activity",
+      metric: "transaction_count",
+      unit: { kind: "count", subject: "transaction" },
+      value: 80,
+      meta: { type: "root", txnCount: 80 },
+      children: [
+        {
+          name: "Payments",
+          value: 50,
+          meta: {
+            type: "category",
+            category: "payments",
+            txnCount: 50,
+            share: 62.5,
+            childCount: 1,
+          },
+          children: [
+            {
+              name: "payment",
+              value: 50,
+              meta: {
+                type: "entity",
+                category: "payments",
+                txnCount: 50,
+                eventType: "payment",
+              },
+            },
+          ],
+        },
+      ],
+    },
     xlm_events: {
       name: "Network Activity",
       metric: "asset_volume",
       unit: { kind: "asset", asset: { type: "native", code: "XLM" } },
-      value: "12.5",
-      meta: { type: "root", xlmVolume: 12.5 },
+      value: "12.5",      meta: { type: "root", xlmVolume: 12.5 },
       children: [
         {
           name: "Payments",

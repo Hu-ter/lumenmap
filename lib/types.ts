@@ -10,7 +10,7 @@ export type MetricId =
   | "tvl";
 
 /** Internal selector values for the metrics currently backed by queries. */
-export type DashboardMetricId = "ops" | "xlm_volume" | "usdc";
+export type DashboardMetricId = "ops" | "xlm_volume" | "usdc" | "transactions";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -144,6 +144,7 @@ export type MetricProvenance<M extends MetricId> = {
 
 export interface ActivityMetricProvenance {
   operation_count: MetricProvenance<"operation_count">;
+  transaction_count: MetricProvenance<"transaction_count">;
   asset_volume: MetricProvenance<"asset_volume">;
 }
 
@@ -151,6 +152,11 @@ export const OPERATION_COUNT_UNIT = {
   kind: "count",
   subject: "operation",
 } as const satisfies MetricUnit<"operation_count">;
+
+export const TRANSACTION_COUNT_UNIT = {
+  kind: "count",
+  subject: "transaction",
+} as const satisfies MetricUnit<"transaction_count">;
 
 export const XLM_ASSET_UNIT = {
   kind: "asset",
@@ -170,6 +176,11 @@ export const USDC_ASSET_UNIT = {
 export interface UsdcCategoryRow {
   type_string: string;
   amount: number;
+}
+
+export interface TransactionCategoryRow {
+  type_string: string;
+  txn_count: number;
 }
 
 export interface UsdcAccountRow {
@@ -292,6 +303,7 @@ export interface TreemapNodeMeta {
   protocol?: string;
   share?: number;
   opCount?: number;
+  txnCount?: number;
   xlmVolume?: number;
   usdcVolume?: number;
   childCount?: number;
@@ -317,6 +329,8 @@ export type TreemapPayload<M extends MetricId> = TreemapNode<MetricValue<M>> & {
 export interface ActivityTreemaps {
   events: TreemapPayload<"operation_count">;
   actors: TreemapPayload<"operation_count">;
+  txn_events: TreemapPayload<"transaction_count">;
+  txn_actors: TreemapPayload<"transaction_count">;
   xlm_events: TreemapPayload<"asset_volume">;
   xlm_actors: TreemapPayload<"asset_volume">;
   usdc_events: TreemapPayload<"asset_volume">;
@@ -334,6 +348,7 @@ export interface ActivityResponseMetadata {
 
 export interface RawResearchRows {
   categories: CategoryRow[];
+  transactionCategories: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];

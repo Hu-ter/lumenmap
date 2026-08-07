@@ -92,7 +92,9 @@ export function DetailPanel() {
                 ? "XLM volume"
                 : metric === "usdc"
                   ? "USDC volume"
-                  : "Activity count"}
+                  : metric === "transactions"
+                    ? "Transaction count"
+                    : "Activity count"}
             </p>
             <p className="text-lg font-semibold text-white">
               {formatNumber(selectedNode.value)}

@@ -17,6 +17,7 @@ import type {
   EntityInfo,
   SorobanFunctionContractRow,
   SorobanFunctionRow,
+  TransactionCategoryRow,
   TreemapCoverage,
   TreemapNode,
   UsdcAccountRow,
@@ -26,6 +27,7 @@ import type {
 } from "@/lib/types";
 import {
   OPERATION_COUNT_UNIT,
+  TRANSACTION_COUNT_UNIT,
   USDC_ASSET_UNIT,
   XLM_ASSET_UNIT,
 } from "@/lib/types";
@@ -34,6 +36,7 @@ type BuildMetricId = "ops" | "xlm_volume";
 
 interface BuildTreemapInput {
   categories: CategoryRow[];
+  transactionCategories?: TransactionCategoryRow[];
   contracts: ContractRow[];
   accounts: AccountRow[];
   sorobanFunctions: SorobanFunctionRow[];
@@ -649,9 +652,83 @@ export function buildUsdcActorTreemap(input: BuildTreemapInput): TreemapNode {
   };
 }
 
+function buildTransactionTypeLeaves(
+  input: BuildTreemapInput,
+  group: string,
+): TreemapNode[] {
+  const color = CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other;
+
+  return (input.transactionCategories ?? [])
+    .filter((row) => getGroupForType(row.type_string) === group)
+    .filter((row) => row.txn_count > 0)
+    .sort((a, b) => b.txn_count - a.txn_count)
+    .map((row) => ({
+      name: row.type_string.replaceAll("_", " "),
+      value: row.txn_count,
+      color,
+      meta: {
+        type: "entity" as const,
+        category: group,
+        txnCount: row.txn_count,
+        eventType: row.type_string,
+      },
+    }));
+}
+
+export function buildTransactionTreemap(input: BuildTreemapInput): TreemapNode {
+  const transactionCategories = input.transactionCategories ?? [];
+  const totalTxns = transactionCategories.reduce(
+    (sum, row) => sum + row.txn_count,
+    0,
+  );
+
+  const groupTotals = new Map<string, number>();
+  for (const row of transactionCategories) {
+    const group = getGroupForType(row.type_string);
+    groupTotals.set(group, (groupTotals.get(group) ?? 0) + row.txn_count);
+  }
+
+  const children: TreemapNode[] = GROUP_ORDER.flatMap((group) => {
+    const value = groupTotals.get(group) ?? 0;
+    if (value <= 0) {
+      return [];
+    }
+
+    const typeLeaves = buildTransactionTypeLeaves(input, group);
+
+    return [
+      {
+        name: GROUP_LABELS[group] ?? group,
+        value,
+        color: CATEGORY_COLORS[group] ?? CATEGORY_COLORS.other,
+        meta: {
+          type: "category" as const,
+          category: group,
+          txnCount: value,
+          share: totalTxns > 0 ? (value / totalTxns) * 100 : 0,
+          childCount: typeLeaves.length,
+        },
+        children: typeLeaves,
+      },
+    ];
+  });
+
+  return {
+    name: "Network Activity",
+    value: totalTxns,
+    meta: {
+      type: "root",
+      txnCount: totalTxns,
+    },
+    children,
+  };
+}
+
 export function buildAllTreemaps(input: BuildTreemapInput): ActivityTreemaps {
   const eventOperations = buildEventTypeTreemap(input, "ops");
   const actorOperations = buildActorTreemap(input, "ops");
+  const eventTransaction = buildTransactionTreemap(input);
+  const actorTransaction = buildTransactionTreemap(input);
   const eventXlmVolume = serializeAssetValues(
     buildEventTypeTreemap(input, "xlm_volume"),
   );
@@ -671,6 +748,16 @@ export function buildAllTreemaps(input: BuildTreemapInput): ActivityTreemaps {
       ...actorOperations,
       metric: "operation_count",
       unit: OPERATION_COUNT_UNIT,
+    },
+    txn_events: {
+      ...eventTransaction,
+      metric: "transaction_count",
+      unit: TRANSACTION_COUNT_UNIT,
+    },
+    txn_actors: {
+      ...actorTransaction,
+      metric: "transaction_count",
+      unit: TRANSACTION_COUNT_UNIT,
     },
     xlm_events: {
       ...eventXlmVolume,

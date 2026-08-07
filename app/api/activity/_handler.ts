@@ -91,6 +91,7 @@ export function toRawResearchResponse(
     isPeriodComplete: data.isPeriodComplete,
     rows: {
       categories: data.categories,
+      transactionCategories: data.transactionCategories,
       contracts: data.contracts,
       accounts: data.accounts,
       sorobanFunctions: data.sorobanFunctions,
