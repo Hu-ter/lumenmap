@@ -1,0 +1,145 @@
+import {
+  SEARCH_RESULT_TYPE_LABELS,
+  SEARCH_RESULT_TYPE_ORDER,
+  type GroupedSearchResults,
+  type SearchIndexEntry,
+  type SearchQueryResult,
+  type SearchResult,
+} from "@/lib/search/types";
+
+const DEFAULT_LIMIT = 40;
+
+function toResult(entry: SearchIndexEntry): SearchResult {
+  return {
+    key: entry.key,
+    type: entry.type,
+    label: entry.label,
+    subtitle: entry.subtitle,
+    id: entry.id,
+    assetCode: entry.assetCode,
+    issuer: entry.issuer,
+    protocol: entry.protocol,
+    category: entry.category,
+    opCount: entry.opCount,
+    treemapView: entry.treemapView,
+    nodeType: entry.nodeType,
+  };
+}
+
+function scoreEntry(entry: SearchIndexEntry, rawQuery: string, folded: string): number {
+  // Exact canonical id (case-sensitive) — deterministic top hit.
+  for (const id of entry.exactIds) {
+    if (id === rawQuery) {
+      return 1_000;
+    }
+  }
+
+  // Exact id ignoring case.
+  for (const id of entry.exactIds) {
+    if (id.toLowerCase() === folded) {
+      return 900;
+    }
+  }
+
+  // Exact term match (names / protocols), case-insensitive.
+  for (const term of entry.terms) {
+    if (term === folded) {
+      return 800;
+    }
+  }
+
+  // Asset code exact match — keep multiple issuers distinguishable, same score band.
+  if (entry.type === "asset" && entry.assetCode?.toLowerCase() === folded) {
+    return 750;
+  }
+
+  // Prefix match on label / protocol.
+  if (entry.label.toLowerCase().startsWith(folded)) {
+    return 600;
+  }
+  if (entry.protocol?.toLowerCase().startsWith(folded)) {
+    return 580;
+  }
+  if (entry.assetCode?.toLowerCase().startsWith(folded)) {
+    return 560;
+  }
+
+  // Substring match on any term.
+  for (const term of entry.terms) {
+    if (term.includes(folded)) {
+      return 400;
+    }
+  }
+
+  if (entry.subtitle?.toLowerCase().includes(folded)) {
+    return 300;
+  }
+
+  return 0;
+}
+
+/**
+ * Query a pre-built search index.
+ *
+ * - Exact identifiers resolve deterministically (highest score, stable tie-break).
+ * - Names and protocols match case-insensitively.
+ * - Same-code assets remain separate rows distinguished by issuer.
+ */
+export function searchIndex(
+  index: SearchIndexEntry[],
+  query: string,
+  limit = DEFAULT_LIMIT,
+): SearchQueryResult {
+  const rawQuery = query.trim();
+  if (!rawQuery) {
+    return { query: rawQuery, groups: [], total: 0 };
+  }
+
+  const folded = rawQuery.toLowerCase();
+
+  const ranked = index
+    .map((entry) => ({ entry, score: scoreEntry(entry, rawQuery, folded) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      // Deterministic tie-break: higher activity, then stable key.
+      const opDelta = (b.entry.opCount ?? 0) - (a.entry.opCount ?? 0);
+      if (opDelta !== 0) {
+        return opDelta;
+      }
+      return a.entry.key.localeCompare(b.entry.key);
+    })
+    .slice(0, limit)
+    .map((row) => toResult(row.entry));
+
+  const byType = new Map<SearchResult["type"], SearchResult[]>();
+  for (const result of ranked) {
+    const list = byType.get(result.type) ?? [];
+    list.push(result);
+    byType.set(result.type, list);
+  }
+
+  const groups: GroupedSearchResults[] = SEARCH_RESULT_TYPE_ORDER.flatMap(
+    (type) => {
+      const results = byType.get(type);
+      if (!results || results.length === 0) {
+        return [];
+      }
+      return [
+        {
+          type,
+          label: SEARCH_RESULT_TYPE_LABELS[type],
+          results,
+        },
+      ];
+    },
+  );
+
+  return {
+    query: rawQuery,
+    groups,
+    total: ranked.length,
+  };
+}
