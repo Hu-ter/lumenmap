@@ -191,6 +191,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           id: original.meta?.id ?? original.id,
           opCount: value,
           childCount: original.children?.length ?? original.meta?.childCount,
+          nodeId: data.id ?? data.name,
         },
       });
 
@@ -356,6 +357,7 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
           return (
             <g
               key={nodeId}
+              id={`node-${data.id ?? data.name}`}
               data-testid="treemap-tile"
               data-node-name={data.name}
               transform={`translate(${node.x0},${node.y0})`}
