@@ -8,6 +8,7 @@ const METRIC_IDS: DashboardMetricId[] = [
   "xlm_volume",
   "usdc",
   "transactions",
+  "protocol_tvl",
 ];
 
 export function isValidMetric(
