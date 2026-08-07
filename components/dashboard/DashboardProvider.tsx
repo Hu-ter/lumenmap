@@ -138,13 +138,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const parsed = parseDashboardUrlSearch(window.location.search);
-    if (parsed.period) setPeriodState(parsed.period);
-    if (parsed.metric) setMetricState(parsed.metric);
-    if (parsed.view) setTreemapViewState(parsed.view);
     if (parsed.pathSegments && parsed.pathSegments.length > 0) {
       pendingPathSegments.current = parsed.pathSegments;
     }
-    setUrlReady(true);
+    // Defer state updates so hydration does not cascade synchronously in the effect body.
+    queueMicrotask(() => {
+      if (parsed.period) setPeriodState(parsed.period);
+      if (parsed.metric) setMetricState(parsed.metric);
+      if (parsed.view) setTreemapViewState(parsed.view);
+      setUrlReady(true);
+    });
   }, []);
 
   const handleSetPeriod = useCallback((newPeriod: Period) => {
