@@ -46,12 +46,23 @@ function getNodeValue(node: TreemapNode): number {
   return node.value ?? node.meta?.opCount ?? 0;
 }
 
+interface TooltipData {
+  x: number;
+  y: number;
+  name: string;
+  identity?: string;
+  value: number;
+  share: number;
+  unit: string;
+}
+
 export function D3Treemap({ root, onSelect }: D3TreemapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 400, height: 400 });
   const [path, setPath] = useState<TreemapNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const reducedMotion = useReducedMotion();
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -233,6 +244,37 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
     [root, path, announce],
   );
 
+  
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent, data: Omit<TooltipData, "x" | "y">) => {
+      const tooltipWidth = 280;
+      const tooltipHeight = 140;
+      const margin = 16;
+
+      let x = e.clientX + margin;
+      let y = e.clientY + margin;
+
+      if (typeof window !== "undefined") {
+        if (x + tooltipWidth > window.innerWidth) {
+          x = e.clientX - tooltipWidth - margin;
+        }
+        if (y + tooltipHeight > window.innerHeight) {
+          y = e.clientY - tooltipHeight - margin;
+        }
+        x = Math.max(margin, x);
+        y = Math.max(margin, y);
+      }
+
+      setTooltip({ x, y, ...data });
+    },
+    [],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+    setHoveredId(null);
+  }, []);
+
   const breadcrumbs = [root, ...path];
 
   return (
@@ -320,8 +362,17 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
               tabIndex={0}
               role="button"
               aria-label={ariaLabel}
-              onMouseEnter={() => setHoveredId(nodeId)}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseMove={(e) => {
+                setHoveredId(nodeId);
+                handleMouseMove(e, {
+                  name: data.name,
+                  identity,
+                  value,
+                  share,
+                  unit: metricUnit,
+                });
+              }}
+              onMouseLeave={handleMouseLeave}
               onFocus={() => setFocusedId(nodeId)}
               onBlur={() => setFocusedId(null)}
               onClick={() => handleNodeClick(node)}
@@ -433,6 +484,30 @@ export function D3Treemap({ root, onSelect }: D3TreemapProps) {
         })}
         </svg>
       </div>
+
+
+      {tooltip ? (
+        <div
+          className="pointer-events-none fixed z-50 flex max-w-[280px] flex-col gap-1.5 rounded-lg border border-zinc-800 bg-[#0B0E14]/95 p-3 text-sm shadow-xl backdrop-blur-md"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-zinc-100">{tooltip.name}</span>
+            {tooltip.identity ? (
+              <span className="font-mono text-xs text-zinc-400">{tooltip.identity}</span>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-zinc-200">
+                {formatNumber(tooltip.value)} {tooltip.unit}
+              </span>
+              <span className="text-zinc-500">·</span>
+              <span className="text-zinc-400">{formatPercent(tooltip.share)}</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div
         className="sr-only"
