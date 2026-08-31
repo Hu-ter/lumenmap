@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+const DEFAULT_HEIGHT = 24;
+
 export interface SparklineProps {
   data?: number[] | null;
   height?: number;
@@ -30,12 +32,13 @@ function computePoints(data: number[], width: number, height: number): Point[] {
 
 function buildPath(points: Point[]): string {
   return points
-    .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .map((point, i) => `${ i === 0 ? 'M' : 'L' } ${point.x} ${point.y}`)
     .join(' ');
 }
 
 function SparklineSkeleton({ height, className = '' }: Pick<SparklineProps, 'height' | 'className'>) {
-  const style = height ? { height } : undefined;
+  const resolvedHeight = height || DEFAULT_HEIGHT;
+  const style = { height: resolvedHeight, minWidth: 0, overflow: 'hidden' };
   return (
     <div
       className={`data-sparkline data-sparkline--skeleton ${className}`}
@@ -60,17 +63,18 @@ export function Sparkline({
 
   if (!data || data.length < 2) return null;
 
+  const resolvedHeight = height || DEFAULT_HEIGHT;
   const width = 100; // viewBox coordinate space; actual svg stretches via preserveAspectRatio="none"
-  const points = computePoints(data, width, height ?? 24);
+  const points = computePoints(data, width, resolvedHeight);
   const d = buildPath(points);
-  const style = height ? { height } : undefined;
+  const style = { height: resolvedHeight, minWidth: 0, overflow: 'hidden' };
 
   return (
     <div className={`data-sparkline ${className}`} style={style}>
       <svg
-        viewBox={`0 0 ${width} ${height ?? 24}`}
+        viewBox={0 0 ${width} ${resolvedHeight}}"
         preserveAspectRatio="none"
-        style={{ width: '100%', height: '100%' }}
+        style={ width: '100%', height: '100%' }
         role="img"
         aria-label="Sparkline"
       >
