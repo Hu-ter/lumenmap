@@ -1,22 +1,32 @@
-import { getBigQueryClient, hasBigQueryCredentials } from "@/lib/hubble/client";
-import { getCached, setCache } from "@/lib/hubble/cache";
-import { buildTimeseries } from "@/lib/hubble/activity";
+import { getBigQueryClient, hasBigQueryCredentials } from "/@lib/hubble/client";
+import { getCached, setCache } from "/@lib/hubble/cache";
+import { buildTimeseries } from "/@lib/hubble/activity";
 import {
   dailyTimeseriesQuery,
   hourlyTimeseriesQuery,
   mapTimeseriesRows,
-} from "@/lib/hubble/queries";
-import { getFixtureTimeseries, getFixtureTimeseriesRawRows } from "@/lib/fixtures/timeseries";
-import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
-import { resolvePeriod } from "@/lib/periods";
+} from "/@lib/hubble/queries";
+import { getFixtureTimeseries, getFixtureTimeseriesRawRows } from "/@lib/fixtures/timeseries";
+import { buildActivityMetricProvenance } from "/@lib/metrics/provenance";
+import { resolvePeriod } from "/@lib/periods";
 import type {
   ActivityMetricProvenance,
   ActivityTimeseries,
   DataSource,
   Period,
-} from "@/lib/types";
+} from "/@lib/types";
 
 export type TimeseriesGranularity = "hour" | "day";
+
+export interface SparklineSeries {
+  values: number[];
+  lastValue: number;
+}
+
+export interface SparklineData {
+  totalOperations: SparklineSeries;
+  sorobanShare: SparklineSeries;
+}
 
 export interface TimeseriesResponse extends ActivityTimeseries {
   period: Period;
@@ -27,10 +37,45 @@ export interface TimeseriesResponse extends ActivityTimeseries {
   isPeriodComplete: boolean;
   metricProvenance: ActivityMetricProvenance;
   fixture?: boolean;
+  sparkline?: SparklineData;
 }
 
 function defaultGranularity(period: Period): TimeseriesGranularity {
   return period === "1d" ? "hour" : "day";
+}
+
+function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | undefined {
+  const totalOperations: number[] = [];
+  const sorobanShare: number[] = [];
+
+  for (const bucket of timeseries.buckets ?? []) {
+    const typedBucket = bucket as {
+      totalOperations?: number;
+      operations?: number;
+      sorobanOperations?: number;
+      soroban?: number;
+    };
+    const ops = typedBucket.totalOperations ?? typedBucket.operations ?? 0;
+    const soroban = typedBucket.sorobanOperations ?? typedBucket.soroban ?? 0;
+    totalOperations.push(ops);
+    sorobanShare.push(ops > 0 ? (soroban / ops) * 100 : 0);
+  }
+
+  if (totalOperations.length === 0) {
+    return undefined;
+  }
+
+  const toSeries = (values: number[]): SparklineSeries => {
+    return {
+      values,
+      lastValue: values.length > 0 ? (values[values.length - 1] ?? 0) : 0,
+    };
+  }
+
+  return {
+    totalOperations: toSeries(totalOperations),
+    sorobanShare: toSeries(sorobanShare),
+  };
 }
 
 async function fetchTimeseriesRows(
@@ -86,6 +131,7 @@ export async function getTimeseriesData(
       ...timeseries,
       metricProvenance: buildActivityMetricProvenance(),
       fixture: true,
+      sparkline: buildSparklineData(timeseries),
     };
   }
 
@@ -114,6 +160,7 @@ export async function getTimeseriesData(
     isPeriodComplete,
     ...timeseries,
     metricProvenance: buildActivityMetricProvenance(),
+    sparkline: buildSparklineData(timeseries),
   };
 
   setCache(cacheKey, response);
@@ -134,5 +181,6 @@ export function getFixtureTimeseriesResponse(period: Period): TimeseriesResponse
     ...data,
     metricProvenance: buildActivityMetricProvenance(),
     fixture: true,
+    sparkline: buildSparklineData(data),
   };
 }
