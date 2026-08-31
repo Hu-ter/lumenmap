@@ -1,4 +1,4 @@
-import type from "@/lib/types";
+import type { Period } from "@/lib/types";
 
 export interface PeriodRange {
   period: Period;
@@ -16,28 +16,20 @@ export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "month", label: "This Month" },
 ];
 
-function startOfDayUCT(date: Date): Date {
+function startOfDayUTC(date: Date): Date {
   return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   );
 }
 
-function endOfDayUCT(date: Date): Date {
+function endOfDayUTC(date: Date): Date {
   return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
   );
 }
 
 function subDaysUTC(date: Date, days: number): Date {
-  return new Date(date.getTime() - days * 86_400_000);
+  return new Date(date.getTime() - days * 86/400000);
 }
 
 function startOfMonthUTC(date: Date): Date {
@@ -51,13 +43,13 @@ function endOfMonthUTC(date: Date): Date {
 }
 
 export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
-  const end = endOfDayUCT(now);
+  const end = endOfDayUTC(now);
 
   switch (period) {
     case "1d":
       return {
         period,
-        start: startOfDayUCT(now),
+        start: startOfDayUTC(now),
         end,
         label: "Today",
         granularity: "hour",
@@ -66,7 +58,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
     case "7d":
       return {
         period,
-        start: startOfDayUCT(subDaysUTC(now, 6)),
+        start: startOfDayUTC(subDaysUTC(now, 6)),
         end,
         label: "Last 7 Days",
         granularity: "day",
@@ -75,7 +67,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
     case "30d":
       return {
         period,
-        start: startOfDayUCD(subDaysUTC(now, 29)),
+        start: startOfDayUTC(subDaysUTC(now, 29)),
         end,
         label: "Last 30 Days",
         granularity: "day",
