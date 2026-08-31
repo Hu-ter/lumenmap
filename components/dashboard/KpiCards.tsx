@@ -45,6 +45,52 @@ const KPI_CONFIG = [
   },
 ];
 
+
+function getSeries(data: any, key: string): number[] | undefined {
+  if (!data?.timeseries || !Array.isArray(data.timeseries)) return undefined;
+  const series = data.timeseries
+    .map((point: any) => point?.[key])
+    .filter((v: any): v is number => typeof v === "number" && Number.isFinite(v));
+  return series.length > 1 ? series : undefined;
+}
+
+function Sparkline({ data }: { data: number[] }) {
+  if (data.length < 2) return null;
+  const width = 100;
+  const height = 24;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - ((value - min) / range) * (height - 2) - 1;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <svg
+      width="100%"
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Trend"
+      className="mt-2"
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function KpiCards() {
   const { data, isLoading } = useDashboard();
   const freshnessState = classifyFreshness(data?.sourceTimestamp);
@@ -68,6 +114,9 @@ export function KpiCards() {
             </CardHeader>
             <CardContent>
               <Skeleton className="h-8 w-32 max-w-full" />
+              {["totalOps", "sorobanShare"].includes(item.key) ? (
+                <Skeleton className="mt-2 h-6 w-full max-w-[120px]" />
+              ) : null}
             </CardContent>
           </Card>
         ))}
@@ -82,6 +131,7 @@ export function KpiCards() {
         const metric = METRIC_DEFINITIONS[item.key];
         const kpi = data.kpis[item.key];
         const value = typeof kpi === "string" ? kpi : kpi.value;
+        const series = getSeries(data, item.key);
 
         return (
           <Card key={item.key}>
@@ -104,6 +154,7 @@ export function KpiCards() {
                   (stale)
                 </p>
               ) : null}
+              {series ? <Sparkline data={series} /> : null}
             </CardContent>
           </Card>
         );
