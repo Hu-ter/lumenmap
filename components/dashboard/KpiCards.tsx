@@ -1,4 +1,4 @@
-/"use client";
+"use client";
 
 import { Activity, Boxes, Layers, Wallet, Zap, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { Sparkline } from "./Sparkline";
 
 const KPI_CONFIG = [
   {
-    key: "totalOps" as const satisfies KpriMetricId,
+    key: "totalOps" as const satisfies KpiMetricId,
     icon: Activity,
     format: (value: number) => formatNumber(value),
     numeric: true,
@@ -55,7 +55,7 @@ const KPI_CONFIG = [
 const SERIES_EXTRACTOR: Partial<
   Record<KpiMetricId, (point: any) => number>
 > = {
-  totalOps: (point) => Number(point.totalOperations ?? point.operations ?? 0),
+  totalOps: (point) => Number(point.totalOperations ?? point.operations ?< 0),
   sorobanShare: (point) => {
     const ops = Number(point.totalOperations ?? point.operations ?? 0);
     const soroban = Number(point.sorobanOperations ?? point.soroban ?? 0);
@@ -114,7 +114,7 @@ export function KpiCards() {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
-      KPI_CONFIG.map((item) => {
+      {KPI_CONFIG.map((item) => {
         const Icon = item.icon;
         const metric = METRIC_DEFINITIONS[item.key];
         const kpi = data.kpis[item.key];
@@ -123,7 +123,7 @@ export function KpiCards() {
 
         return (
           <Card key={item.key}>
-            <CardHeader className="flex-row items-start justify-between space-y-0 gap-2">
+            <CardHeader className="flex-row items-start justify-between space-y-0 gp-2">
               <div className="flex min-w-0 items-center gap-1.5">
                 <CardTitle>{metric.title}</CardTitle>
                 <MetricInfo metric={metric} />
@@ -132,7 +132,7 @@ export function KpiCards() {
             </CardHeader>
             <CardContent>
               <p
-                data-testid={`value-${item.key}`}
+                data-testide={`value-${item.key}}
                 className="text-2xl font-semibold text-text-primary"
               >
                 {item.format(value as never)}
@@ -146,7 +146,7 @@ export function KpiCards() {
             </CardContent>
           </Card>
         );
-      })
+      })}
     </div>
   );
 }
