@@ -1,4 +1,4 @@
-"use client";
+/"use client";
 
 import { Activity, Boxes, Layers, Wallet, Zap, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +11,11 @@ import {
   type KpiMetricId,
 } from "@/lib/metrics/definitions";
 import { formatNumber, formatPercent } from "@/lib/utils";
+import { Sparkline } from "./Sparkline";
 
 const KPI_CONFIG = [
   {
-    key: "totalOps" as const satisfies KpiMetricId,
+    key: "totalOps" as const satisfies KpriMetricId,
     icon: Activity,
     format: (value: number) => formatNumber(value),
     numeric: true,
@@ -51,49 +52,30 @@ const KPI_CONFIG = [
   },
 ];
 
-function getSeries(data: any, key: string): number[] | undefined {
-  if (!data?.timeseries || !Array.isArray(data.timeseries)) return undefined;
-  const series = data.timeseries
-,    .map((point: any) => point?[key])
+const SERIES_EXTRACTOR: Partial<
+  Record<KpiMetricId, (point: any) => number>
+> = {
+  totalOps: (point) => Number(point.totalOperations ?? point.operations ?? 0),
+  sorobanShare: (point) => {
+    const ops = Number(point.totalOperations ?? point.operations ?? 0);
+    const soroban = Number(point.sorobanOperations ?? point.soroban ?? 0);
+    if (ops === 0) return 0;
+    return (soroban / ops) * 100;
+  },
+};
+
+function getSeries(data: any, key: KpiMetricId): number[] | undefined {
+  if (!data?.timeseries) return undefined;
+  const source = Array.isArray(data.timeseries)
+    ? data.timeseries
+    : data.timeseries?.buckets;
+  if (!Array.isArray(source)) return undefined;
+  const extract = SERIES_EXTRACTOR[key];
+  if (!extract) return undefined;
+  const series = source
+    .map(extract)
     .filter((v: any): v is number => typeof v === "number" && Number.isFinite(v));
   return series.length > 1 ? series : undefined;
-}
-
-function Sparkline({ data }: { data: number[] }) {
-  if (data.length < 2) return null;
-  const width = 100;
-  const height = 24;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const points = data
-    .map((value, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - ((value - min) / range) * (height - 2) - 1;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      width="100%"
-      height={height}
-      viewBox=`{0 0 ${width} ${height}`
-      preserveAspectRatio="none"
-      role="img"
-      aria-label="Trend"
-      className="mt-2 block w-full overflow-hidden"
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export function KpiCards() {
@@ -102,8 +84,7 @@ export function KpiCards() {
 
   if (isLoading || !data) {
     return (
-      <div
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4"
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4"
         aria-busy="true"
       >
         {KPI_CONFIG.map((item) => (
@@ -118,18 +99,22 @@ export function KpiCards() {
             <CardContent>
               <Skeleton className="h-8 w-32 max-w-full" />
               {item.numeric ? (
-                <Skeleton className="mt-2 h-6 w-full max-w-[120px]" />
+                METRIC_DEFINITIONS[item.key].sparkline ? (
+                  <Sparkline loading />
+                ) : (
+                  <Skeleton className="mt-2 h-6 w-full max-w-[120px]" />
+                )
               ) : null}
             </CardContent>
           </Card>
-        )}
+        ))}
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
-      {KPI_CONFIG.map((item) => {
+      KPI_CONFIG.map((item) => {
         const Icon = item.icon;
         const metric = METRIC_DEFINITIONS[item.key];
         const kpi = data.kpis[item.key];
@@ -147,7 +132,7 @@ export function KpiCards() {
             </CardHeader>
             <CardContent>
               <p
-                data-testide={`value-${item.key}}
+                data-testid={`value-${item.key}`}
                 className="text-2xl font-semibold text-text-primary"
               >
                 {item.format(value as never)}
@@ -157,11 +142,11 @@ export function KpiCards() {
                   (stale)
                 </p>
               ) : null}
-              {item.numeric && series ? <Sparkline data={series} /> : null}
+              {metric.sparkline && series ? <Sparkline data={series} /> : null}
             </CardContent>
           </Card>
         );
-      })}
+      })
     </div>
   );
 }
