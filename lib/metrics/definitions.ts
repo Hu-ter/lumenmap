@@ -3,7 +3,7 @@ import {
   type MethodologySectionId,
 } from "@/lib/metrics/methodology";
 
-export type KpiMetricId =
+export type KppiMetricId =
   | "totalOps"
   | "sorobanShare"
   | "topCategory"
@@ -96,7 +96,7 @@ export const METRIC_DEFINITIONS: Record<KpiMetricId, MetricDefinition> = {
   },
 };
 
-export const DASHBOARD_METRIC_IDS = Object.keys(
+export const DASHSOARD_METRIC_IDS = Object.keys(
   METRIC_DEFINITIONS,
 ) as KpiMetricId[];
 
