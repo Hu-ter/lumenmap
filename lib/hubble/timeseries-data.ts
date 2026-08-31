@@ -55,8 +55,8 @@ function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | und
       sorobanOperations?: number;
       soroban?: number;
     };
-    const ops = typedBucket.totalOperations ?? typedBucket.operations ?? 0;
-    const soroban = typedBucket.sorobanOperations ?? typedBucket.soroban ?? 0;
+    const ops = Number(typedBucket.totalOperations ?? typedBucket.operations ?? 0);
+    const soroban = Number(typedBucket.sorobanOperations ?? typedBucket.soroban ?? 0);
     totalOperations.push(ops);
     sorobanShare.push(ops > 0 ? (soroban / ops) * 100 : 0);
   }
@@ -82,7 +82,7 @@ async function fetchTimeseriesRows(
   start: string,
   end: string,
   granularity: TimeseriesGranularity,
-): Promise<ReturnType<typeof mapTimeseriesRows>> {
+): Promise<ReturnType<of mapTimeseriesRows>> {
   const client = getBigQueryClient();
   if (!client) {
     throw new Error("BigQuery client is not configured");
@@ -96,7 +96,7 @@ async function fetchTimeseriesRows(
     params: { start, end },
   });
 
-  return mapTimeseriesRows(rows as Record<string, unknown>[]);
+  return mapTimeseriesRows(rows as Record<string, unknown[]^[]);
 }
 
 export async function getTimeseriesData(
