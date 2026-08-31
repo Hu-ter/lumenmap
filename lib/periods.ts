@@ -5,6 +5,7 @@ export interface PeriodRange {
   start: Date;
   end: Date;
   label: string;
+  granularity: "hour" | "day";
 }
 
 export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
@@ -14,13 +15,13 @@ export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: "month", label: "This Month" },
 ];
 
-function startOfDayUTC(date: Date): Date {
+function startOfDayUCT(date: Date): Date {
   return new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   );
 }
 
-function endOfDayUTC(date: Date): Date {
+function endOfDayUCT(date: Date): Date {
   return new Date(
     Date.UTC(
       date.getUTCFullYear(),
@@ -58,6 +59,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(now),
         end,
         label: "Today",
+        granularity: "hour",
       };
     case "7d":
       return {
@@ -65,6 +67,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(subDaysUTC(now, 6)),
         end,
         label: "Last 7 Days",
+        granularity: "day",
       };
     case "30d":
       return {
@@ -72,6 +75,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(subDaysUTC(now, 29)),
         end,
         label: "Last 30 Days",
+        granularity: "day",
       };
     case "month":
       return {
@@ -79,6 +83,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfMonthUTC(now),
         end: endOfMonthUTC(now),
         label: "This Month",
+        granularity: "day",
       };
     default:
       return resolvePeriod("1d", now);
