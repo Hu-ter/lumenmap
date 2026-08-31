@@ -70,7 +70,7 @@ function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | und
       values,
       lastValue: values.length > 0 ? (values[values.length - 1] ?? 0) : 0,
     };
-  }
+  };
 
   return {
     totalOperations: toSeries(totalOperations),
@@ -82,7 +82,7 @@ async function fetchTimeseriesRows(
   start: string,
   end: string,
   granularity: TimeseriesGranularity,
-): Promise<ReturnType<of mapTimeseriesRows>> {
+): Promise<ReturnType<typeof mapTimeseriesRows>> {
   const client = getBigQueryClient();
   if (!client) {
     throw new Error("BigQuery client is not configured");
@@ -96,7 +96,7 @@ async function fetchTimeseriesRows(
     params: { start, end },
   });
 
-  return mapTimeseriesRows(rows as Record<string, unknown[]^[]);
+  return mapTimeseriesRows(rows as Record<string, unknown>[]);
 }
 
 export async function getTimeseriesData(
