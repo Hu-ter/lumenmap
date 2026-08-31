@@ -10,11 +10,12 @@ import {
   accountQuery,
   accountMetadataQuery,
   activeContractCountQuery,
+  activeDestinationCountQuery,
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
   dailyTimeseriesQuery,
-  heatmapQuery,
+  getDestinationQueryTypes,
   hourlyTimeseriesQuery,
   getAccountQueryTypes,
   getUsdcPaymentVolumeParams,
@@ -22,6 +23,7 @@ import {
   mapAccountMetadataRows,
   mapAccountRows,
   mapActiveContractCountRow,
+  mapActiveDestinationCountRow,
   mapActiveSourceAccountsRows,
   mapCategoryRows,
   mapContractRows,
@@ -177,6 +179,7 @@ async function fetchFromHubble(
     sorobanFunctionRows,
     sorobanFunctionContractRows,
     activeSourceAccountRows,
+    activeDestinationCountRows,
     usdcPaymentVolumeRows,
     usdcCategoryRows,
     usdcAccountRows,
@@ -216,6 +219,15 @@ async function fetchFromHubble(
       "activeSourceAccounts",
       activeSourceAccountsQuery,
       params,
+      correlationId,
+    ),
+    runQuery<Record<string, unknown>>(
+      "activeDestinationCount",
+      activeDestinationCountQuery,
+      {
+        ...params,
+        types: getDestinationQueryTypes(),
+      },
       correlationId,
     ),
     runQuery<Record<string, unknown>>(
@@ -269,6 +281,7 @@ async function fetchFromHubble(
       sorobanFunctionContractRows,
     ),
     activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
+    activeDestinationCount: mapActiveDestinationCountRow(activeDestinationCountRows),
     usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
     usdcCategories: mapUsdcCategoryRows(usdcCategoryRows),
     usdcAccounts: mapUsdcAccountRows(usdcAccountRows),
@@ -334,8 +347,10 @@ export function buildTimeseries(
   end: Date,
   rawRows: TimeseriesRawRow[],
   now = new Date(),
+  granularityOverride?: "hour" | "day",
 ): ActivityTimeseries {
-  const granularity = period === "1d" ? "hour" : "day";
+  const granularity =
+    granularityOverride ?? (period === "1d" ? "hour" : "day");
   const buckets: TimeseriesBucket[] = [];
 
   const lookup = new Map<string, { tx_count: number; op_count: number }>();
@@ -506,6 +521,7 @@ export async function getActivityData(
       raw.contracts,
       raw.activeSourceAccounts,
       activeContractCount.active_contract_count,
+      raw.activeDestinationCount.active_destination_count,
     );
     logInfo({
       event: "activity.kpi.build",

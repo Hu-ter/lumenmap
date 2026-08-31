@@ -10,6 +10,7 @@ import { FreshnessWarning } from "@/components/dashboard/FreshnessWarning";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { ProtocolBarChart } from "@/components/dashboard/ProtocolBarChart";
+import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
@@ -83,6 +84,7 @@ function DashboardContent() {
       </div>
 
       <ProtocolBarChart />
+      <ActivityHeatmap />
       <TimeSeriesChart />
       <ActivityHeatmap />
     </div>

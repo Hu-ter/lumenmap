@@ -1,198 +1,267 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, HelpCircle, Activity } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/components/dashboard/DashboardProvider";
 import { formatNumber } from "@/lib/utils";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+type HeatmapCellState = "missing" | "zero" | "value" | "partial";
+
+interface HeatmapCell {
+  dateKey: string;
+  label: string;
+  operations: number;
+  transactions: number;
+  state: HeatmapCellState;
+  isPartial: boolean;
+}
+
+const LEVELS = [
+  { label: "None", className: "bg-zinc-900 border-zinc-800" },
+  { label: "Low", className: "bg-cyan-950 border-cyan-900/60" },
+  { label: "Medium", className: "bg-cyan-800/70 border-cyan-700/60" },
+  { label: "High", className: "bg-cyan-500/80 border-cyan-400/70" },
+  { label: "Peak", className: "bg-cyan-300 border-cyan-200" },
+];
+
+function intensityLevel(value: number, max: number): number {
+  if (value <= 0 || max <= 0) {
+    return 0;
+  }
+  const ratio = value / max;
+  if (ratio >= 0.85) return 4;
+  if (ratio >= 0.55) return 3;
+  if (ratio >= 0.25) return 2;
+  return 1;
+}
+
+function toUtcDateKey(timestamp: string): string {
+  return timestamp.substring(0, 10);
+}
 
 export function ActivityHeatmap() {
-  const { data, isLoading, isError, error, metric } = useDashboard();
-  const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null);
+  const { data, isLoading } = useDashboard();
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
 
-  const buckets = data?.heatmap?.buckets ?? [];
+  const cells = useMemo(() => {
+    const buckets = data?.timeseries?.buckets ?? [];
+    const dailyBuckets =
+      data?.timeseries?.granularity === "hour"
+        ? buckets.reduce(
+            (acc, bucket) => {
+              const key = toUtcDateKey(bucket.timestamp);
+              const existing = acc.get(key) ?? {
+                operations: 0,
+                transactions: 0,
+                isPartial: false,
+                label: key,
+              };
+              acc.set(key, {
+                operations: existing.operations + bucket.operations,
+                transactions: existing.transactions + bucket.transactions,
+                isPartial: existing.isPartial || Boolean(bucket.isPartial),
+                label: key,
+              });
+              return acc;
+            },
+            new Map<
+              string,
+              {
+                operations: number;
+                transactions: number;
+                isPartial: boolean;
+                label: string;
+              }
+            >(),
+          )
+        : new Map(
+            buckets.map((bucket) => [
+              toUtcDateKey(bucket.timestamp),
+              {
+                operations: bucket.operations,
+                transactions: bucket.transactions,
+                isPartial: Boolean(bucket.isPartial),
+                label: bucket.label,
+              },
+            ]),
+          );
 
-  // Compute max value for color scaling
-  const maxVal = useMemo(() => {
-    let max = 0;
-    for (const b of buckets) {
-      const val = metric === "transactions" || metric === "txn_events" || metric === "txn_actors" ? b.transactions : b.operations;
-      if (val > max) max = val;
-    }
-    return max;
-  }, [buckets, metric]);
+    const periodStart = data?.start ? toUtcDateKey(data.start) : null;
+    const periodEnd = data?.end ? toUtcDateKey(data.end) : null;
 
-  const hasData = buckets.length > 0 && maxVal > 0;
+    const result: HeatmapCell[] = [...dailyBuckets.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, bucket]) => {
+        const inRange =
+          periodStart && periodEnd
+            ? dateKey >= periodStart && dateKey <= periodEnd
+            : true;
 
-  if (isLoading) {
+        let state: HeatmapCellState = "value";
+        if (!inRange) {
+          state = "missing";
+        } else if (bucket.operations === 0 && bucket.transactions === 0) {
+          state = "zero";
+        }
+
+        return {
+          dateKey,
+          label: bucket.label,
+          operations: bucket.operations,
+          transactions: bucket.transactions,
+          state,
+          isPartial: bucket.isPartial,
+        };
+      });
+
+    return result;
+  }, [data]);
+
+  const maxOps = useMemo(
+    () => Math.max(0, ...cells.map((cell) => cell.operations)),
+    [cells],
+  );
+
+  const activeCell =
+    cells.find((cell) => cell.dateKey === focusedKey) ?? cells[cells.length - 1];
+
+  if (isLoading || !data) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-56" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-28 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (cells.length <= 1) {
     return (
       <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-32" />
-        </CardHeader>
-        <CardContent className="pt-4">
-          <Skeleton className="h-[260px] w-full rounded-lg" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <Card className="border-red-950/40 bg-zinc-900/50 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="flex items-center gap-2 text-base font-medium text-red-400">
-            <AlertTriangle className="h-5 w-5 text-red-400" />
-            Activity Heatmap Unavailable
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
+            <BarChart3 className="h-5 w-5 text-cyan-400" />
+            Daily Activity Calendar
           </CardTitle>
         </CardHeader>
-        <CardContent className="py-6">
+        <CardContent>
           <p className="text-sm text-zinc-400">
-            {error instanceof Error
-              ? error.message
-              : "Unable to load heatmap data."}
+            Select a multi-day period to view the UTC daily activity heatmap.
           </p>
         </CardContent>
       </Card>
     );
   }
-
-  const activeMetricLabel = metric === "transactions" || metric === "txn_events" || metric === "txn_actors" ? "Transactions" : "Operations";
-  
-  // Calculate cell color based on intensity
-  const getCellColor = (val: number) => {
-    if (val === 0) return "bg-zinc-800/40";
-    const intensity = Math.max(0.1, val / maxVal);
-    // Cyan color scale based on intensity
-    if (intensity < 0.2) return "bg-cyan-900/40";
-    if (intensity < 0.4) return "bg-cyan-800/60";
-    if (intensity < 0.6) return "bg-cyan-700/80";
-    if (intensity < 0.8) return "bg-cyan-600";
-    return "bg-cyan-400";
-  };
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+      <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-white sm:text-lg">
-            <Activity className="h-5 w-5 text-cyan-400" />
-            Hour-of-Week Activity Heatmap
+            <BarChart3 className="h-5 w-5 text-cyan-400" />
+            Daily Activity Calendar
           </CardTitle>
           <p className="text-xs text-zinc-400">
-            Activity patterns across a 7×24 grid for the selected period.
+            UTC calendar cells colored by daily operation count. Hover or focus a cell for exact values.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-400">Legend ({activeMetricLabel}):</span>
-            <div className="flex gap-1">
-              <div className="h-3 w-3 rounded-sm bg-zinc-800/40" title="0" />
-              <div className="h-3 w-3 rounded-sm bg-cyan-900/40" title="Low" />
-              <div className="h-3 w-3 rounded-sm bg-cyan-800/60" />
-              <div className="h-3 w-3 rounded-sm bg-cyan-700/80" />
-              <div className="h-3 w-3 rounded-sm bg-cyan-600" />
-              <div className="h-3 w-3 rounded-sm bg-cyan-400" title="High" />
-            </div>
-            <span className="text-zinc-500 ml-1">(UTC basis)</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400">
+          <span className="font-medium text-zinc-300">Operations</span>
+          {LEVELS.map((level) => (
+            <span key={level.label} className="flex items-center gap-1">
+              <span
+                className={`inline-block h-3 w-3 rounded-sm border ${level.className}`}
+                aria-hidden="true"
+              />
+              {level.label}
+            </span>
+          ))}
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-zinc-500 bg-zinc-950" />
+            Missing
+          </span>
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
-        {!hasData ? (
-          <div className="flex h-[240px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 text-center">
-            <HelpCircle className="h-8 w-8 text-zinc-500" />
-            <p className="text-sm text-zinc-400">No activity recorded to generate heatmap.</p>
-          </div>
-        ) : (
-          <div className="relative w-full overflow-x-auto pb-4">
-            <div className="min-w-[700px]">
-              {/* Screen reader table fallback */}
-              <table className="sr-only">
-                <caption>Hour-of-week activity heatmap data (UTC)</caption>
-                <thead>
-                  <tr>
-                    <th>Day</th>
-                    {HOURS.map(h => <th key={h}>{h}:00</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {DAYS.map((dayName, d) => (
-                    <tr key={d}>
-                      <td>{dayName}</td>
-                      {HOURS.map(h => {
-                        const b = buckets.find(b => b.dayOfWeek === d && b.hourOfDay === h);
-                        const val = b ? (activeMetricLabel === "Transactions" ? b.transactions : b.operations) : 0;
-                        return <td key={h}>{val} {activeMetricLabel}</td>;
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <CardContent className="space-y-4">
+        <div
+          className="grid gap-1.5 sm:gap-2"
+          style={{
+            gridTemplateColumns: `repeat(${Math.min(cells.length, 14)}, minmax(0, 1fr))`,
+          }}
+          role="grid"
+          aria-label="Daily network activity heatmap"
+        >
+          {cells.map((cell) => {
+            const level =
+              cell.state === "missing"
+                ? null
+                : intensityLevel(cell.operations, maxOps);
+            const levelClass =
+              cell.state === "missing"
+                ? "border-dashed border-zinc-600 bg-zinc-950"
+                : cell.state === "zero"
+                  ? LEVELS[0].className
+                  : LEVELS[level ?? 0].className;
 
-              {/* Visual Heatmap Grid */}
-              <div className="flex flex-col gap-1 select-none" aria-hidden="true">
-                {/* Column Headers (Hours) */}
-                <div className="flex ml-12 mb-1">
-                  {HOURS.map(h => (
-                    <div key={h} className="flex-1 text-center text-[10px] text-zinc-500">
-                      {h % 2 === 0 ? h : ""}
-                    </div>
-                  ))}
-                </div>
+            return (
+              <button
+                key={cell.dateKey}
+                type="button"
+                role="gridcell"
+                aria-label={`${cell.dateKey}: ${cell.state === "missing" ? "no data" : `${formatNumber(cell.operations)} operations`}${cell.isPartial ? ", partial day" : ""}`}
+                title={`${cell.dateKey}\nOperations: ${formatNumber(cell.operations)}\nTransactions: ${formatNumber(cell.transactions)}${cell.isPartial ? "\nPartial day" : ""}`}
+                className={`aspect-square min-h-8 rounded-sm border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${levelClass} ${cell.isPartial ? "ring-1 ring-dashed ring-cyan-300/70" : ""}`}
+                onMouseEnter={() => setFocusedKey(cell.dateKey)}
+                onFocus={() => setFocusedKey(cell.dateKey)}
+              />
+            );
+          })}
+        </div>
 
-                {/* Rows (Days) */}
-                {DAYS.map((dayName, d) => (
-                  <div key={d} className="flex items-center gap-1 group">
-                    <div className="w-11 text-[10px] font-medium text-zinc-400 text-right pr-2">
-                      {dayName.slice(0, 3)}
-                    </div>
-                    <div className="flex flex-1 gap-1">
-                      {HOURS.map(h => {
-                        const b = buckets.find(b => b.dayOfWeek === d && b.hourOfDay === h);
-                        const val = b ? (activeMetricLabel === "Transactions" ? b.transactions : b.operations) : 0;
-                        const isHovered = hoveredCell?.day === d && hoveredCell?.hour === h;
-                        
-                        return (
-                          <div 
-                            key={h} 
-                            className="relative flex-1 aspect-square min-w-[20px]"
-                            onMouseEnter={() => setHoveredCell({ day: d, hour: h })}
-                            onMouseLeave={() => setHoveredCell(null)}
-                          >
-                            <div 
-                              className={`w-full h-full rounded-sm transition-colors duration-150 border ${isHovered ? 'border-zinc-300 z-10 scale-110' : 'border-transparent'} ${getCellColor(val)}`} 
-                            />
-                            {/* Tooltip */}
-                            {isHovered && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
-                                <div className="flex flex-col gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs shadow-xl min-w-max">
-                                  <div className="font-medium text-zinc-300 border-b border-zinc-800 pb-1">
-                                    {dayName}, {h.toString().padStart(2, '0')}:00 UTC
-                                  </div>
-                                  <div className="flex justify-between gap-3 pt-1">
-                                    <span className="text-zinc-400">{activeMetricLabel}:</span>
-                                    <span className="font-mono text-white font-medium">{formatNumber(val)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {activeCell ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-zinc-300">
+            <span className="font-semibold text-white">{activeCell.dateKey}</span>
+            {" · "}
+            <span>{formatNumber(activeCell.operations)} operations</span>
+            {" · "}
+            <span>{formatNumber(activeCell.transactions)} transactions</span>
+            {activeCell.isPartial ? (
+              <span className="ml-2 rounded-full border border-cyan-800/60 bg-cyan-950 px-2 py-0.5 text-[10px] text-cyan-300">
+                Partial day
+              </span>
+            ) : null}
           </div>
-        )}
+        ) : null}
+
+        <div className="sr-only">
+          <table>
+            <caption>Daily network activity values</caption>
+            <thead>
+              <tr>
+                <th scope="col">UTC date</th>
+                <th scope="col">Operations</th>
+                <th scope="col">Transactions</th>
+                <th scope="col">Partial</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cells.map((cell) => (
+                <tr key={`row-${cell.dateKey}`}>
+                  <th scope="row">{cell.dateKey}</th>
+                  <td>{cell.operations}</td>
+                  <td>{cell.transactions}</td>
+                  <td>{cell.isPartial ? "yes" : "no"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );

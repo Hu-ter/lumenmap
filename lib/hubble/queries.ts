@@ -23,6 +23,7 @@ import { SUPPORTED_USDC_ASSET_SET } from "@/lib/assets/usdc";
 import type {
   AccountRow,
   ActiveContractCountRow,
+  ActiveDestinationCountRow,
   ActiveSourceAccountsRow,
   CategoryRow,
   ContractRow,
@@ -142,6 +143,7 @@ export type RawQueryResults = {
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   activeSourceAccounts: ActiveSourceAccountsRow[];
+  activeDestinationCount: ActiveDestinationCountRow;
   usdcPaymentVolume: UsdcPaymentVolume;
   usdcCategories: UsdcCategoryRow[];
   usdcAccounts: UsdcAccountRow[];
@@ -286,4 +288,13 @@ export function mapActiveSourceAccountsRows(
   return rows.map((row) => ({
     active_accounts: Number(row.active_accounts),
   }));
+}
+
+export function mapActiveDestinationCountRow(
+  rows: Record<string, unknown>[],
+): ActiveDestinationCountRow {
+  return {
+    active_destination_count:
+      rows.length > 0 ? Number(rows[0].active_destination_count) : 0,
+  };
 }
