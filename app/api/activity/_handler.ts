@@ -76,6 +76,7 @@ export function toVisualizationResponse(
     treemaps: data.treemaps,
     protocols: data.protocols,
     timeseries: data.timeseries,
+    heatmap: data.heatmap,
     metricProvenance: data.metricProvenance,
   };
 }

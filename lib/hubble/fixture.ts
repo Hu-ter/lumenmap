@@ -4,9 +4,28 @@
  */
 
 import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
-import type { ActivityDataset, Period } from "@/lib/types";
+import type { ActivityDataset, Period, HeatmapBucket } from "@/lib/types";
 
 export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
+  const heatmapBuckets: HeatmapBucket[] = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      let op_count = Math.floor(Math.random() * 5000);
+      let tx_count = Math.floor(op_count * 0.8);
+      // Spike on weekdays at 14:00 UTC
+      if (d > 0 && d < 6 && h === 14) {
+        op_count += 15000;
+        tx_count += 12000;
+      }
+      heatmapBuckets.push({
+        dayOfWeek: d,
+        hourOfDay: h,
+        operations: op_count,
+        transactions: tx_count,
+      });
+    }
+  }
+
   return {
     period,
     start: "2026-01-01T00:00:00.000Z",
@@ -319,6 +338,9 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       },
     },
     metricProvenance: buildActivityMetricProvenance(),
+    heatmap: {
+      buckets: heatmapBuckets,
+    },
   };
 }
 

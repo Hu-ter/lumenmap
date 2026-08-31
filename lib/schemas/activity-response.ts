@@ -310,6 +310,17 @@ const activityTimeseriesSchema = z.object({
   }),
 });
 
+const heatmapBucketSchema = z.object({
+  dayOfWeek: z.number(),
+  hourOfDay: z.number(),
+  transactions: z.number(),
+  operations: z.number(),
+});
+
+const activityHeatmapSchema = z.object({
+  buckets: z.array(heatmapBucketSchema),
+});
+
 const protocolBarSchema = z.object({
   protocol: z.string(),
   opCount: z.number(),
@@ -348,6 +359,7 @@ export const activityResponseSchema = z.object({
   metricProvenance: activityMetricProvenanceSchema,
   protocols: protocolSummarySchema.optional(),
   timeseries: activityTimeseriesSchema.optional(),
+  heatmap: activityHeatmapSchema.optional(),
   fixture: z.boolean().optional(),
 });
 

@@ -11,6 +11,7 @@ import { KpiCards } from "@/components/dashboard/KpiCards";
 import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { ProtocolBarChart } from "@/components/dashboard/ProtocolBarChart";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
+import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 
@@ -83,6 +84,7 @@ function DashboardContent() {
 
       <ProtocolBarChart />
       <TimeSeriesChart />
+      <ActivityHeatmap />
     </div>
   );
 }

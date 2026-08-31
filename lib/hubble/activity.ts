@@ -14,6 +14,7 @@ import {
   categoryQuery,
   contractQuery,
   dailyTimeseriesQuery,
+  heatmapQuery,
   hourlyTimeseriesQuery,
   getAccountQueryTypes,
   getUsdcPaymentVolumeParams,
@@ -28,6 +29,7 @@ import {
   mapSorobanFunctionRows,
   mapTransactionCategoryRows,
   mapTimeseriesRows,
+  mapHeatmapRows,
   mapUsdcAccountRows,
   mapUsdcCategoryRows,
   mapUsdcPaymentVolumeRows,
@@ -54,6 +56,9 @@ import type {
   ActivityDataset,
   Period,
   ActivityTimeseries,
+  ActivityHeatmap,
+  HeatmapBucket,
+  HeatmapRawRow,
   TimeseriesBucket,
   TimeseriesRawRow,
 } from "@/lib/types";
@@ -176,6 +181,7 @@ async function fetchFromHubble(
     usdcCategoryRows,
     usdcAccountRows,
     timeseriesRows,
+    heatmapRows,
   ] = await Promise.all([
     runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
     runQuery<Record<string, unknown>>(
@@ -245,6 +251,12 @@ async function fetchFromHubble(
       params,
       correlationId,
     ),
+    runQuery<Record<string, unknown>>(
+      "heatmap",
+      heatmapQuery,
+      params,
+      correlationId,
+    ),
   ]);
 
   return {
@@ -261,6 +273,7 @@ async function fetchFromHubble(
     usdcCategories: mapUsdcCategoryRows(usdcCategoryRows),
     usdcAccounts: mapUsdcAccountRows(usdcAccountRows),
     timeseries: mapTimeseriesRows(timeseriesRows),
+    heatmap: mapHeatmapRows(heatmapRows),
   };
 }
 
@@ -412,6 +425,32 @@ export function buildTimeseries(
   };
 }
 
+export function buildHeatmap(rawRows: HeatmapRawRow[]): ActivityHeatmap {
+  // Ensure we cover 7x24 grid (168 buckets).
+  const buckets: HeatmapBucket[] = [];
+  const map = new Map<string, HeatmapRawRow>();
+  for (const row of rawRows) {
+    map.set(`${row.day_of_week}-${row.hour_of_day}`, row);
+  }
+
+  for (let d = 1; d <= 7; d++) {
+    // BigQuery DAYOFWEEK is 1 (Sunday) to 7 (Saturday).
+    // Let's map it to 0-6 (0 = Sunday).
+    const dayOfWeek = d - 1;
+    for (let hourOfDay = 0; hourOfDay < 24; hourOfDay++) {
+      const row = map.get(`${d}-${hourOfDay}`);
+      buckets.push({
+        dayOfWeek,
+        hourOfDay,
+        transactions: row?.tx_count ?? 0,
+        operations: row?.op_count ?? 0,
+      });
+    }
+  }
+
+  return { buckets };
+}
+
 export async function getActivityData(
   period: Period,
   correlationId: string = createCorrelationId(),
@@ -490,6 +529,7 @@ export async function getActivityData(
     const treemaps = buildAllTreemaps({ ...raw, labels });
   const protocols = buildProtocolSummary(raw.accounts, raw.contracts, labels);
   const timeseries = buildTimeseries(period, range.start, range.end, raw.timeseries);
+  const heatmap = buildHeatmap(raw.heatmap);
     logInfo({
       event: "activity.treemap.build",
       correlationId,
@@ -521,6 +561,7 @@ export async function getActivityData(
       treemaps,
       protocols,
       timeseries,
+      heatmap,
       metricProvenance: buildActivityMetricProvenance(),
     };
 
