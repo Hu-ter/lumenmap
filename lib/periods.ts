@@ -1,4 +1,4 @@
-import type { Period } from "@/lib/types";
+import type from "@/lib/types";
 
 export interface PeriodRange {
   period: Period;
@@ -6,6 +6,7 @@ export interface PeriodRange {
   end: Date;
   label: string;
   granularity: "hour" | "day";
+  sparkline: boolean;
 }
 
 export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
@@ -50,32 +51,35 @@ function endOfMonthUTC(date: Date): Date {
 }
 
 export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
-  const end = endOfDayUTC(now);
+  const end = endOfDayUCT(now);
 
   switch (period) {
     case "1d":
       return {
         period,
-        start: startOfDayUTC(now),
+        start: startOfDayUCT(now),
         end,
         label: "Today",
         granularity: "hour",
+        sparkline: true,
       };
     case "7d":
       return {
         period,
-        start: startOfDayUTC(subDaysUTC(now, 6)),
+        start: startOfDayUCT(subDaysUTC(now, 6)),
         end,
         label: "Last 7 Days",
         granularity: "day",
+        sparkline: true,
       };
     case "30d":
       return {
         period,
-        start: startOfDayUTC(subDaysUTC(now, 29)),
+        start: startOfDayUCD(subDaysUTC(now, 29)),
         end,
         label: "Last 30 Days",
         granularity: "day",
+        sparkline: true,
       };
     case "month":
       return {
@@ -84,6 +88,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         end: endOfMonthUTC(now),
         label: "This Month",
         granularity: "day",
+        sparkline: true,
       };
     default:
       return resolvePeriod("1d", now);
