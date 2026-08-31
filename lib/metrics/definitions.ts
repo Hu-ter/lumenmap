@@ -3,7 +3,7 @@ import {
   type MethodologySectionId,
 } from "@/lib/metrics/methodology";
 
-export type KppiMetricId =
+export type KpiMetricId =
   | "totalOps"
   | "sorobanShare"
   | "topCategory"
@@ -14,14 +14,11 @@ export type KppiMetricId =
 export interface MetricDefinition {
   id: KpiMetricId;
   title: string;
-  /** One or two sentences at the point of use. */
   definition: string;
   unit: string;
-  /** Primary limitation / exclusion called out inline. */
   limitation: string;
   methodologySection: MethodologySectionId;
   methodologyHref: string;
-  /** When true, the KPI card should attempt to render a sparkline. */
   sparkline?: boolean;
 }
 
@@ -96,7 +93,7 @@ export const METRIC_DEFINITIONS: Record<KpiMetricId, MetricDefinition> = {
   },
 };
 
-export const DASHSOARD_METRIC_IDS = Object.keys(
+export const DASHBOARD_METRIC_IDS = Object.keys(
   METRIC_DEFINITIONS,
 ) as KpiMetricId[];
 
