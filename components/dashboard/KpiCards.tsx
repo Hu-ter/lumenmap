@@ -17,39 +17,44 @@ const KPI_CONFIG = [
     key: "totalOps" as const satisfies KpiMetricId,
     icon: Activity,
     format: (value: number) => formatNumber(value),
+    numeric: true,
   },
   {
     key: "sorobanShare" as const satisfies KpiMetricId,
     icon: Zap,
     format: (value: number) => formatPercent(value),
+    numeric: true,
   },
   {
     key: "topCategory" as const satisfies KpiMetricId,
     icon: Layers,
     format: (value: string) => value,
+    numeric: false,
   },
   {
     key: "activeContracts" as const satisfies KpiMetricId,
     icon: Boxes,
     format: (value: number) => formatNumber(value),
+    numeric: true,
   },
   {
     key: "activeWallets" as const satisfies KpiMetricId,
     icon: Wallet,
     format: (value: number) => formatNumber(value),
+    numeric: true,
   },
   {
     key: "activeDestinationAccounts" as const satisfies KpiMetricId,
     icon: ArrowDown,
     format: (value: number) => formatNumber(value),
+    numeric: true,
   },
 ];
-
 
 function getSeries(data: any, key: string): number[] | undefined {
   if (!data?.timeseries || !Array.isArray(data.timeseries)) return undefined;
   const series = data.timeseries
-    .map((point: any) => point?.[key])
+,    .map((point: any) => point?[key])
     .filter((v: any): v is number => typeof v === "number" && Number.isFinite(v));
   return series.length > 1 ? series : undefined;
 }
@@ -73,11 +78,11 @@ function Sparkline({ data }: { data: number[] }) {
     <svg
       width="100%"
       height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox=`{0 0 ${width} ${height}`
       preserveAspectRatio="none"
       role="img"
       aria-label="Trend"
-      className="mt-2"
+      className="mt-2 block w-full overflow-hidden"
     >
       <polyline
         points={points}
@@ -104,8 +109,6 @@ export function KpiCards() {
         {KPI_CONFIG.map((item) => (
           <Card key={item.key}>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              {/* Titles wrap to two lines in the narrow mobile columns, so the
-                  skeleton reserves the same number of lines per breakpoint. */}
               <div className="min-w-0 flex-1 space-y-1">
                 <Skeleton className="h-4 w-24 max-w-full" />
                 <Skeleton className="h-4 w-16 max-w-full sm:hidden" />
@@ -114,12 +117,12 @@ export function KpiCards() {
             </CardHeader>
             <CardContent>
               <Skeleton className="h-8 w-32 max-w-full" />
-              {["totalOps", "sorobanShare"].includes(item.key) ? (
+              {item.numeric ? (
                 <Skeleton className="mt-2 h-6 w-full max-w-[120px]" />
               ) : null}
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
     );
   }
@@ -144,7 +147,7 @@ export function KpiCards() {
             </CardHeader>
             <CardContent>
               <p
-                data-testid={`kpi-value-${item.key}`}
+                data-testide={`value-${item.key}}
                 className="text-2xl font-semibold text-text-primary"
               >
                 {item.format(value as never)}
@@ -154,7 +157,7 @@ export function KpiCards() {
                   (stale)
                 </p>
               ) : null}
-              {series ? <Sparkline data={series} /> : null}
+              {item.numeric && series ? <Sparkline data={series} /> : null}
             </CardContent>
           </Card>
         );
