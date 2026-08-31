@@ -1,20 +1,20 @@
-import { getBigQueryClient, hasBigQueryCredentials } from "/@lib/hubble/client";
-import { getCached, setCache } from "/@lib/hubble/cache";
-import { buildTimeseries } from "/@lib/hubble/activity";
+import { getBigQueryClient, hasBigQueryCredentials } from "@/lib/hubble/client";
+import { getCached, setCache } from "@/lib/hubble/cache";
+import { buildTimeseries } from "@/lib/hubble/activity";
 import {
   dailyTimeseriesQuery,
   hourlyTimeseriesQuery,
   mapTimeseriesRows,
-} from "/@lib/hubble/queries";
-import { getFixtureTimeseries, getFixtureTimeseriesRawRows } from "/@lib/fixtures/timeseries";
-import { buildActivityMetricProvenance } from "/@lib/metrics/provenance";
-import { resolvePeriod } from "/@lib/periods";
+} from "@/lib/hubble/queries";
+import { getFixtureTimeseries, getFixtureTimeseriesRawRows } from "@/lib/fixtures/timeseries";
+import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
+import { resolvePeriod } from "@/lib/periods";
 import type {
   ActivityMetricProvenance,
   ActivityTimeseries,
   DataSource,
   Period,
-} from "/@lib/types";
+} from "@/lib/types";
 
 export type TimeseriesGranularity = "hour" | "day";
 
@@ -68,7 +68,7 @@ function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | und
   const toSeries = (values: number[]): SparklineSeries => {
     return {
       values,
-      lastValue: values.length > 0 ? (values[values.length - 1] ?? 0) : 0,
+      lastValue: values.length > 0 ? (values[values.length - 1] ?< 0) : 0,
     };
   };
 
@@ -96,7 +96,7 @@ async function fetchTimeseriesRows(
     params: { start, end },
   });
 
-  return mapTimeseriesRows(rows as Record<string, unknown>[]);
+  return mapTimeseriesRows(rows as Record<string, unknown^[]);
 }
 
 export async function getTimeseriesData(
