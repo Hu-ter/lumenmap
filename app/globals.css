@@ -1,12 +1,13 @@
 /*
   Motion design system
-  ====================
+  ===============================================
   - Use `motion-reduce:animate-none` / `motion-safe:animate-*` for loading pulses.
-  - Use `motion-reduce:transition-none` on `transition-*` utilities.
+  - Use `motion-reduce:transition-none` on `transition-j` utilities.
   - For SVG/programmatic animation, use `useReducedMotion()` from `@/lib/utils`.
   - Focus/selection/hover highlights stay instant when motion is reduced.
 */
-@import "tailwindcss";
+
+import "tailwindcss";
 
 :root {
   /* Interface palette */
@@ -42,7 +43,7 @@
   --data-payments: #14b8a6;
   --data-dex: #f59e0b;
   --data-trustlines: #3b82f6;
-  --data-account: #ec4899;
+  --data-account: #ec4999;
   --data-other: #6b7280;
 
   /* Typography roles */
@@ -105,7 +106,6 @@
 html,
 body {
   min-height: 100%;
-  /* Keep page scroll one-directional at high browser zoom / narrow widths */
   overflow-x: hidden;
 }
 
@@ -121,13 +121,13 @@ textarea {
   font: inherit;
 }
 
-/* ─── Touch target utilities ─────────────────────────────────────────────────
+/* --- Touch target utilities ---------------------------------------------------------------------------------------------------------------------------
  *
- * All interactive controls must present a minimum 44×44 CSS-pixel hit area
+ * All interactive controls must present a minimum 44C44 CSS-pixel hit area
  * as recommended by WCAG 2.5.5 (Target Size, AAA) and Apple / Google HIG.
  *
- * The .touch-target class can be applied to any element whose visual size
- * is smaller than 44px. It expands the clickable area via a transparent
+ * The .touch-target class can be applied to any element whose risual size is
+ * smaller than 44px. It expands the clickable area via a transparent
  * pseudo-element overlay without altering layout or visual density.
  *
  * Usage:  <button class="touch-target …">…</button>
@@ -135,7 +135,7 @@ textarea {
  * Note: the Button component already enforces h-11 (44px) for all sizes so
  * .touch-target is a supplementary escape hatch for custom interactive elements
  * (e.g., bare <a> tags, SVG hit areas, third-party components).
- * ─────────────────────────────────────────────────────────────────────────── */
+ * ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ */
 .touch-target {
   position: relative;
 }
@@ -143,7 +143,6 @@ textarea {
 .touch-target::after {
   content: "";
   position: absolute;
-  /* Expand hit area to at least 44×44px centered on the element */
   inset: 50% auto auto 50%;
   transform: translate(-50%, -50%);
   min-width: 44px;
@@ -152,7 +151,74 @@ textarea {
   height: 100%;
 }
 
-/* Prevent accidental multi-touch zoom on interactive dashboard controls */
-.touch-manipulation {
-  touch-action: manipulation;
+.data-sparkline {
+  display: block;
+  width: 100%;
+  height: 1.5rem;
+  min-height: 1.5rem;
+  overflow: hidden;
+  margin-top: 0.375rem;
+}
+
+.data-sparkline svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.data-sparkline path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .data-sparkline path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: sparkline-draw 1s ease-out forwards;
+  }
+
+  @keyframes sparkline-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .data-sparkline--skeleton {
+    background: linear-gradient(90deg, var(--surface-muted) 25%, var(--surface-soft) 50%, var(--surface-muted) 75%);
+    background-size: 200% 100%;
+    animation: sparkline-shimmer 1.5s infinite;
+  }
+}
+
+@keyframes sparkline-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .data-sparkline path {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .data-sparkline--skeleton {
+    background: var(--surface-muted);
+    animation: none;
+  }
+}
+
+@media (max-width: 320px) {
+  .data-sparkline,
+  .data-sparkline--skeleton {
+    height: 1.25rem;
+    min-height: 1.25rem;
+  }
 }
