@@ -28,11 +28,18 @@ function computePoints(data: number[], width: number, height: number): Point[] {
   });
 }
 
-function SparklineSkeleton({ height = 32, className = '' }: Pick<SparklineProps, 'height' | 'className'>) {
+function buildPath(points: Point[]): string {
+  return points
+    .map((point, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
+}
+
+function SparklineSkeleton({ height, className = '' }: Pick<SparklineProps, 'height' | 'className'>) {
+  const style = height ? { height } : undefined;
   return (
     <div
-      className={`animate-pulse motion-reduce:animate-none rounded bg-gray-200 dark:bg-gray-800 ${className}`}
-      style={{ height, width: '100%' }}
+      className={`data-sparkline data-sparkline--skeleton ${className}`}
+      style={style}
       role="status"
       aria-label="Loading sparkline"
     />
@@ -41,7 +48,7 @@ function SparklineSkeleton({ height = 32, className = '' }: Pick<SparklineProps,
 
 export function Sparkline({
   data,
-  height = 32,
+  height,
   color = 'currentColor',
   strokeWidth = 1.5,
   className = '',
@@ -54,26 +61,28 @@ export function Sparkline({
   if (!data || data.length < 2) return null;
 
   const width = 100; // viewBox coordinate space; actual svg stretches via preserveAspectRatio="none"
-  const points = computePoints(data, width, height);
-  const pointsString = points.map((point) => `${point.x},${point.y}`).join(' ');
+  const points = computePoints(data, width, height ?? 24);
+  const d = buildPath(points);
+  const style = height ? { height } : undefined;
 
   return (
-    <svg
-      className={className}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      style={{ width: '100%', height, display: 'block' }}
-      role="img"
-      aria-label="Sparkline"
-    >
-      <polyline
-        points={pointsString}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className={`data-sparkline ${className}`} style={style}>
+      <svg
+        viewBox={`0 0 ${width} ${height ?? 24}`}
+        preserveAspectRatio="none"
+        style={{ width: '100%', height: '100%' }}
+        role="img"
+        aria-label="Sparkline"
+      >
+        <path
+          d={d}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 }
