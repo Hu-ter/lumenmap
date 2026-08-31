@@ -21,6 +21,8 @@ export interface MetricDefinition {
   limitation: string;
   methodologySection: MethodologySectionId;
   methodologyHref: string;
+  /** When true, the KPI card should attempt to render a sparkline. */
+  sparkline?: boolean;
 }
 
 export const METRIC_DEFINITIONS: Record<KpiMetricId, MetricDefinition> = {
@@ -34,6 +36,7 @@ export const METRIC_DEFINITIONS: Record<KpiMetricId, MetricDefinition> = {
       "Not a transaction count; Hubble lag can understate the latest partial day.",
     methodologySection: "operations",
     methodologyHref: methodologyPath("operations"),
+    sparkline: true,
   },
   sorobanShare: {
     id: "sorobanShare",
@@ -45,6 +48,7 @@ export const METRIC_DEFINITIONS: Record<KpiMetricId, MetricDefinition> = {
       "Uses LumenMap category mapping; undefined when total operations are zero.",
     methodologySection: "soroban-share",
     methodologyHref: methodologyPath("soroban-share"),
+    sparkline: true,
   },
   topCategory: {
     id: "topCategory",
