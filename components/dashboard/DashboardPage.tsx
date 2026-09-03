@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { DashboardProvider, useDashboard } from "@/components/dashboard/DashboardProvider";
+import {
+  DashboardProvider,
+  useDashboard,
+} from "@/components/dashboard/DashboardProvider";
 import { CategoryShareChart } from "@/components/dashboard/CategoryShareChart";
 import { DetailPanel } from "@/components/dashboard/DetailPanel";
 import { FreshnessIndicator } from "@/components/dashboard/FreshnessIndicator";
@@ -12,6 +15,7 @@ import { NetworkTreemap } from "@/components/dashboard/NetworkTreemap";
 import { ProtocolBarChart } from "@/components/dashboard/ProtocolBarChart";
 import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
+import { HourOfWeekHeatmap } from "@/components/dashboard/HourOfWeekHeatmap";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 
@@ -42,15 +46,15 @@ function DashboardContent() {
             <Badge>Mainnet</Badge>
           </div>
           <FreshnessIndicator />
-            <p className="text-xs text-zinc-500">
-              <a
-                href="/methodology"
-                className="text-stellar-light hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stellar rounded-sm"
-              >
-                Metric methodology
-              </a>
-              {" · "}definitions on each KPI
-            </p>
+          <p className="text-xs text-zinc-500">
+            <a
+              href="/methodology"
+              className="text-stellar-light hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stellar rounded-sm"
+            >
+              Metric methodology
+            </a>
+            {" · "}definitions on each KPI
+          </p>
         </div>
         <div className="min-w-0 shrink-0">
           <PeriodSelector />
@@ -85,6 +89,7 @@ function DashboardContent() {
       <ProtocolBarChart />
       <ActivityHeatmap />
       <TimeSeriesChart />
+      <HourOfWeekHeatmap />
     </div>
   );
 }

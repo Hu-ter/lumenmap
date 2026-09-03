@@ -8,6 +8,7 @@ import {
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
+  heatmapQuery,
   latestDataTimestampQuery,
   nativePaymentVolumeQuery,
   queryRegistry,
@@ -35,6 +36,7 @@ import type {
   UsdcPaymentVolume,
   UsdcPaymentVolumeAssetRow,
   TimeseriesRawRow,
+  HeatmapRawRow,
 } from "@/lib/types";
 
 export {
@@ -47,6 +49,7 @@ export {
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
+  heatmapQuery,
   latestDataTimestampQuery,
   nativePaymentVolumeQuery,
   queryRegistry,
@@ -120,6 +123,17 @@ export function mapTimeseriesRows(
   }));
 }
 
+export function mapHeatmapRows(
+  rows: Record<string, unknown>[],
+): HeatmapRawRow[] {
+  return rows.map((row) => ({
+    day_of_week: Number(row.day_of_week),
+    hour_of_day: Number(row.hour_of_day),
+    tx_count: Number(row.tx_count ?? 0),
+    op_count: Number(row.op_count ?? 0),
+  }));
+}
+
 export type RawQueryResults = {
   timeseries: TimeseriesRawRow[];
   categories: CategoryRow[];
@@ -133,6 +147,7 @@ export type RawQueryResults = {
   usdcPaymentVolume: UsdcPaymentVolume;
   usdcCategories: UsdcCategoryRow[];
   usdcAccounts: UsdcAccountRow[];
+  heatmap: HeatmapRawRow[];
 };
 
 export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {

@@ -17,6 +17,7 @@ import {
   dailyTimeseriesQuery,
   getDestinationQueryTypes,
   hourlyTimeseriesQuery,
+  heatmapQuery,
   getAccountQueryTypes,
   getUsdcPaymentVolumeParams,
   latestDataTimestampQuery,
@@ -31,6 +32,7 @@ import {
   mapSorobanFunctionRows,
   mapTransactionCategoryRows,
   mapTimeseriesRows,
+  mapHeatmapRows,
   mapUsdcAccountRows,
   mapUsdcCategoryRows,
   mapUsdcPaymentVolumeRows,
@@ -43,7 +45,11 @@ import {
   type RawQueryResults,
 } from "@/lib/hubble/queries";
 import { hasBigQueryCredentials } from "@/lib/hubble/client";
-import { buildAllTreemaps, buildKpis, buildProtocolSummary } from "@/lib/entities/build-treemap";
+import {
+  buildAllTreemaps,
+  buildKpis,
+  buildProtocolSummary,
+} from "@/lib/entities/build-treemap";
 import {
   collectTreemapIds,
   homeDomainsToEntities,
@@ -57,6 +63,9 @@ import type {
   ActivityDataset,
   Period,
   ActivityTimeseries,
+  ActivityHeatmap,
+  HeatmapBucket,
+  HeatmapRawRow,
   TimeseriesBucket,
   TimeseriesRawRow,
 } from "@/lib/types";
@@ -180,15 +189,26 @@ async function fetchFromHubble(
     usdcCategoryRows,
     usdcAccountRows,
     timeseriesRows,
+    heatmapRows,
   ] = await Promise.all([
-    runQuery<Record<string, unknown>>("category", categoryQuery, params, correlationId),
+    runQuery<Record<string, unknown>>(
+      "category",
+      categoryQuery,
+      params,
+      correlationId,
+    ),
     runQuery<Record<string, unknown>>(
       "transactionCategory",
       transactionCategoryQuery,
       params,
       correlationId,
     ).catch(() => [] as Record<string, unknown>[]),
-    runQuery<Record<string, unknown>>("contract", contractQuery, params, correlationId),
+    runQuery<Record<string, unknown>>(
+      "contract",
+      contractQuery,
+      params,
+      correlationId,
+    ),
     runQuery<Record<string, unknown>>(
       "account",
       accountQuery,
@@ -258,6 +278,12 @@ async function fetchFromHubble(
       params,
       correlationId,
     ),
+    runQuery<Record<string, unknown>>(
+      "heatmap",
+      heatmapQuery,
+      params,
+      correlationId,
+    ),
   ]);
 
   return {
@@ -270,11 +296,14 @@ async function fetchFromHubble(
       sorobanFunctionContractRows,
     ),
     activeSourceAccounts: mapActiveSourceAccountsRows(activeSourceAccountRows),
-    activeDestinationCount: mapActiveDestinationCountRow(activeDestinationCountRows),
+    activeDestinationCount: mapActiveDestinationCountRow(
+      activeDestinationCountRows,
+    ),
     usdcPaymentVolume: mapUsdcPaymentVolumeRows(usdcPaymentVolumeRows),
     usdcCategories: mapUsdcCategoryRows(usdcCategoryRows),
     usdcAccounts: mapUsdcAccountRows(usdcAccountRows),
     timeseries: mapTimeseriesRows(timeseriesRows),
+    heatmap: mapHeatmapRows(heatmapRows),
   };
 }
 
@@ -314,7 +343,9 @@ export async function getActiveContractCount(
   return mapActiveContractCountRow(rows);
 }
 
-async function fetchLatestDataTimestamp(correlationId: string): Promise<string | null> {
+async function fetchLatestDataTimestamp(
+  correlationId: string,
+): Promise<string | null> {
   const rows = await runQuery<Record<string, unknown>>(
     "latestDataTimestamp",
     latestDataTimestampQuery,
@@ -337,8 +368,7 @@ export function buildTimeseries(
   now = new Date(),
   granularityOverride?: "hour" | "day",
 ): ActivityTimeseries {
-  const granularity =
-    granularityOverride ?? (period === "1d" ? "hour" : "day");
+  const granularity = granularityOverride ?? (period === "1d" ? "hour" : "day");
   const buckets: TimeseriesBucket[] = [];
 
   const lookup = new Map<string, { tx_count: number; op_count: number }>();
@@ -428,6 +458,32 @@ export function buildTimeseries(
   };
 }
 
+export function buildHeatmap(rawRows: HeatmapRawRow[]): ActivityHeatmap {
+  // Ensure we cover 7x24 grid (168 buckets).
+  const buckets: HeatmapBucket[] = [];
+  const map = new Map<string, HeatmapRawRow>();
+  for (const row of rawRows) {
+    map.set(`${row.day_of_week}-${row.hour_of_day}`, row);
+  }
+
+  for (let d = 1; d <= 7; d++) {
+    // BigQuery DAYOFWEEK is 1 (Sunday) to 7 (Saturday).
+    // Let's map it to 0-6 (0 = Sunday).
+    const dayOfWeek = d - 1;
+    for (let hourOfDay = 0; hourOfDay < 24; hourOfDay++) {
+      const row = map.get(`${d}-${hourOfDay}`);
+      buckets.push({
+        dayOfWeek,
+        hourOfDay,
+        transactions: row?.tx_count ?? 0,
+        operations: row?.op_count ?? 0,
+      });
+    }
+  }
+
+  return { buckets };
+}
+
 export async function getActivityData(
   period: Period,
   correlationId: string = createCorrelationId(),
@@ -453,7 +509,9 @@ export async function getActivityData(
 
   return coalesceInflight(inflightActivityRequests, cacheKey, async () => {
     // Re-check cache after winning/joining the in-flight slot.
-    const cachedAfterWait = getCached<ActivityDataset>(cacheKey, { track: true });
+    const cachedAfterWait = getCached<ActivityDataset>(cacheKey, {
+      track: true,
+    });
     if (cachedAfterWait) {
       return cachedAfterWait;
     }
@@ -477,7 +535,11 @@ export async function getActivityData(
     });
 
     const kpiTimer = startTimer();
-    const activeContractCount = await getActiveContractCount(start, end, correlationId);
+    const activeContractCount = await getActiveContractCount(
+      start,
+      end,
+      correlationId,
+    );
     const kpis = buildKpis(
       raw.categories,
       raw.contracts,
@@ -505,8 +567,14 @@ export async function getActivityData(
 
     const treemapTimer = startTimer();
     const treemaps = buildAllTreemaps({ ...raw, labels });
-  const protocols = buildProtocolSummary(raw.accounts, raw.contracts, labels);
-  const timeseries = buildTimeseries(period, range.start, range.end, raw.timeseries);
+    const protocols = buildProtocolSummary(raw.accounts, raw.contracts, labels);
+    const timeseries = buildTimeseries(
+      period,
+      range.start,
+      range.end,
+      raw.timeseries,
+    );
+    const heatmap = buildHeatmap(raw.heatmap);
     logInfo({
       event: "activity.treemap.build",
       correlationId,
@@ -538,11 +606,11 @@ export async function getActivityData(
       treemaps,
       protocols,
       timeseries,
+      heatmap,
       metricProvenance: buildActivityMetricProvenance(),
     };
 
     setCache(cacheKey, response);
     return response;
   });
-
 }
