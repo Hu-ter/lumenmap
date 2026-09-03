@@ -103,6 +103,31 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       methodology: "docs/metric-methodology.md#usdc-payment-volume",
       assets: [],
     },
+    assetVolumes: [
+      {
+        asset: { type: "native", code: "XLM" },
+        amount: "16500",
+        opCount: 60000,
+      },
+      {
+        asset: {
+          type: "issued",
+          code: "USDC",
+          issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        },
+        amount: "125000.5",
+        opCount: 42000,
+      },
+      {
+        asset: {
+          type: "issued",
+          code: "USDC",
+          issuer: "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNKNLXLTCV",
+        },
+        amount: "9200",
+        opCount: 3100,
+      },
+    ],
     usdcCategories: [
       { type_string: "payment", amount: 100000.5 },
       { type_string: "path_payment_strict_receive", amount: 25000 },

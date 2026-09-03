@@ -322,6 +322,21 @@ const activityHeatmapSchema = z.object({
   buckets: z.array(heatmapBucketSchema),
 });
 
+const assetPaymentVolumeSchema = z.object({
+  asset: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("native"), code: z.literal("XLM") }),
+    z.object({
+      type: z.literal("issued"),
+      code: z.string().min(1),
+      issuer: z.string().min(1),
+    }),
+  ]),
+  amount: z
+    .string()
+    .refine((value) => Number.isFinite(Number(value)) && Number(value) >= 0),
+  opCount: z.number().int().nonnegative(),
+});
+
 const protocolBarSchema = z.object({
   protocol: z.string(),
   opCount: z.number(),
@@ -361,6 +376,7 @@ export const activityResponseSchema = z.object({
   protocols: protocolSummarySchema.optional(),
   timeseries: activityTimeseriesSchema.optional(),
   heatmap: activityHeatmapSchema.optional(),
+  assetVolumes: z.array(assetPaymentVolumeSchema).optional(),
   fixture: z.boolean().optional(),
 });
 

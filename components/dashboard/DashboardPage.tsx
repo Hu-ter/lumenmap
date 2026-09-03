@@ -16,6 +16,7 @@ import { ProtocolBarChart } from "@/components/dashboard/ProtocolBarChart";
 import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { HourOfWeekHeatmap } from "@/components/dashboard/HourOfWeekHeatmap";
+import { AssetVolumePanel } from "@/components/dashboard/AssetVolumePanel";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 
@@ -66,6 +67,8 @@ function DashboardContent() {
       <DashboardSearch />
 
       <KpiCards />
+
+      <AssetVolumePanel />
 
       <CategoryShareChart />
 

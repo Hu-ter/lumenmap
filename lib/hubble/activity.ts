@@ -8,6 +8,7 @@ import {
 import { coalesceInflight } from "@/lib/hubble/inflight";
 import {
   accountQuery,
+  assetPaymentVolumeQuery,
   accountMetadataQuery,
   activeContractCountQuery,
   activeDestinationCountQuery,
@@ -23,6 +24,7 @@ import {
   latestDataTimestampQuery,
   mapAccountMetadataRows,
   mapAccountRows,
+  mapAssetPaymentVolumeRows,
   mapActiveContractCountRow,
   mapActiveDestinationCountRow,
   mapActiveSourceAccountsRows,
@@ -177,6 +179,7 @@ async function fetchFromHubble(
     period === "1d" ? hourlyTimeseriesQuery : dailyTimeseriesQuery;
 
   const [
+    assetVolumeRows,
     categoryRows,
     transactionCategoryRows,
     contractRows,
@@ -191,6 +194,12 @@ async function fetchFromHubble(
     timeseriesRows,
     heatmapRows,
   ] = await Promise.all([
+    runQuery<Record<string, unknown>>(
+      "assetPaymentVolume",
+      assetPaymentVolumeQuery,
+      params,
+      correlationId,
+    ),
     runQuery<Record<string, unknown>>(
       "category",
       categoryQuery,
@@ -287,6 +296,7 @@ async function fetchFromHubble(
   ]);
 
   return {
+    assetVolumes: mapAssetPaymentVolumeRows(assetVolumeRows),
     categories: mapCategoryRows(categoryRows),
     transactionCategories: mapTransactionCategoryRows(transactionCategoryRows),
     contracts: mapContractRows(contractRows),
@@ -600,6 +610,7 @@ export async function getActivityData(
       sorobanFunctions: raw.sorobanFunctions,
       sorobanFunctionContracts: raw.sorobanFunctionContracts,
       usdcPaymentVolume: raw.usdcPaymentVolume,
+      assetVolumes: raw.assetVolumes,
       usdcCategories: raw.usdcCategories,
       usdcAccounts: raw.usdcAccounts,
       kpis,

@@ -4,18 +4,11 @@ export type DataSource = "hubble" | "fixture";
 
 /** Stable identifiers used by the public treemap contract. */
 export type MetricId =
-  | "operation_count"
-  | "transaction_count"
-  | "asset_volume"
-  | "tvl";
+  "operation_count" | "transaction_count" | "asset_volume" | "tvl";
 
 /** Internal selector values for the metrics currently backed by queries. */
 export type DashboardMetricId =
-  | "ops"
-  | "xlm_volume"
-  | "usdc"
-  | "transactions"
-  | "protocol_tvl";
+  "ops" | "xlm_volume" | "usdc" | "transactions" | "protocol_tvl";
 
 export type CountUnit =
   | { kind: "count"; subject: "operation" }
@@ -195,12 +188,7 @@ export interface UsdcAccountRow {
 }
 
 export type TreemapNodeType =
-  | "root"
-  | "category"
-  | "entity"
-  | "contract"
-  | "account"
-  | "protocol";
+  "root" | "category" | "entity" | "contract" | "account" | "protocol";
 
 export interface EntityInfo {
   name: string;
@@ -248,6 +236,12 @@ export interface SorobanFunctionContractRow {
 export interface NativePaymentVolume {
   amount: string;
   unit: "XLM";
+}
+
+export interface AssetPaymentVolumeRow {
+  asset: AssetIdentity;
+  amount: string;
+  opCount: number;
 }
 
 export interface ActiveSourceAccountsRow {
@@ -322,6 +316,9 @@ export interface TreemapNodeMeta {
   txnCount?: number;
   xlmVolume?: number;
   usdcVolume?: number;
+  assetCode?: string;
+  assetIssuer?: string;
+  assetAmount?: string;
   tvlUsd?: number;
   snapshotTime?: string;
   adapterStatus?: string;
@@ -347,7 +344,6 @@ export type TreemapPayload<M extends MetricId> = TreemapNode<MetricValue<M>> & {
   metric: M;
   unit: MetricUnit<M>;
 };
-
 
 export interface TimeseriesBucket {
   timestamp: string;
@@ -419,6 +415,7 @@ export interface RawResearchRows {
   sorobanFunctions: SorobanFunctionRow[];
   sorobanFunctionContracts: SorobanFunctionContractRow[];
   usdcPaymentVolume: UsdcPaymentVolume;
+  assetVolumes?: AssetPaymentVolumeRow[];
   usdcCategories: UsdcCategoryRow[];
   usdcAccounts: UsdcAccountRow[];
 }
@@ -430,6 +427,7 @@ export interface ActivityVisualizationResponse extends ActivityResponseMetadata 
   metricProvenance: ActivityMetricProvenance;
   timeseries?: ActivityTimeseries;
   heatmap?: ActivityHeatmap;
+  assetVolumes?: AssetPaymentVolumeRow[];
   /** Present and true when the API returned static fixture data (no GCP credentials). */
   fixture?: boolean;
 }
@@ -456,8 +454,7 @@ export interface ProtocolSummary {
 }
 
 export interface ActivityDataset
-  extends ActivityResponseMetadata,
-    RawResearchRows {
+  extends ActivityResponseMetadata, RawResearchRows {
   kpis: ActivityKpis;
   treemaps: ActivityTreemaps;
   protocols?: ProtocolSummary;
