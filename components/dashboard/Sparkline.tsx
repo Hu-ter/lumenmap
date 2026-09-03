@@ -1,92 +1,46 @@
-import * as React from 'react';
-
-const DEFAULT_HEIGHT = 24;
-
-export interface SparklineProps {
-  data?: number[] | null;
-  height?: number;
-  color?: string;
-  strokeWidth?: number;
-  className?: string;
+interface SparklineProps {
+  data?: number[];
   loading?: boolean;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-function computePoints(data: number[], width: number, height: number): Point[] {
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const stepX = width / (data.length - 1);
-  const padding = 2;
-  const innerHeight = Math.max(2, height - padding * 2);
-  return data.map((value, i) => {
-    const x = i * stepX;
-    const y = padding + ((max - value) / range) * innerHeight;
-    return { x, y };
-  });
-}
-
-function buildPath(points: Point[]): string {
-  return points
-    .map((point, i) => `${ i === 0 ? 'M' : 'L' } ${point.x} ${point.y}`)
-    .join(' ');
-}
-
-function SparklineSkeleton({ height, className = '' }: Pick<SparklineProps, 'height' | 'className'>) {
-  const resolvedHeight = height || DEFAULT_HEIGHT;
-  const style = { height: resolvedHeight, minWidth: 0, overflow: 'hidden' };
-  return (
-    <div
-      className={`data-sparkline data-sparkline--skeleton ${className}`}
-      style={style}
-      role="status"
-      aria-label="Loading sparkline"
-    />
-  );
+  label?: string;
 }
 
 export function Sparkline({
   data,
-  height,
-  color = 'currentColor',
-  strokeWidth = 1.5,
-  className = '',
   loading = false,
+  label = "Trend",
 }: SparklineProps) {
-  if (loading && (!data || data.length === 0)) {
-    return <SparklineSkeleton height={height} className={className} />;
-  }
-
+  if (loading)
+    return (
+      <div
+        className="mt-2 h-6 w-full animate-pulse rounded bg-white/5"
+        aria-hidden="true"
+      />
+    );
   if (!data || data.length < 2) return null;
-
-  const resolvedHeight = height || DEFAULT_HEIGHT;
-  const width = 100; // viewBox coordinate space; actual svg stretches via preserveAspectRatio="none"
-  const points = computePoints(data, width, resolvedHeight);
-  const d = buildPath(points);
-  const style = { height: resolvedHeight, minWidth: 0, overflow: 'hidden' };
-
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map(
+      (value, index) =>
+        `${(index / (data.length - 1)) * 100},${22 - ((value - min) / range) * 18}`,
+    )
+    .join(" ");
   return (
-    <div className={`data-sparkline ${className}`} style={style}>
-      <svg
-        viewBox={0 0 ${width} ${resolvedHeight}}"
-        preserveAspectRatio="none"
-        style={ width: '100%', height: '100%' }
-        role="img"
-        aria-label="Sparkline"
-      >
-        <path
-          d={d}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
+    <svg
+      viewBox="0 0 100 26"
+      preserveAspectRatio="none"
+      className="mt-2 h-6 w-full min-w-0 text-cyan-400"
+      role="img"
+      aria-label={label}
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }

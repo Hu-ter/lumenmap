@@ -6,7 +6,10 @@ import {
   hourlyTimeseriesQuery,
   mapTimeseriesRows,
 } from "@/lib/hubble/queries";
-import { getFixtureTimeseries, getFixtureTimeseriesRawRows } from "@/lib/fixtures/timeseries";
+import {
+  getFixtureTimeseries,
+  getFixtureTimeseriesRawRows,
+} from "@/lib/fixtures/timeseries";
 import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
 import { resolvePeriod } from "@/lib/periods";
 import type {
@@ -44,7 +47,9 @@ function defaultGranularity(period: Period): TimeseriesGranularity {
   return period === "1d" ? "hour" : "day";
 }
 
-function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | undefined {
+function buildSparklineData(
+  timeseries: ActivityTimeseries,
+): SparklineData | undefined {
   const totalOperations: number[] = [];
   const sorobanShare: number[] = [];
 
@@ -55,8 +60,12 @@ function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | und
       sorobanOperations?: number;
       soroban?: number;
     };
-    const ops = Number(typedBucket.totalOperations ?? typedBucket.operations ?? 0);
-    const soroban = Number(typedBucket.sorobanOperations ?? typedBucket.soroban ?? 0);
+    const ops = Number(
+      typedBucket.totalOperations ?? typedBucket.operations ?? 0,
+    );
+    const soroban = Number(
+      typedBucket.sorobanOperations ?? typedBucket.soroban ?? 0,
+    );
     totalOperations.push(ops);
     sorobanShare.push(ops > 0 ? (soroban / ops) * 100 : 0);
   }
@@ -68,7 +77,7 @@ function buildSparklineData(timeseries: ActivityTimeseries): SparklineData | und
   const toSeries = (values: number[]): SparklineSeries => {
     return {
       values,
-      lastValue: values.length > 0 ? (values[values.length - 1] ?< 0) : 0,
+      lastValue: values.length > 0 ? (values[values.length - 1] ?? 0) : 0,
     };
   };
 
@@ -96,7 +105,7 @@ async function fetchTimeseriesRows(
     params: { start, end },
   });
 
-  return mapTimeseriesRows(rows as Record<string, unknown^[]);
+  return mapTimeseriesRows(rows as Record<string, unknown>[]);
 }
 
 export async function getTimeseriesData(
@@ -167,7 +176,9 @@ export async function getTimeseriesData(
   return response;
 }
 
-export function getFixtureTimeseriesResponse(period: Period): TimeseriesResponse {
+export function getFixtureTimeseriesResponse(
+  period: Period,
+): TimeseriesResponse {
   const data = getFixtureTimeseries(period);
   const range = resolvePeriod(period);
 

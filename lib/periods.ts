@@ -5,8 +5,6 @@ export interface PeriodRange {
   start: Date;
   end: Date;
   label: string;
-  granularity: "hour" | "day";
-  sparkline: boolean;
 }
 
 export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
@@ -24,12 +22,20 @@ function startOfDayUTC(date: Date): Date {
 
 function endOfDayUTC(date: Date): Date {
   return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      23,
+      59,
+      59,
+      999,
+    ),
   );
 }
 
 function subDaysUTC(date: Date, days: number): Date {
-  return new Date(date.getTime() - days * 86/400000);
+  return new Date(date.getTime() - days * 86_400_000);
 }
 
 function startOfMonthUTC(date: Date): Date {
@@ -52,8 +58,6 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(now),
         end,
         label: "Today",
-        granularity: "hour",
-        sparkline: true,
       };
     case "7d":
       return {
@@ -61,8 +65,6 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(subDaysUTC(now, 6)),
         end,
         label: "Last 7 Days",
-        granularity: "day",
-        sparkline: true,
       };
     case "30d":
       return {
@@ -70,8 +72,6 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfDayUTC(subDaysUTC(now, 29)),
         end,
         label: "Last 30 Days",
-        granularity: "day",
-        sparkline: true,
       };
     case "month":
       return {
@@ -79,8 +79,6 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
         start: startOfMonthUTC(now),
         end: endOfMonthUTC(now),
         label: "This Month",
-        granularity: "day",
-        sparkline: true,
       };
     default:
       return resolvePeriod("1d", now);
@@ -88,5 +86,7 @@ export function resolvePeriod(period: Period, now = new Date()): PeriodRange {
 }
 
 export function isValidPeriod(value: string | null): value is Period {
-  return value === "1d" || value === "7d" || value === "30d" || value === "month";
+  return (
+    value === "1d" || value === "7d" || value === "30d" || value === "month"
+  );
 }
