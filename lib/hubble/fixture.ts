@@ -4,9 +4,28 @@
  */
 
 import { buildActivityMetricProvenance } from "@/lib/metrics/provenance";
-import type { ActivityDataset, Period } from "@/lib/types";
+import type { ActivityDataset, Period, HeatmapBucket } from "@/lib/types";
 
 export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
+  const heatmapBuckets: HeatmapBucket[] = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      let op_count = (d + 1) * 500 + h * 75;
+      let tx_count = Math.floor(op_count * 0.8);
+      // Spike on weekdays at 14:00 UTC
+      if (d > 0 && d < 6 && h === 14) {
+        op_count += 15000;
+        tx_count += 12000;
+      }
+      heatmapBuckets.push({
+        dayOfWeek: d,
+        hourOfDay: h,
+        operations: op_count,
+        transactions: tx_count,
+      });
+    }
+  }
+
   return {
     period,
     start: "2026-01-01T00:00:00.000Z",
@@ -15,10 +34,18 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
     sourceTimestamp: "2026-01-02T00:00:00.000Z",
     isPeriodComplete: true,
     categories: [
-      { type_string: "invoke_host_function", op_count: 420000, xlm_volume: 12000 },
+      {
+        type_string: "invoke_host_function",
+        op_count: 420000,
+        xlm_volume: 12000,
+      },
       { type_string: "payment", op_count: 180000, xlm_volume: 84000 },
       { type_string: "manage_sell_offer", op_count: 95000, xlm_volume: 22000 },
-      { type_string: "path_payment_strict_receive", op_count: 62000, xlm_volume: 15000 },
+      {
+        type_string: "path_payment_strict_receive",
+        op_count: 62000,
+        xlm_volume: 15000,
+      },
       { type_string: "change_trust", op_count: 31000, xlm_volume: 0 },
     ],
     transactionCategories: [
@@ -93,7 +120,11 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       topCategory: "soroban",
       activeContracts: { kind: "entity_count", unit: "count", value: 2 },
       activeWallets: { kind: "entity_count", unit: "count", value: 1500 },
-      activeDestinationAccounts: { kind: "entity_count", unit: "count", value: 1200 },
+      activeDestinationAccounts: {
+        kind: "entity_count",
+        unit: "count",
+        value: 1200,
+      },
     },
     treemaps: {
       events: {
@@ -184,93 +215,93 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
         ],
       },
       txn_events: {
-      name: "Network Activity",
-      metric: "transaction_count",
-      unit: { kind: "count", subject: "transaction" },
-      value: 285000,
-      meta: { type: "root", txnCount: 285000 },
-      children: [
-        {
-          name: "Payments",
-          value: 120000,
-          meta: {
-            type: "category",
-            category: "payments",
-            txnCount: 120000,
-            share: 42.1,
-            childCount: 1,
-          },
-          children: [
-            {
-              name: "payment",
-              value: 120000,
-              meta: {
-                type: "entity",
-                category: "payments",
-                txnCount: 120000,
-                eventType: "payment",
-              },
+        name: "Network Activity",
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
+        value: 285000,
+        meta: { type: "root", txnCount: 285000 },
+        children: [
+          {
+            name: "Payments",
+            value: 120000,
+            meta: {
+              type: "category",
+              category: "payments",
+              txnCount: 120000,
+              share: 42.1,
+              childCount: 1,
             },
-          ],
-        },
-        {
-          name: "Soroban Contracts",
-          value: 85000,
-          meta: {
-            type: "category",
-            category: "soroban",
-            txnCount: 85000,
-            share: 29.8,
-            childCount: 1,
-          },
-          children: [
-            {
-              name: "invoke host function",
-              value: 85000,
-              meta: {
-                type: "entity",
-                category: "soroban",
-                txnCount: 85000,
-                eventType: "invoke_host_function",
+            children: [
+              {
+                name: "payment",
+                value: 120000,
+                meta: {
+                  type: "entity",
+                  category: "payments",
+                  txnCount: 120000,
+                  eventType: "payment",
+                },
               },
-            },
-          ],
-        },
-      ],
-    },
-    txn_actors: {
-      name: "Network Activity",
-      metric: "transaction_count",
-      unit: { kind: "count", subject: "transaction" },
-      value: 285000,
-      meta: { type: "root", txnCount: 285000 },
-      children: [
-        {
-          name: "Payments",
-          value: 120000,
-          meta: {
-            type: "category",
-            category: "payments",
-            txnCount: 120000,
-            share: 42.1,
-            childCount: 1,
+            ],
           },
-          children: [
-            {
-              name: "payment",
-              value: 120000,
-              meta: {
-                type: "entity",
-                category: "payments",
-                txnCount: 120000,
-                eventType: "payment",
-              },
+          {
+            name: "Soroban Contracts",
+            value: 85000,
+            meta: {
+              type: "category",
+              category: "soroban",
+              txnCount: 85000,
+              share: 29.8,
+              childCount: 1,
             },
-          ],
-        },
-      ],
-    },
-    xlm_events: {
+            children: [
+              {
+                name: "invoke host function",
+                value: 85000,
+                meta: {
+                  type: "entity",
+                  category: "soroban",
+                  txnCount: 85000,
+                  eventType: "invoke_host_function",
+                },
+              },
+            ],
+          },
+        ],
+      },
+      txn_actors: {
+        name: "Network Activity",
+        metric: "transaction_count",
+        unit: { kind: "count", subject: "transaction" },
+        value: 285000,
+        meta: { type: "root", txnCount: 285000 },
+        children: [
+          {
+            name: "Payments",
+            value: 120000,
+            meta: {
+              type: "category",
+              category: "payments",
+              txnCount: 120000,
+              share: 42.1,
+              childCount: 1,
+            },
+            children: [
+              {
+                name: "payment",
+                value: 120000,
+                meta: {
+                  type: "entity",
+                  category: "payments",
+                  txnCount: 120000,
+                  eventType: "payment",
+                },
+              },
+            ],
+          },
+        ],
+      },
+      xlm_events: {
         name: "XLM Events",
         metric: "asset_volume",
         value: "133000",
@@ -321,6 +352,9 @@ export function buildFixtureDataset(period: Period = "1d"): ActivityDataset {
       },
     },
     metricProvenance: buildActivityMetricProvenance(),
+    heatmap: {
+      buckets: heatmapBuckets,
+    },
   };
 }
 

@@ -366,6 +366,24 @@ export interface ActivityTimeseries {
   };
 }
 
+export interface HeatmapRawRow {
+  day_of_week: number;
+  hour_of_day: number;
+  tx_count: number;
+  op_count: number;
+}
+
+export interface HeatmapBucket {
+  dayOfWeek: number; // 0-6 (0=Sunday)
+  hourOfDay: number; // 0-23
+  transactions: number;
+  operations: number;
+}
+
+export interface ActivityHeatmap {
+  buckets: HeatmapBucket[];
+}
+
 export interface TimeseriesRawRow {
   bucket_time: string;
   tx_count: number;
@@ -411,6 +429,7 @@ export interface ActivityVisualizationResponse extends ActivityResponseMetadata 
   protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
   timeseries?: ActivityTimeseries;
+  heatmap?: ActivityHeatmap;
   /** Present and true when the API returned static fixture data (no GCP credentials). */
   fixture?: boolean;
 }
@@ -444,6 +463,7 @@ export interface ActivityDataset
   protocols?: ProtocolSummary;
   metricProvenance: ActivityMetricProvenance;
   timeseries?: ActivityTimeseries;
+  heatmap?: ActivityHeatmap;
 }
 
 export interface ApiErrorResponse {
