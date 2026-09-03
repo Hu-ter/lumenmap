@@ -1,4 +1,5 @@
 import {
+  assetPaymentVolumeQuery,
   ACCOUNT_QUERY_TYPES,
   DESTINATION_QUERY_TYPES,
   accountMetadataQuery,
@@ -8,6 +9,7 @@ import {
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
+  heatmapQuery,
   latestDataTimestampQuery,
   nativePaymentVolumeQuery,
   queryRegistry,
@@ -20,6 +22,7 @@ import {
 } from "./shared-queries.mjs";
 import { SUPPORTED_USDC_ASSET_SET } from "@/lib/assets/usdc";
 import type {
+  AssetPaymentVolumeRow,
   AccountRow,
   ActiveContractCountRow,
   ActiveDestinationCountRow,
@@ -35,9 +38,11 @@ import type {
   UsdcPaymentVolume,
   UsdcPaymentVolumeAssetRow,
   TimeseriesRawRow,
+  HeatmapRawRow,
 } from "@/lib/types";
 
 export {
+  assetPaymentVolumeQuery,
   ACCOUNT_QUERY_TYPES,
   DESTINATION_QUERY_TYPES,
   accountMetadataQuery,
@@ -47,6 +52,7 @@ export {
   activeSourceAccountsQuery,
   categoryQuery,
   contractQuery,
+  heatmapQuery,
   latestDataTimestampQuery,
   nativePaymentVolumeQuery,
   queryRegistry,
@@ -75,15 +81,15 @@ export function getAccountQueryTypes(): string[] {
   return ACCOUNT_QUERY_TYPES;
 }
 
-
-
-export function getUsdcPaymentVolumeParams(): { code: string; issuer: string }[] {
+export function getUsdcPaymentVolumeParams(): {
+  code: string;
+  issuer: string;
+}[] {
   return SUPPORTED_USDC_ASSET_SET.assets.map((asset) => ({
     code: asset.code,
     issuer: asset.issuer,
   }));
 }
-
 
 export const hourlyTimeseriesQuery = `
 SELECT
@@ -112,7 +118,9 @@ export function mapTimeseriesRows(
 ): TimeseriesRawRow[] {
   return rows.map((row) => ({
     bucket_time:
-      row.bucket_time && typeof row.bucket_time === "object" && "value" in row.bucket_time
+      row.bucket_time &&
+      typeof row.bucket_time === "object" &&
+      "value" in row.bucket_time
         ? String((row.bucket_time as { value: string }).value)
         : String(row.bucket_time ?? ""),
     tx_count: Number(row.tx_count ?? 0),
@@ -120,7 +128,19 @@ export function mapTimeseriesRows(
   }));
 }
 
+export function mapHeatmapRows(
+  rows: Record<string, unknown>[],
+): HeatmapRawRow[] {
+  return rows.map((row) => ({
+    day_of_week: Number(row.day_of_week),
+    hour_of_day: Number(row.hour_of_day),
+    tx_count: Number(row.tx_count ?? 0),
+    op_count: Number(row.op_count ?? 0),
+  }));
+}
+
 export type RawQueryResults = {
+  assetVolumes: AssetPaymentVolumeRow[];
   timeseries: TimeseriesRawRow[];
   categories: CategoryRow[];
   transactionCategories: TransactionCategoryRow[];
@@ -133,9 +153,31 @@ export type RawQueryResults = {
   usdcPaymentVolume: UsdcPaymentVolume;
   usdcCategories: UsdcCategoryRow[];
   usdcAccounts: UsdcAccountRow[];
+  heatmap: HeatmapRawRow[];
 };
 
-export function mapCategoryRows(rows: Record<string, unknown>[]): CategoryRow[] {
+export function mapAssetPaymentVolumeRows(
+  rows: Record<string, unknown>[],
+): AssetPaymentVolumeRow[] {
+  return rows
+    .map((row) => ({
+      asset:
+        String(row.asset_type) === "native"
+          ? ({ type: "native", code: "XLM" } as const)
+          : ({
+              type: "issued",
+              code: String(row.asset_code),
+              issuer: String(row.asset_issuer),
+            } as const),
+      amount: String(row.amount ?? "0"),
+      opCount: Number(row.op_count ?? 0),
+    }))
+    .filter((row) => Number(row.amount) > 0);
+}
+
+export function mapCategoryRows(
+  rows: Record<string, unknown>[],
+): CategoryRow[] {
   return rows.map((row) => ({
     type_string: String(row.type_string),
     op_count: Number(row.op_count),
@@ -152,7 +194,9 @@ export function mapTransactionCategoryRows(
   }));
 }
 
-export function mapContractRows(rows: Record<string, unknown>[]): ContractRow[] {
+export function mapContractRows(
+  rows: Record<string, unknown>[],
+): ContractRow[] {
   return rows.map((row) => ({
     contract_id: String(row.contract_id),
     op_count: Number(row.op_count),
@@ -206,7 +250,6 @@ export function mapSorobanFunctionContractRows(
   }));
 }
 
-
 export function mapUsdcPaymentVolumeRows(
   rows: Record<string, unknown>[],
 ): UsdcPaymentVolume {
@@ -226,7 +269,6 @@ export function mapUsdcPaymentVolumeRows(
     assets,
   };
 }
-
 
 export function mapUsdcCategoryRows(
   rows: Record<string, unknown>[],
